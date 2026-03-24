@@ -174,20 +174,48 @@ def search_oxylabs(query: str, locations: List[str], max_results: int = 10) -> L
     audit_log("SEARCH_STARTED", method="oxylabs", query=query, locations=locations)
     
     try:
-        # Simulate Oxylabs API call (in production: actual HTTP request)
-        # The real implementation would call:
-        # response = requests.post(
-        #     "https://api.oxylabs.io/v1/queries",
-        #     json={
-        #         "source": "indeed",
-        #         "query": query,
-        #         "location": ",".join(locations),
-        #         "parse": True
-        #     },
-        #     headers={"Authorization": f"Bearer {OXYLABS_API_KEY}"}
-        # )
-        
-        jobs = _parse_oxylabs_response(query, locations, max_results)
+        from oxylabs_ai_studio.apps.ai_scraper import AiScraper
+        from urllib.parse import quote_plus
+
+        scraper = AiScraper(api_key=OXYLABS_API_KEY)
+
+        location_str = locations[0] if locations else "Remote"
+        url = (
+            f"https://www.linkedin.com/jobs/search/"
+            f"?keywords={quote_plus(query)}&location={quote_plus(location_str)}"
+        )
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "job_listings": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "job_title":    {"type": "string"},
+                            "company_name": {"type": "string"},
+                            "location":     {"type": "string"},
+                            "apply_url":    {"type": "string"},
+                            "salary":       {"type": "string"},
+                            "date_posted":  {"type": "string"},
+                        },
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "additionalProperties": False,
+        }
+
+        result = scraper.scrape(
+            url=url,
+            output_format="json",
+            schema=schema,
+            render_javascript=False,
+            geo_location="US",
+        )
+
+        jobs = _parse_oxylabs_response(result.data if result else {}, locations, max_results)
         rate_limiter.track_usage(estimated_cost)
         
         audit_log("SEARCH_COMPLETED", method="oxylabs", results=len(jobs), cost=estimated_cost)
@@ -233,11 +261,46 @@ def search_firecrawl(query: str, locations: List[str], max_results: int = 10) ->
         audit_log("SEARCH_FAILED", method="firecrawl", error=str(e))
         raise
 
-def _parse_oxylabs_response(query: str, locations: List[str], max_results: int) -> List[Job]:
-    """Mock Oxylabs response parsing. In production: parse real API response."""
-    # Placeholder: return empty list for demo
-    # Real implementation would parse JSON from Oxylabs API
-    return []
+def _parse_oxylabs_response(data: dict, locations: List[str], max_results: int) -> List[Job]:
+    """Parse Oxylabs AI Studio JSON response into Job objects."""
+    if not data:
+        return []
+
+    # Find job list — try known key first, then fall back to first list value
+    job_list = data.get("job_listings") or []
+    if not job_list:
+        for value in data.values():
+            if isinstance(value, list) and value:
+                job_list = value
+                break
+
+    jobs = []
+    for item in job_list[:max_results]:
+        if not isinstance(item, dict):
+            continue
+
+        title    = item.get("job_title") or item.get("title") or item.get("position") or "Unknown Title"
+        company  = item.get("company_name") or item.get("company") or item.get("employer") or "Unknown Company"
+        location = item.get("location") or item.get("job_location") or (locations[0] if locations else "Remote")
+        desc     = item.get("description") or item.get("job_description") or item.get("summary") or ""
+        url      = item.get("apply_url") or item.get("url") or item.get("link") or ""
+        salary   = item.get("salary") or item.get("salary_range") or item.get("compensation")
+        posted   = item.get("date_posted") or item.get("posted") or item.get("date")
+
+        job_id = hashlib.md5(f"{title}{company}{url}".encode()).hexdigest()[:12]
+        jobs.append(Job(
+            job_id=job_id,
+            title=str(title),
+            company=str(company),
+            location=str(location),
+            description=str(desc),
+            url=str(url),
+            source="indeed",
+            posted_date=str(posted) if posted else None,
+            salary_range=str(salary) if salary else None,
+        ))
+
+    return jobs
 
 def _parse_firecrawl_response(query: str, locations: List[str], max_results: int) -> List[Job]:
     """Mock FireCrawl response parsing. In production: parse real scrape result."""
@@ -514,7 +577,7 @@ def main():
     # Search command
     search_parser = subparsers.add_parser("search", help="Search for jobs")
     search_parser.add_argument("--query", required=True, help="Job title or keywords")
-    search_parser.add_argument("--locations", required=True, help="Locations (comma-separated)")
+    search_parser.add_argument("--location", "--locations", dest="locations", required=True, help="Location or locations (comma-separated)")
     search_parser.add_argument("--max-results", type=int, default=10, help="Max results (default 10)")
     search_parser.add_argument("--output", help="Save results to JSON file")
     
