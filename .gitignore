@@ -1,0 +1,39 @@
+# Secrets — NEVER commit these
+.env
+*.key
+auth-profiles.json
+**/credentials/
+**/secrets/
+
+# OpenClaw data
+openclaw.json
+openclaw.json.bak*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Node
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
