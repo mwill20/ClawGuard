@@ -1,0 +1,40 @@
+{
+  "full_name": "Michael Williams",
+  "email": "mwill.itmission@gmail.com",
+  "phone": "+1-206-474-0889",
+  "target_roles": [
+    "SOC Analyst II",
+    "SOC Analyst III",
+    "SOC Engineer",
+    "Security Engineer",
+    "Customer Success Engineer",
+    "Threat Hunter",
+    "AI Security Engineer",
+    "Detection Engineer",
+    "Security Operations Engineer"
+  ],
+  "target_locations": [
+    "Seattle, WA",
+    "Washington State",
+    "Remote"
+  ],
+  "work_arrangement": ["onsite", "hybrid", "remote"],
+  "preferences": {
+    "experience_level": "early-to-mid career",
+    "job_type": ["full-time"],
+    "remote_acceptable": true,
+    "relocation": false
+  },
+  "key_skills": [
+    "EDR", "SIEM", "SOAR", "incident response", "threat hunting",
+    "endpoint forensics", "Python", "REST APIs", "Docker", "Git",
+    "FortiEDR", "FortiSIEM", "Swimlane", "Trend Micro XDR",
+    "Microsoft Sentinel", "Splunk", "Wazuh", "AWS", "Azure", "GCP",
+    "LLM integration", "guardrail design", "API troubleshooting"
+  ],
+  "certifications": [
+    "GSEC", "GCIH", "GCIA", "Security+", "CySA+", "PenTest+",
+    "CASP+", "SecurityX", "SSCP", "CCNA", "ITIL", "CAISS",
+    "AZ-500 (in progress)"
+  ]
+}
