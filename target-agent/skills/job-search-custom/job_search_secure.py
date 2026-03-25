@@ -402,6 +402,42 @@ class JobDatabase:
         row = self.conn.execute("SELECT MIN(first_seen) as earliest FROM jobs").fetchone()
         return row["earliest"] if row else None
 
+    def is_first_week(self) -> bool:
+        """
+        Check if the pipeline is in its first week of operation.
+        During the first week, we show all found jobs (catch-up mode).
+        After the first week, we only show jobs from the last 24 hours.
+        """
+        earliest = self.get_earliest_first_seen()
+        if not earliest:
+            return True  # No jobs yet = first run
+        try:
+            first_date = datetime.fromisoformat(earliest)
+            days_since = (datetime.now() - first_date).days
+            return days_since < 7
+        except (ValueError, TypeError):
+            return True
+
+    def get_digest_jobs(self) -> List[dict]:
+        """
+        Get jobs for today's digest with smart date filtering:
+        - First week: all jobs in DB (catch-up mode)
+        - After first week: only jobs first_seen in last 24 hours
+        """
+        if self.is_first_week():
+            logger.info("First-week mode: including all jobs in digest")
+            rows = self.conn.execute(
+                "SELECT * FROM jobs ORDER BY score DESC NULLS LAST, first_seen DESC"
+            ).fetchall()
+        else:
+            cutoff = (datetime.now() - timedelta(hours=24)).isoformat()
+            logger.info(f"Daily mode: jobs since {cutoff}")
+            rows = self.conn.execute(
+                "SELECT * FROM jobs WHERE first_seen >= ? ORDER BY score DESC NULLS LAST",
+                (cutoff,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def get_job_count(self) -> dict:
         """Return count of jobs by status."""
         rows = self.conn.execute(
@@ -719,13 +755,14 @@ JOB_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "job_title":    {"type": "string"},
-                    "company_name": {"type": "string"},
-                    "location":     {"type": "string"},
-                    "apply_url":    {"type": "string"},
-                    "salary":       {"type": "string"},
-                    "date_posted":  {"type": "string"},
-                    "description":  {"type": "string"},
+                    "job_title":      {"type": "string"},
+                    "company_name":   {"type": "string"},
+                    "location":       {"type": "string"},
+                    "job_detail_url": {"type": "string", "description": "Direct link to the individual job posting page (e.g. /jobs/view/...)"},
+                    "apply_url":      {"type": "string", "description": "Link to apply or the job posting page"},
+                    "salary":         {"type": "string"},
+                    "date_posted":    {"type": "string"},
+                    "description":    {"type": "string"},
                 },
                 "additionalProperties": False,
             },
@@ -733,6 +770,134 @@ JOB_SCHEMA = {
     },
     "additionalProperties": False,
 }
+
+# Schema for scraping individual job detail pages (richer)
+JOB_DETAIL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "job_title":         {"type": "string"},
+        "company_name":      {"type": "string"},
+        "location":          {"type": "string"},
+        "description":       {"type": "string"},
+        "requirements":      {"type": "string"},
+        "qualifications":    {"type": "string"},
+        "responsibilities":  {"type": "string"},
+        "salary":            {"type": "string"},
+        "job_type":          {"type": "string"},
+        "experience_level":  {"type": "string"},
+        "apply_url":         {"type": "string"},
+        "date_posted":       {"type": "string"},
+    },
+    "additionalProperties": False,
+}
+
+# ============================================================================
+# JD ENRICHMENT — Scrape full job descriptions from detail pages
+# ============================================================================
+
+def enrich_job_description(job: Job, rate_limiter: Optional['RateLimiter'] = None,
+                           db: Optional[JobDatabase] = None) -> Job:
+    """
+    Follow a job's URL to scrape the full job description.
+    Returns updated Job with enriched description.
+    Costs 1 credit (no JS) for LinkedIn, 4 credits (JS) for others.
+    """
+    if not job.url or not OXYLABS_API_KEY:
+        return job
+
+    # Skip if description already looks substantive (>200 chars)
+    if job.description and len(job.description) > 200:
+        return job
+
+    # Determine if this URL needs JS rendering
+    needs_js = True  # Default: most sites need JS
+    credits = 4
+    if "linkedin.com" in job.url:
+        needs_js = False
+        credits = 1
+    elif "cybersecurityjobs.com" in job.url or "infosec-jobs.com" in job.url:
+        needs_js = False
+        credits = 1
+
+    if rate_limiter:
+        try:
+            rate_limiter.check_quota(credits)
+            rate_limiter.check_rate_limit()
+        except RuntimeError:
+            logger.info(f"Skipping JD enrichment for {job.job_id}: quota/rate limit")
+            return job
+
+    logger.info(f"Enriching JD for: {job.title} @ {job.company} ({job.url[:60]}...)")
+
+    try:
+        from oxylabs_ai_studio.apps.ai_scraper import AiScraper
+
+        scraper = AiScraper(api_key=OXYLABS_API_KEY)
+        result = scraper.scrape(
+            url=job.url,
+            output_format="json",
+            schema=JOB_DETAIL_SCHEMA,
+            render_javascript=needs_js,
+            geo_location="US",
+        )
+
+        data = result.data if result else {}
+        if data:
+            # Build full description from available fields
+            parts = []
+            for field in ["description", "responsibilities", "requirements", "qualifications"]:
+                val = data.get(field, "")
+                if val and len(val.strip()) > 10:
+                    parts.append(val.strip())
+
+            if parts:
+                full_desc = "\n\n".join(parts)
+                job = Job(
+                    job_id=job.job_id, title=job.title, company=job.company,
+                    location=job.location, description=full_desc,
+                    url=data.get("apply_url") or job.url,
+                    source=job.source,
+                    posted_date=data.get("date_posted") or job.posted_date,
+                    salary_range=data.get("salary") or job.salary_range,
+                )
+                logger.info(f"Enriched: {len(full_desc)} chars for {job.title}")
+
+                # Update DB if available
+                if db:
+                    db.conn.execute(
+                        "UPDATE jobs SET description = ?, url = ?, salary_range = ?, updated_at = ? WHERE job_id = ?",
+                        (job.description, job.url, job.salary_range, datetime.now().isoformat(), job.job_id)
+                    )
+                    db.conn.commit()
+
+        if db:
+            db.track_usage(credits)
+
+        audit_log("JD_ENRICHED", job_id=job.job_id, chars=len(job.description or ""),
+                  cost=credits)
+
+    except Exception as e:
+        logger.warning(f"JD enrichment failed for {job.job_id}: {e}")
+
+    return job
+
+
+def _fix_linkedin_url(raw_url: str) -> str:
+    """
+    Fix LinkedIn URLs: ensure we have the direct job view URL,
+    not the company page or tracking-heavy redirect.
+
+    LinkedIn job view URLs follow: linkedin.com/jobs/view/{job_id}
+    """
+    if not raw_url:
+        return raw_url
+    # Already a direct job view URL — clean up tracking params but keep it
+    if "/jobs/view/" in raw_url:
+        # Strip tracking parameters but keep the base URL
+        base = raw_url.split("?")[0]
+        return base
+    # If it's a company page link, return as-is (we can't construct job URL without ID)
+    return raw_url
 
 
 def search_site(
@@ -783,14 +948,31 @@ def search_site(
 
         # DB dedup: insert new jobs, count them
         new_count = 0
+        new_jobs = []
         if db:
             for job in jobs:
                 if db.upsert_job(job):
                     new_count += 1
+                    new_jobs.append(job)
             db.record_search_run(run_id, site_key, query, location,
                                  len(jobs), new_count, credits)
         else:
             new_count = len(jobs)
+            new_jobs = jobs
+
+        # Enrich new jobs with full JD from detail pages
+        # Only for jobs with thin descriptions (<200 chars) and within budget
+        enriched = 0
+        for job in new_jobs:
+            if not job.description or len(job.description) < 200:
+                updated = enrich_job_description(job, rate_limiter, db)
+                if updated.description and len(updated.description) > len(job.description or ""):
+                    enriched += 1
+                    # Update the job in our local list too
+                    job.description = updated.description
+                    job.url = updated.url
+        if enriched:
+            logger.info(f"Enriched {enriched}/{new_count} new jobs with full JDs")
 
         audit_log("SEARCH_COMPLETED", site=site_key, results=len(jobs),
                   new=new_count, cost=credits)
@@ -879,9 +1061,29 @@ def _parse_oxylabs_response(data: dict, site_key: str, location: str,
         company = item.get("company_name") or item.get("company") or item.get("employer") or "Unknown Company"
         loc     = item.get("location") or item.get("job_location") or location
         desc    = item.get("description") or item.get("job_description") or item.get("summary") or ""
-        url     = item.get("apply_url") or item.get("url") or item.get("link") or ""
         salary  = item.get("salary") or item.get("salary_range") or item.get("compensation")
         posted  = item.get("date_posted") or item.get("posted") or item.get("date")
+
+        # URL selection: prefer job_detail_url > apply_url > url > link
+        # Then apply LinkedIn-specific cleanup
+        url_candidates = [
+            item.get("job_detail_url"),
+            item.get("apply_url"),
+            item.get("url"),
+            item.get("link"),
+        ]
+        url = ""
+        # First pass: find a /jobs/view/ URL if any exist
+        for candidate in url_candidates:
+            if candidate and "/jobs/view/" in str(candidate):
+                url = _fix_linkedin_url(str(candidate)) if site_key == "linkedin" else str(candidate)
+                break
+        # Second pass: take the first non-empty URL if no /jobs/view/ found
+        if not url:
+            for candidate in url_candidates:
+                if candidate and str(candidate).startswith("http"):
+                    url = _fix_linkedin_url(str(candidate)) if site_key == "linkedin" else str(candidate)
+                    break
 
         job_id = hashlib.md5(f"{title}{company}{url}".encode()).hexdigest()[:12]
         jobs.append(Job(
@@ -1422,9 +1624,11 @@ def run_daily_digest(
 
     # ── Compile mode: score, auto-prepare, build digest ──
 
-    # Get today's new jobs
-    today_jobs_data = db.get_todays_new_jobs()
-    logger.info(f"Compiling digest: {len(today_jobs_data)} new jobs today")
+    # Get jobs for digest (first-week: all jobs; after: last 24h only)
+    today_jobs_data = db.get_digest_jobs()
+    first_week = db.is_first_week()
+    mode_label = "first-week (all jobs)" if first_week else "daily (last 24h)"
+    logger.info(f"Compiling digest ({mode_label}): {len(today_jobs_data)} jobs")
 
     # Convert DB rows to Job objects for scoring
     all_jobs = []

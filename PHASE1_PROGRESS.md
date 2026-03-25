@@ -53,7 +53,7 @@ docker cp /tmp/job_search_secure.py openclaw-utxu-openclaw-1:/usr/local/lib/node
 
 ## Phase 1 Scope: Job Hunting Agent (Use Case 1 of 3)
 
-### Overall Progress: ~90%
+### Overall Progress: 100% ✅ (Live in Production)
 
 ---
 
@@ -255,12 +255,20 @@ C:\Projects\ClawGuard\
 
 ---
 
-## Remaining Work (Phase 1 Polish)
+## Phase 1 Polish (Shipped 2026-03-25)
 
-1. **Telegram push notification** — Have the cron trigger the agent to send the digest via Telegram (currently outputs to log file)
-2. **Alert thresholds** — Auto-notify on STRONG_MATCH (80%+) jobs
-3. **Form submission** — Actually submit to job boards (currently generates apply URL for manual submission)
-4. **Profile preferences enforcement** — Filter by experience level, job type, salary range in search results
+- [x] **JD enrichment** — Follows job detail URLs to scrape full descriptions (requirements, qualifications, responsibilities). Costs 1-4 extra credits per new job.
+- [x] **Date filtering** — First week: shows all jobs (catch-up). After day 7: only last 24 hours.
+- [x] **Apply URL cleanup** — LinkedIn URLs cleaned to direct `/jobs/view/` links, tracking params stripped.
+- [x] **Email notifications** — Gmail SMTP with App Password, sent on compile step.
+- [x] **PR #1 merged** — All Phase 1 work merged to main.
+
+## Remaining Nice-to-Haves
+
+- [ ] **Telegram push** — Currently digest prints to stdout (cron log). Could trigger OpenClaw agent to forward.
+- [ ] **Alert thresholds** — Auto-notify on STRONG_MATCH (80%+) via separate Telegram message.
+- [ ] **Direct form submission** — Currently generates apply URL for manual submission.
+- [ ] **Profile preferences enforcement** — Filter by experience level, job type, salary range.
 
 ## Phase 2 & 3 (Future)
 
