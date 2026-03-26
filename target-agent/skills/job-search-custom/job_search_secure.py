@@ -44,6 +44,7 @@ RATE_LIMIT_SECONDS = 5
 MAX_RESULTS_PER_SEARCH = 50
 MIN_SCORE_THRESHOLD = 0.40
 AUTO_PREPARE_THRESHOLD = 0.60  # Auto-prepare materials for STRONG + GOOD matches
+ENRICHMENT_DAILY_CAP = 30     # Max JD enrichments per day (budget control)
 
 # Persistent data directory (Docker volume-mounted at /data/)
 DATA_DIR = Path(os.getenv("CLAWGUARD_DATA_DIR", "/data/clawguard"))
@@ -535,6 +536,26 @@ class JobDatabase:
         used, total = self.get_quota()
         return total - used
 
+    def get_todays_enrichment_count(self) -> int:
+        """Count how many JD enrichments have been done today."""
+        today = datetime.now().strftime("%Y-%m-%d")
+        row = self.conn.execute(
+            "SELECT COUNT(*) as cnt FROM search_runs WHERE site = 'enrichment' AND started_at LIKE ?",
+            (f"{today}%",)
+        ).fetchone()
+        return row["cnt"] if row else 0
+
+    def get_unenriched_jobs(self, limit: int = 100) -> List[dict]:
+        """Get jobs with thin descriptions (<200 chars), ordered by score + title_match."""
+        rows = self.conn.execute("""
+            SELECT * FROM jobs
+            WHERE (description IS NULL OR length(description) < 200)
+              AND url IS NOT NULL AND url != ''
+            ORDER BY title_match DESC, score DESC NULLS LAST, first_seen DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
     # ── Search runs ──
 
     def record_search_run(self, run_id: str, site: str, query: str, location: str,
@@ -882,6 +903,68 @@ def enrich_job_description(job: Job, rate_limiter: Optional['RateLimiter'] = Non
     return job
 
 
+def enrich_top_jobs(
+    db: JobDatabase,
+    rate_limiter: 'RateLimiter',
+    daily_cap: int = ENRICHMENT_DAILY_CAP,
+) -> int:
+    """
+    Budget-capped JD enrichment pass. Called during compile step.
+
+    Strategy:
+    1. Get unenriched jobs from DB (thin description <200 chars)
+    2. Sort by title_match DESC, score DESC (best candidates first)
+    3. Enrich up to daily_cap, tracking each as a 'search_run'
+    4. Re-score enriched jobs with the new full JD
+
+    Returns count of jobs enriched.
+    """
+    already_done = db.get_todays_enrichment_count()
+    remaining_budget = daily_cap - already_done
+    if remaining_budget <= 0:
+        logger.info(f"Enrichment cap reached ({already_done}/{daily_cap} today)")
+        return 0
+
+    candidates = db.get_unenriched_jobs(limit=remaining_budget)
+    if not candidates:
+        logger.info("No unenriched jobs to process")
+        return 0
+
+    logger.info(
+        f"Enrichment pass: {len(candidates)} candidates, "
+        f"budget {remaining_budget}/{daily_cap} (done today: {already_done})"
+    )
+
+    enriched = 0
+    for row in candidates:
+        if enriched >= remaining_budget:
+            break
+
+        job = Job(
+            job_id=row["job_id"], title=row["title"], company=row["company"],
+            location=row["location"] or "", description=row["description"] or "",
+            url=row["url"] or "", source=row["source"] or "",
+            posted_date=row["posted_date"], salary_range=row["salary_range"],
+        )
+
+        updated = enrich_job_description(job, rate_limiter, db)
+        if updated.description and len(updated.description) > len(job.description or ""):
+            enriched += 1
+            # Record as enrichment run for daily cap tracking
+            db.record_search_run(
+                run_id=f"enrich-{job.job_id[:8]}",
+                site="enrichment",
+                query=job.title,
+                location=job.location,
+                jobs_found=1,
+                new_jobs=0,
+                credits_used=1 if "linkedin" in (job.source or "") else 4,
+            )
+
+    logger.info(f"Enriched {enriched}/{len(candidates)} jobs (cap: {daily_cap}/day)")
+    return enriched
+
+
 def _fix_linkedin_url(raw_url: str) -> str:
     """
     Fix LinkedIn URLs: ensure we have the direct job view URL,
@@ -960,19 +1043,8 @@ def search_site(
             new_count = len(jobs)
             new_jobs = jobs
 
-        # Enrich new jobs with full JD from detail pages
-        # Only for jobs with thin descriptions (<200 chars) and within budget
-        enriched = 0
-        for job in new_jobs:
-            if not job.description or len(job.description) < 200:
-                updated = enrich_job_description(job, rate_limiter, db)
-                if updated.description and len(updated.description) > len(job.description or ""):
-                    enriched += 1
-                    # Update the job in our local list too
-                    job.description = updated.description
-                    job.url = updated.url
-        if enriched:
-            logger.info(f"Enriched {enriched}/{new_count} new jobs with full JDs")
+        # NOTE: JD enrichment moved to compile step (budget-capped, title-match prioritized)
+        # See enrich_top_jobs() called during digest --compile
 
         audit_log("SEARCH_COMPLETED", site=site_key, results=len(jobs),
                   new=new_count, cost=credits)
@@ -1624,7 +1696,8 @@ def run_daily_digest(
 
     # ── Compile mode: score, auto-prepare, build digest ──
 
-    # Get jobs for digest (first-week: all jobs; after: last 24h only)
+    # Step 1: Quick-score all unscored jobs (uses existing thin descriptions)
+    # This gives us title_match data for enrichment prioritization
     today_jobs_data = db.get_digest_jobs()
     first_week = db.is_first_week()
     mode_label = "first-week (all jobs)" if first_week else "daily (last 24h)"
@@ -1658,6 +1731,31 @@ def run_daily_digest(
             scored.append(score_job(job, profile, db=db))
 
     scored.sort(key=lambda s: s.score, reverse=True)
+
+    # Step 2: Enrich top jobs with full JDs (budget-capped, title-match prioritized)
+    # This runs AFTER initial scoring so we know which jobs deserve enrichment
+    enrichment_count = enrich_top_jobs(db, rate_limiter, daily_cap=ENRICHMENT_DAILY_CAP)
+
+    # Step 3: Re-score enriched jobs (now with full JD data for better skill matching)
+    if enrichment_count > 0:
+        logger.info(f"Re-scoring {enrichment_count} enriched jobs")
+        rescored = []
+        for s in scored:
+            # Re-read from DB to get enriched description
+            fresh = db.get_job(s.job.job_id)
+            if fresh and fresh.get("description") and len(fresh["description"]) > len(s.job.description):
+                # Job was enriched — re-score with full JD
+                enriched_job = Job(
+                    job_id=s.job.job_id, title=s.job.title, company=s.job.company,
+                    location=s.job.location, description=fresh["description"],
+                    url=fresh.get("url") or s.job.url, source=s.job.source,
+                    posted_date=s.job.posted_date, salary_range=s.job.salary_range,
+                )
+                rescored.append(score_job(enriched_job, profile, db=db))
+            else:
+                rescored.append(s)
+        scored = rescored
+        scored.sort(key=lambda s: s.score, reverse=True)
 
     # Auto-prepare STRONG + GOOD matches
     auto_prepared = 0
