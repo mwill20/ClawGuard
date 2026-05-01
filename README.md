@@ -37,6 +37,8 @@ ClawGuard follows a **guardrails-first** design philosophy — security is the a
 
 ```
 clawguard/
+├── ClawGuardSpecs/       # ClawGuard specs, runbooks, and foundation docs
+├── OpenClawSpecs/        # OpenClaw target-agent specs and runbooks
 ├── target-agent/          # Live OpenClaw deployment (the defended asset)
 │   ├── docs/              # Attack surface mapping & recon findings
 │   ├── skills/            # Custom-built skills (audited, no community installs)

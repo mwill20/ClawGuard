@@ -37,6 +37,25 @@ ls -la /docker/openclaw-utxu/data/clawguard/applications/
 grep -i "error\|failed\|exception" /docker/openclaw-utxu/data/clawguard/logs/cron.log | tail -10
 ```
 
+## Fallback Verification
+
+```bash
+# Brave fallback: force Brave for a single LinkedIn-shaped search
+docker exec -e BRAVE_SEARCH_API_KEY="$(grep '^BRAVE_SEARCH_API_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
+  -e CLAWGUARD_DATA_DIR="/data/clawguard" \
+  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
+  openclaw-utxu-openclaw-1 python3 job_search_secure.py search \
+    --query "SOC Analyst" --location "Remote" --sites linkedin --provider brave --max-results 5
+
+# USAJobs native API: force USAJobs provider
+docker exec -e USAJOBS_AUTH_KEY="$(grep '^USAJOBS_AUTH_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
+  -e USAJOBS_USER_AGENT="$(grep '^USAJOBS_USER_AGENT=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
+  -e CLAWGUARD_DATA_DIR="/data/clawguard" \
+  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
+  openclaw-utxu-openclaw-1 python3 job_search_secure.py search \
+    --query "Security Analyst" --location "Seattle, WA" --sites usajobs --provider usajobs --max-results 5
+```
+
 ---
 
 ## Observation Matrix

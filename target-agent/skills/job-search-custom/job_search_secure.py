@@ -2,10 +2,10 @@
 """
 job-search-custom v2: Persistent job search pipeline for OpenClaw.
 
-One-stop-shop: searches 8 job boards on a staggered schedule, deduplicates
-across runs via SQLite, scores against resume/profile, auto-prepares tailored
-materials (resume + cover letter) for STRONG/GOOD matches, and notifies via
-Telegram + email.
+One-stop-shop: searches selected job boards on a low-volume maintenance
+schedule, deduplicates across runs via SQLite, scores against resume/profile,
+prepares tailored materials only when enabled, and notifies via Telegram +
+email.
 
 NO auto-submit. NO data exfiltration. Human approval required.
 
@@ -27,13 +27,21 @@ import time
 import sqlite3
 import uuid
 import smtplib
+from enum import Enum
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict, field
-from urllib.parse import quote_plus, urlencode
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus, urlencode, urlparse
+from urllib.request import Request, urlopen
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # ============================================================================
 # CONFIGURATION
@@ -43,8 +51,12 @@ LOG_FILE = "job_search_audit.log"
 RATE_LIMIT_SECONDS = 5
 MAX_RESULTS_PER_SEARCH = 50
 MIN_SCORE_THRESHOLD = 0.40
-AUTO_PREPARE_THRESHOLD = 0.60  # Auto-prepare materials for STRONG + GOOD matches
-ENRICHMENT_DAILY_CAP = 30     # Max JD enrichments per day (budget control)
+AUTO_PREPARE_THRESHOLD = float(os.getenv("CLAWGUARD_AUTO_PREPARE_THRESHOLD", "0.75"))
+ENRICHMENT_DAILY_CAP = int(os.getenv("CLAWGUARD_ENRICHMENT_DAILY_CAP", "10"))
+DIGEST_MAX_RESULTS_PER_SITE = int(os.getenv("CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE", "5"))
+DIGEST_TOP_MATCH_LIMIT = int(os.getenv("CLAWGUARD_DIGEST_TOP_MATCH_LIMIT", "10"))
+ASI06_SKILL_STUFFING_THRESHOLD = int(os.getenv("CLAWGUARD_SKILL_STUFFING_THRESHOLD", "15"))
+ASI06_SKILL_STUFFING_PENALTY = float(os.getenv("CLAWGUARD_SKILL_STUFFING_PENALTY", "0.15"))
 
 # Persistent data directory (Docker volume-mounted at /data/)
 DATA_DIR = Path(os.getenv("CLAWGUARD_DATA_DIR", "/data/clawguard"))
@@ -55,6 +67,16 @@ DIGESTS_DIR = DATA_DIR / "digests"
 
 # API Configuration
 OXYLABS_API_KEY = os.getenv("OXYLABS_AISTUDIO_API_KEY", "")
+BRAVE_SEARCH_API_KEY = os.getenv("BRAVE_SEARCH_API_KEY", "")
+USAJOBS_AUTH_KEY = os.getenv("USAJOBS_AUTH_KEY", "")
+USAJOBS_USER_AGENT = os.getenv("USAJOBS_USER_AGENT") or os.getenv("CLAWGUARD_EMAIL_TO", "")
+CLAWGUARD_SEARCH_PROVIDER = (os.getenv("CLAWGUARD_SEARCH_PROVIDER") or "auto").lower()
+CLAWGUARD_DISABLE_OXYLABS = os.getenv("CLAWGUARD_DISABLE_OXYLABS", "").lower() in {"1", "true", "yes"}
+CLAWGUARD_FALLBACK_ON_EMPTY = os.getenv("CLAWGUARD_FALLBACK_ON_EMPTY", "").lower() in {"1", "true", "yes"}
+HTTP_TIMEOUT_SECONDS = int(os.getenv("CLAWGUARD_HTTP_TIMEOUT_SECONDS", "20"))
+
+BRAVE_WEB_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
+USAJOBS_SEARCH_URL = "https://data.usajobs.gov/api/search"
 
 # Skill base directory (where this script lives)
 SKILL_DIR = Path(__file__).parent.resolve()
@@ -237,6 +259,20 @@ class ScoredJob:
     title_match: bool
     recommendation: str
 
+
+class FindingSeverity(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+@dataclass
+class SecurityFinding:
+    rule_id: str
+    severity: FindingSeverity
+    message: str
+    evidence: Dict
+
 # ============================================================================
 # SQLITE JOB DATABASE
 # ============================================================================
@@ -310,6 +346,18 @@ class JobDatabase:
                 credits_used    INTEGER DEFAULT 0,
                 error           TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS job_security_findings (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id      TEXT NOT NULL REFERENCES jobs(job_id),
+                rule_id     TEXT NOT NULL,
+                severity    TEXT NOT NULL,
+                message     TEXT NOT NULL,
+                evidence    TEXT,
+                detected_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_findings_job_id ON job_security_findings(job_id);
+            CREATE INDEX IF NOT EXISTS idx_findings_rule_id ON job_security_findings(rule_id);
 
             CREATE TABLE IF NOT EXISTS quota (
                 month       TEXT PRIMARY KEY,
@@ -570,6 +618,34 @@ class JobDatabase:
             jobs_found, new_jobs, credits_used, error
         ))
         self.conn.commit()
+
+    # -- Security findings --
+
+    def record_security_findings(self, job_id: str, findings: List[SecurityFinding]):
+        """Replace current ASI06 findings for a job with the latest evaluation."""
+        self.conn.execute(
+            "DELETE FROM job_security_findings WHERE job_id = ? AND rule_id LIKE 'ASI06_%'",
+            (job_id,)
+        )
+        for finding in findings:
+            self.conn.execute("""
+                INSERT INTO job_security_findings (job_id, rule_id, severity, message, evidence)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                job_id,
+                finding.rule_id,
+                finding.severity.value,
+                finding.message,
+                json.dumps(finding.evidence, sort_keys=True),
+            ))
+        self.conn.commit()
+
+    def get_security_findings(self, job_id: str) -> List[dict]:
+        rows = self.conn.execute(
+            "SELECT rule_id, severity, message, evidence, detected_at FROM job_security_findings WHERE job_id = ? ORDER BY id",
+            (job_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 
 # ============================================================================
@@ -885,6 +961,14 @@ def enrich_job_description(job: Job, rate_limiter: Optional['RateLimiter'] = Non
 
                 # Update DB if available
                 if db:
+                    findings = run_jd_security_detections(job)
+                    if findings:
+                        db.record_security_findings(job.job_id, findings)
+                        audit_log(
+                            "JD_SECURITY_FINDINGS",
+                            job_id=job.job_id,
+                            rules=[finding.rule_id for finding in findings],
+                        )
                     db.conn.execute(
                         "UPDATE jobs SET description = ?, url = ?, salary_range = ?, updated_at = ? WHERE job_id = ?",
                         (job.description, job.url, job.salary_range, datetime.now().isoformat(), job.job_id)
@@ -983,6 +1067,260 @@ def _fix_linkedin_url(raw_url: str) -> str:
     return raw_url
 
 
+class SearchProviderError(RuntimeError):
+    """Raised when a configured search provider cannot complete a query."""
+
+
+def _resolve_provider(provider: Optional[str] = None) -> str:
+    selected = (provider or CLAWGUARD_SEARCH_PROVIDER or "auto").lower()
+    valid = {"auto", "oxylabs", "brave", "usajobs"}
+    if selected not in valid:
+        raise ValueError(f"Invalid search provider '{selected}'. Use one of: {', '.join(sorted(valid))}")
+    return selected
+
+
+def _usajobs_configured() -> bool:
+    return bool(USAJOBS_AUTH_KEY and USAJOBS_USER_AGENT)
+
+
+def _brave_configured() -> bool:
+    return bool(BRAVE_SEARCH_API_KEY)
+
+
+def _provider_order(site_key: str, provider: Optional[str] = None) -> List[str]:
+    selected = _resolve_provider(provider)
+    if selected == "usajobs" and site_key != "usajobs":
+        raise ValueError("--provider usajobs can only be used with --site usajobs")
+    if selected != "auto":
+        return [selected]
+
+    order = []
+    if site_key == "usajobs" and _usajobs_configured():
+        order.append("usajobs")
+    if not CLAWGUARD_DISABLE_OXYLABS:
+        order.append("oxylabs")
+    if _brave_configured():
+        order.append("brave")
+    return order
+
+
+def _estimated_site_cost(site_key: str, provider: Optional[str] = None) -> int:
+    selected = _resolve_provider(provider)
+    if selected in {"brave", "usajobs"}:
+        return 0
+    if selected == "auto":
+        if site_key == "usajobs" and _usajobs_configured():
+            return 0
+        if (CLAWGUARD_DISABLE_OXYLABS or not OXYLABS_API_KEY) and _brave_configured():
+            return 0
+    return SITE_CONFIGS.get(site_key, {}).get("credits_per_page", 4)
+
+
+def _http_get_json(url: str, headers: Dict[str, str]) -> dict:
+    req = Request(url, headers=headers, method="GET")
+    try:
+        with urlopen(req, timeout=HTTP_TIMEOUT_SECONDS) as resp:
+            body = resp.read().decode("utf-8")
+            return json.loads(body) if body else {}
+    except HTTPError as e:
+        body = e.read(512).decode("utf-8", errors="replace")
+        raise SearchProviderError(f"HTTP {e.code}: {body}") from e
+    except URLError as e:
+        raise SearchProviderError(f"Network error: {e.reason}") from e
+    except json.JSONDecodeError as e:
+        raise SearchProviderError(f"Invalid JSON response: {e}") from e
+
+
+def _clean_search_text(value: Optional[str]) -> str:
+    text = re.sub(r"<[^>]+>", " ", str(value or ""))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _split_title_company(raw_title: str, site_name: str) -> Tuple[str, str]:
+    title = _clean_search_text(raw_title)
+    title = re.sub(rf"\s+[-|]\s+{re.escape(site_name)}.*$", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"\s+[-|]\s+(LinkedIn|Indeed|Monster|Dice|USAJOBS|SimplyHired).*$", "", title, flags=re.IGNORECASE)
+
+    for pattern in [
+        r"^(?P<title>.+?)\s+at\s+(?P<company>.+)$",
+        r"^(?P<title>.+?)\s+@\s+(?P<company>.+)$",
+    ]:
+        match = re.match(pattern, title, flags=re.IGNORECASE)
+        if match:
+            return match.group("title").strip(), match.group("company").strip()
+    return title or "Unknown Title", "Unknown Company"
+
+
+def _parse_brave_response(data: dict, site_key: str, max_results: int) -> List[Job]:
+    config = SITE_CONFIGS.get(site_key, {})
+    results = data.get("web", {}).get("results", []) or []
+    jobs = []
+    for item in results[:max_results]:
+        title, company = _split_title_company(
+            item.get("title", "Unknown Title"),
+            config.get("name", site_key),
+        )
+        url = item.get("url") or item.get("profile", {}).get("url") or ""
+        desc = _clean_search_text(item.get("description"))
+        job_id = hashlib.md5(f"{title}{company}{url}".encode()).hexdigest()[:12]
+        jobs.append(Job(
+            job_id=job_id,
+            title=title,
+            company=company,
+            location="",
+            description=desc,
+            url=str(url),
+            source=site_key,
+            posted_date=item.get("age"),
+            salary_range=None,
+        ))
+    return jobs
+
+
+def _search_brave_site(site_key: str, query: str, location: str, max_results: int) -> Tuple[List[Job], int]:
+    if not BRAVE_SEARCH_API_KEY:
+        raise SearchProviderError("BRAVE_SEARCH_API_KEY not set")
+
+    config = SITE_CONFIGS[site_key]
+    domain = urlparse(config["url_builder"](query, location)).netloc.lower()
+    brave_query = f"site:{domain} {query} {location} job"
+    params = {
+        "q": brave_query,
+        "count": max(1, min(max_results, 20)),
+        "country": "us",
+        "search_lang": "en",
+    }
+    data = _http_get_json(
+        f"{BRAVE_WEB_SEARCH_URL}?{urlencode(params)}",
+        {
+            "Accept": "application/json",
+            "X-Subscription-Token": BRAVE_SEARCH_API_KEY,
+        },
+    )
+    return _parse_brave_response(data, site_key, max_results), 0
+
+
+def _format_usajobs_salary(remuneration: List[dict]) -> Optional[str]:
+    if not remuneration:
+        return None
+    first = remuneration[0] or {}
+    min_range = first.get("MinimumRange")
+    max_range = first.get("MaximumRange")
+    interval = first.get("RateIntervalCode") or ""
+    if min_range and max_range:
+        return f"{min_range}-{max_range} {interval}".strip()
+    if min_range:
+        return f"{min_range}+ {interval}".strip()
+    return None
+
+
+def _parse_usajobs_response(data: dict, max_results: int) -> List[Job]:
+    items = data.get("SearchResult", {}).get("SearchResultItems", []) or []
+    jobs = []
+    for item in items[:max_results]:
+        desc = item.get("MatchedObjectDescriptor", {}) or {}
+        details = desc.get("UserArea", {}).get("Details", {}) or {}
+        locations = desc.get("PositionLocation", []) or []
+        location = desc.get("PositionLocationDisplay") or ", ".join(
+            loc.get("LocationName", "") for loc in locations if loc.get("LocationName")
+        )
+        apply_urls = desc.get("ApplyURI") or []
+        url = desc.get("PositionURI") or (apply_urls[0] if apply_urls else "")
+        title = desc.get("PositionTitle") or "Unknown Title"
+        company = desc.get("OrganizationName") or desc.get("DepartmentName") or "Unknown Agency"
+        summary = _clean_search_text(details.get("JobSummary"))
+        job_id = str(desc.get("PositionID") or hashlib.md5(f"{title}{company}{url}".encode()).hexdigest()[:12])
+        jobs.append(Job(
+            job_id=job_id[:64],
+            title=str(title),
+            company=str(company),
+            location=str(location or ""),
+            description=summary,
+            url=str(url),
+            source="usajobs",
+            posted_date=desc.get("PublicationStartDate"),
+            salary_range=_format_usajobs_salary(desc.get("PositionRemuneration") or []),
+        ))
+    return jobs
+
+
+def _search_usajobs_api(query: str, location: str, max_results: int) -> Tuple[List[Job], int]:
+    if not _usajobs_configured():
+        raise SearchProviderError("USAJOBS_AUTH_KEY and USAJOBS_USER_AGENT must both be set")
+
+    params = {
+        "Keyword": query,
+        "LocationName": location,
+        "ResultsPerPage": max(1, min(max_results, 25)),
+    }
+    data = _http_get_json(
+        f"{USAJOBS_SEARCH_URL}?{urlencode(params)}",
+        {
+            "Host": "data.usajobs.gov",
+            "User-Agent": USAJOBS_USER_AGENT,
+            "Authorization-Key": USAJOBS_AUTH_KEY,
+        },
+    )
+    return _parse_usajobs_response(data, max_results), 0
+
+
+def _search_oxylabs_site(
+    site_key: str,
+    query: str,
+    location: str,
+    max_results: int,
+    rate_limiter: Optional[RateLimiter] = None,
+) -> Tuple[List[Job], int]:
+    config = SITE_CONFIGS[site_key]
+    if CLAWGUARD_DISABLE_OXYLABS:
+        raise SearchProviderError("Oxylabs disabled by CLAWGUARD_DISABLE_OXYLABS")
+    if not OXYLABS_API_KEY:
+        raise SearchProviderError("OXYLABS_AISTUDIO_API_KEY not set")
+
+    credits = config["credits_per_page"]
+    if rate_limiter:
+        rate_limiter.check_rate_limit()
+        rate_limiter.check_quota(credits)
+
+    try:
+        from oxylabs_ai_studio.apps.ai_scraper import AiScraper
+    except Exception as e:
+        raise SearchProviderError(f"oxylabs-ai-studio import failed: {e}") from e
+
+    scraper = AiScraper(api_key=OXYLABS_API_KEY)
+    result = scraper.scrape(
+        url=config["url_builder"](query, location),
+        output_format="json",
+        schema=JOB_SCHEMA,
+        render_javascript=config["needs_js"],
+        geo_location="US",
+    )
+    data = result.data if result else {}
+    return _parse_oxylabs_response(data, site_key, location, max_results), credits
+
+
+def _persist_search_results(
+    db: Optional[JobDatabase],
+    run_id: str,
+    site_key: str,
+    query: str,
+    location: str,
+    jobs: List[Job],
+    credits: int,
+) -> int:
+    if not db:
+        return len(jobs)
+    if credits:
+        db.track_usage(credits)
+
+    new_count = 0
+    for job in jobs:
+        if db.upsert_job(job):
+            new_count += 1
+    db.record_search_run(run_id, site_key, query, location, len(jobs), new_count, credits)
+    return new_count
+
+
 def search_site(
     site_key: str,
     query: str,
@@ -990,6 +1328,7 @@ def search_site(
     max_results: int = 10,
     db: Optional[JobDatabase] = None,
     rate_limiter: Optional[RateLimiter] = None,
+    provider: Optional[str] = None,
 ) -> Tuple[List[Job], int]:
     """
     Search a specific job site. Returns (all_jobs, new_count).
@@ -998,65 +1337,51 @@ def search_site(
     config = SITE_CONFIGS.get(site_key)
     if not config or not config.get("enabled", True):
         return [], 0
-    if not OXYLABS_API_KEY:
-        logger.error("OXYLABS_AISTUDIO_API_KEY not set")
-        return [], 0
-
-    credits = config["credits_per_page"]
-    if rate_limiter:
-        rate_limiter.check_rate_limit()
-        rate_limiter.check_quota(credits)
-
-    url = config["url_builder"](query, location)
-    needs_js = config["needs_js"]
-
-    logger.info(f"Searching {config['name']}: query='{query}', location='{location}', js={needs_js}")
-    audit_log("SEARCH_STARTED", method="oxylabs", site=site_key, query=query, location=location)
 
     run_id = str(uuid.uuid4())[:8]
+    provider_errors = []
     try:
-        from oxylabs_ai_studio.apps.ai_scraper import AiScraper
-
-        scraper = AiScraper(api_key=OXYLABS_API_KEY)
-        result = scraper.scrape(
-            url=url, output_format="json", schema=JOB_SCHEMA,
-            render_javascript=needs_js, geo_location="US",
-        )
-
-        data = result.data if result else {}
-        jobs = _parse_oxylabs_response(data, site_key, location, max_results)
-
-        if db:
-            db.track_usage(credits)
-
-        # DB dedup: insert new jobs, count them
-        new_count = 0
-        new_jobs = []
-        if db:
-            for job in jobs:
-                if db.upsert_job(job):
-                    new_count += 1
-                    new_jobs.append(job)
-            db.record_search_run(run_id, site_key, query, location,
-                                 len(jobs), new_count, credits)
-        else:
-            new_count = len(jobs)
-            new_jobs = jobs
-
-        # NOTE: JD enrichment moved to compile step (budget-capped, title-match prioritized)
-        # See enrich_top_jobs() called during digest --compile
-
-        audit_log("SEARCH_COMPLETED", site=site_key, results=len(jobs),
-                  new=new_count, cost=credits)
-        logger.info(f"Found {len(jobs)} jobs on {config['name']} ({new_count} new)")
-        return jobs, new_count
-
-    except Exception as e:
-        logger.warning(f"{config['name']} search failed: {e}")
-        audit_log("SEARCH_FAILED", site=site_key, error=str(e))
-        if db:
-            db.record_search_run(run_id, site_key, query, location, 0, 0, 0, str(e))
+        providers = _provider_order(site_key, provider)
+    except ValueError as e:
+        logger.error(str(e))
         return [], 0
+
+    if not providers:
+        logger.error("No search provider configured. Set Oxylabs, Brave, or USAJobs credentials.")
+        return [], 0
+
+    logger.info(f"Searching {config['name']}: query='{query}', location='{location}', providers={providers}")
+
+    for method in providers:
+        try:
+            audit_log("SEARCH_STARTED", method=method, site=site_key, query=query, location=location)
+            if method == "usajobs":
+                jobs, credits = _search_usajobs_api(query, location, max_results)
+            elif method == "brave":
+                jobs, credits = _search_brave_site(site_key, query, location, max_results)
+            else:
+                jobs, credits = _search_oxylabs_site(site_key, query, location, max_results, rate_limiter)
+
+            if not jobs and method != providers[-1] and CLAWGUARD_FALLBACK_ON_EMPTY:
+                provider_errors.append(f"{method}: returned 0 jobs")
+                audit_log("SEARCH_EMPTY_FALLBACK", method=method, site=site_key)
+                continue
+
+            new_count = _persist_search_results(db, run_id, site_key, query, location, jobs, credits)
+            audit_log("SEARCH_COMPLETED", method=method, site=site_key, results=len(jobs),
+                      new=new_count, cost=credits)
+            logger.info(f"Found {len(jobs)} jobs on {config['name']} via {method} ({new_count} new)")
+            return jobs, new_count
+        except Exception as e:
+            provider_errors.append(f"{method}: {e}")
+            logger.warning(f"{config['name']} search failed via {method}: {e}")
+            audit_log("SEARCH_PROVIDER_FAILED", method=method, site=site_key, error=str(e))
+
+    error = " | ".join(provider_errors)
+    audit_log("SEARCH_FAILED", site=site_key, error=error)
+    if db:
+        db.record_search_run(run_id, site_key, query, location, 0, 0, 0, error)
+    return [], 0
 
 
 def search_all_sites(
@@ -1067,6 +1392,7 @@ def search_all_sites(
     budget_limit: Optional[int] = None,
     db: Optional[JobDatabase] = None,
     rate_limiter: Optional[RateLimiter] = None,
+    provider: Optional[str] = None,
 ) -> Tuple[List[Job], int]:
     """Search multiple sites. Returns (all_jobs, total_new_count)."""
     if sites is None:
@@ -1077,8 +1403,7 @@ def search_all_sites(
     credits_spent = 0
 
     for site_key in sites:
-        config = SITE_CONFIGS.get(site_key, {})
-        site_cost = config.get("credits_per_page", 4)
+        site_cost = _estimated_site_cost(site_key, provider)
 
         if budget_limit and credits_spent + site_cost > budget_limit:
             logger.info(f"Budget limit reached ({credits_spent}/{budget_limit})")
@@ -1087,7 +1412,7 @@ def search_all_sites(
         try:
             jobs, new_count = search_site(
                 site_key, query, location, max_results_per_site,
-                db=db, rate_limiter=rate_limiter,
+                db=db, rate_limiter=rate_limiter, provider=provider,
             )
             all_jobs.extend(jobs)
             total_new += new_count
@@ -1171,7 +1496,7 @@ def _parse_oxylabs_response(data: dict, site_key: str, location: str,
 # Backward compat
 def search_oxylabs(query: str, locations: List[str], max_results: int = 10) -> List[Job]:
     location_str = locations[0] if locations else "Remote"
-    jobs, _ = search_site("linkedin", query, location_str, max_results)
+    jobs, _ = search_site("linkedin", query, location_str, max_results, provider="oxylabs")
     return jobs
 
 
@@ -1291,12 +1616,131 @@ def extract_certs(text: str) -> List[str]:
 
 
 # ============================================================================
+# ASI06 JOB DESCRIPTION CONTENT DETECTIONS
+# ============================================================================
+
+INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?previous\s+instructions",
+    r"score\s+this\s+(job\s+)?at\s+\d+",
+    r"mark\s+(this\s+)?(as\s+)?strong[ _-]?match",
+    r"do\s+not\s+show\s+other",
+    r"override\s+(the\s+)?scoring",
+    r"system\s*:\s*you\s+are",
+    r"developer\s*:\s*you\s+are",
+]
+
+PII_REQUEST_PATTERNS = [
+    r"include\s+(your\s+)?(full\s+)?resume\s+in",
+    r"salary\s+history",
+    r"social\s+security",
+    r"\bssn\b",
+    r"bank\s+(account|routing)",
+    r"send\s+(your\s+)?(id|passport|license)",
+    r"references\s+with\s+phone",
+]
+
+SAFE_APPLY_DOMAINS = {
+    "linkedin.com",
+    "indeed.com",
+    "dice.com",
+    "monster.com",
+    "usajobs.gov",
+    "greenhouse.io",
+    "lever.co",
+    "workday.com",
+    "myworkdayjobs.com",
+    "icims.com",
+    "smartrecruiters.com",
+    "jobvite.com",
+    "ashbyhq.com",
+    "bamboohr.com",
+}
+
+
+def detect_skill_stuffing(jd_text: str, threshold: int = ASI06_SKILL_STUFFING_THRESHOLD) -> Optional[SecurityFinding]:
+    skills_found = extract_skills_advanced(jd_text)
+    if len(skills_found) <= threshold:
+        return None
+    return SecurityFinding(
+        rule_id="ASI06_SKILL_STUFFING",
+        severity=FindingSeverity.MEDIUM,
+        message=f"Job description contains {len(skills_found)} canonical skill matches; threshold is {threshold}.",
+        evidence={"skill_count": len(skills_found), "threshold": threshold, "skills": skills_found},
+    )
+
+
+def _domain_matches_company(company: str, domain: str) -> bool:
+    company_slug = re.sub(r"[^a-z0-9]", "", company.lower())
+    domain_slug = re.sub(r"[^a-z0-9]", "", domain.lower())
+    if not company_slug or company_slug in {"unknowncompany", "unknownagency"}:
+        return True
+    return company_slug in domain_slug or domain_slug in company_slug
+
+
+def detect_url_mismatch(company: str, apply_url: str) -> Optional[SecurityFinding]:
+    if not apply_url:
+        return None
+    domain = urlparse(apply_url).netloc.lower()
+    domain = domain[4:] if domain.startswith("www.") else domain
+    if not domain:
+        return None
+    if any(domain == safe or domain.endswith(f".{safe}") for safe in SAFE_APPLY_DOMAINS):
+        return None
+    if _domain_matches_company(company, domain):
+        return None
+    return SecurityFinding(
+        rule_id="ASI06_URL_MISMATCH",
+        severity=FindingSeverity.MEDIUM,
+        message=f"Apply URL domain '{domain}' does not match company '{company}'.",
+        evidence={"company": company, "domain": domain, "url": apply_url},
+    )
+
+
+def detect_prompt_injection(jd_text: str) -> Optional[SecurityFinding]:
+    matches = [pattern for pattern in INJECTION_PATTERNS if re.search(pattern, jd_text, re.IGNORECASE)]
+    if not matches:
+        return None
+    return SecurityFinding(
+        rule_id="ASI06_PROMPT_INJECTION",
+        severity=FindingSeverity.HIGH,
+        message="Job description contains prompt-injection language.",
+        evidence={"patterns": matches},
+    )
+
+
+def detect_pii_request(jd_text: str) -> Optional[SecurityFinding]:
+    matches = [pattern for pattern in PII_REQUEST_PATTERNS if re.search(pattern, jd_text, re.IGNORECASE)]
+    if not matches:
+        return None
+    return SecurityFinding(
+        rule_id="ASI06_PII_REQUEST",
+        severity=FindingSeverity.HIGH,
+        message="Job description requests sensitive personal data outside normal application flow.",
+        evidence={"patterns": matches},
+    )
+
+
+def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
+    text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
+    findings = [
+        detect_skill_stuffing(text),
+        detect_url_mismatch(job.company, job.url),
+        detect_prompt_injection(text),
+        detect_pii_request(text),
+    ]
+    return [finding for finding in findings if finding]
+
+
+# ============================================================================
 # SCORING
 # ============================================================================
 
 def score_job(job: Job, profile: Profile, db: Optional[JobDatabase] = None) -> ScoredJob:
     """Score job against profile. Optionally persist to DB."""
     jd_text = f"{job.title} {job.description}".lower()
+    security_findings = run_jd_security_detections(job, jd_text)
+    if db:
+        db.record_security_findings(job.job_id, security_findings)
 
     # 1. Skill match (40%)
     jd_skills = set(extract_skills_advanced(jd_text))
@@ -1305,17 +1749,19 @@ def score_job(job: Job, profile: Profile, db: Optional[JobDatabase] = None) -> S
     all_user_skills = profile_skills | resume_skills
 
     if jd_skills:
-        matched_skills = list(jd_skills & all_user_skills)
-        missing_skills = list(jd_skills - all_user_skills)
+        matched_skills = sorted(jd_skills & all_user_skills)
+        missing_skills = sorted(jd_skills - all_user_skills)
         skill_score = len(matched_skills) / len(jd_skills)
     else:
         matched_skills, missing_skills = [], []
         skill_score = 0.3
+    if any(f.rule_id == "ASI06_SKILL_STUFFING" for f in security_findings):
+        skill_score = max(0.0, skill_score - ASI06_SKILL_STUFFING_PENALTY)
 
     # 2. Cert match (15%)
     jd_certs = set(extract_certs(jd_text))
     user_certs = set(extract_certs(" ".join(profile.certifications)))
-    matched_certs = list(jd_certs & user_certs)
+    matched_certs = sorted(jd_certs & user_certs)
     cert_score = len(matched_certs) / len(jd_certs) if jd_certs else 0.5
 
     # 3. Title match (25%)
@@ -1394,6 +1840,10 @@ def prepare_application(job: Job, profile: Profile,
         "availability": "[HUMAN: Your start date availability]",
     }
 
+    security_findings = run_jd_security_detections(job)
+    if db:
+        db.record_security_findings(job.job_id, security_findings)
+
     review_checklist = [
         "[ ] Verify resume bullets are accurate for this specific role",
         "[ ] Edit cover letter — add company-specific paragraph",
@@ -1404,6 +1854,10 @@ def prepare_application(job: Job, profile: Profile,
         f"[ ] Visit application URL: {job.url}",
         "[ ] Apply and update status: track --job-id {job.job_id} --status applied",
     ]
+    if security_findings:
+        review_checklist.insert(0, "[ ] SECURITY: Review ASI06 content warnings before applying")
+        for finding in reversed(security_findings):
+            review_checklist.insert(1, f"[ ] SECURITY {finding.rule_id}: {finding.message}")
 
     # Write to per-job application directory
     job_dir = APPLICATIONS_DIR / job.job_id
@@ -1421,6 +1875,15 @@ def prepare_application(job: Job, profile: Profile,
         "posted_date": job.posted_date,
         "prepared_at": datetime.now().isoformat(),
         "status": "prepared",
+        "security_findings": [
+            {
+                "rule_id": finding.rule_id,
+                "severity": finding.severity.value,
+                "message": finding.message,
+                "evidence": finding.evidence,
+            }
+            for finding in security_findings
+        ],
         "data_security": {
             "resume_sent_to_board": False,
             "contact_info_sent": False,
@@ -1645,10 +2108,12 @@ def run_daily_digest(
     compile_only: bool = False,
     sites: Optional[List[str]] = None,
     budget_limit: int = 50,
+    max_results_per_site: int = DIGEST_MAX_RESULTS_PER_SITE,
     min_score: float = MIN_SCORE_THRESHOLD,
     auto_prepare: bool = True,
     send_notification: bool = True,
     output_format: str = "json",
+    provider: Optional[str] = None,
 ) -> Dict:
     """
     Run daily digest. Three modes:
@@ -1675,18 +2140,27 @@ def run_daily_digest(
         if search_sites is None:
             search_sites = [k for k, v in SITE_CONFIGS.items() if v.get("enabled")]
 
+        credits_spent_this_run = 0
         for query_group in QUERY_GROUPS:
             remaining = db.get_remaining_credits()
             if remaining < 1:
                 logger.info("No credits remaining, stopping")
                 break
-            effective_budget = min(budget_limit, remaining)
+            run_budget_remaining = max(0, budget_limit - credits_spent_this_run)
+            if budget_limit is not None and run_budget_remaining <= 0:
+                logger.info(f"Run budget reached ({credits_spent_this_run}/{budget_limit})")
+                break
+            effective_budget = min(run_budget_remaining, remaining) if budget_limit is not None else remaining
+            credits_before, _ = db.get_quota()
 
             _, new_count = search_all_sites(
                 query=query_group, location=primary_location,
-                sites=search_sites, max_results_per_site=10,
+                sites=search_sites, max_results_per_site=max_results_per_site,
                 budget_limit=effective_budget, db=db, rate_limiter=rate_limiter,
+                provider=provider,
             )
+            credits_after, _ = db.get_quota()
+            credits_spent_this_run += max(0, credits_after - credits_before)
             new_jobs_total += new_count
 
         if site:
@@ -1813,9 +2287,9 @@ def run_daily_digest(
                     if s.score >= AUTO_PREPARE_THRESHOLD else None,
             }
             for s in scored if s.score >= min_score
-        ][:25],
+        ][:DIGEST_TOP_MATCH_LIMIT],
         "query_groups_used": QUERY_GROUPS,
-        "sites_searched": sites or [site] if site else list(SITE_CONFIGS.keys()),
+        "sites_searched": sites if sites is not None else ([site] if site else list(SITE_CONFIGS.keys())),
         "location": primary_location,
     }
 
@@ -1899,6 +2373,8 @@ def main():
     sp.add_argument("--output", help="Also save to JSON file")
     sp.add_argument("--sites", help="Comma-separated site keys or 'all'")
     sp.add_argument("--budget", type=int, help="Max credits")
+    sp.add_argument("--provider", choices=["auto", "oxylabs", "brave", "usajobs"],
+                    default=None, help="Search provider override for fallback testing")
     sp.add_argument("--since", help="Only show jobs posted since (e.g. '24h', '7d')")
 
     # ── score ──
@@ -1926,9 +2402,12 @@ def main():
     sp.add_argument("--site", help="Single site key (staggered mode)")
     sp.add_argument("--compile", action="store_true", help="Compile only, no new searches")
     sp.add_argument("--budget", type=int, default=50)
+    sp.add_argument("--max-results-per-site", type=int, default=DIGEST_MAX_RESULTS_PER_SITE)
     sp.add_argument("--min-score", type=float, default=MIN_SCORE_THRESHOLD)
     sp.add_argument("--sites", help="Comma-separated site keys")
     sp.add_argument("--format", choices=["json", "telegram"], default="json")
+    sp.add_argument("--provider", choices=["auto", "oxylabs", "brave", "usajobs"],
+                    default=None, help="Search provider override for fallback testing")
     sp.add_argument("--no-prepare", action="store_true", help="Skip auto-prepare")
     sp.add_argument("--no-notify", action="store_true", help="Skip notifications")
 
@@ -2008,13 +2487,14 @@ def main():
         if site_keys and len(site_keys) == 1:
             jobs, new_count = search_site(
                 site_keys[0], args.query, location_str, args.max_results,
-                db=db, rate_limiter=rl,
+                db=db, rate_limiter=rl, provider=args.provider,
             )
         else:
             jobs, new_count = search_all_sites(
                 args.query, location_str, sites=site_keys,
                 max_results_per_site=args.max_results,
                 budget_limit=args.budget, db=db, rate_limiter=rl,
+                provider=args.provider,
             )
 
         if args.output:
@@ -2145,10 +2625,12 @@ def main():
             compile_only=args.compile,
             sites=sites_list,
             budget_limit=args.budget,
+            max_results_per_site=args.max_results_per_site,
             min_score=args.min_score,
             auto_prepare=not args.no_prepare,
             send_notification=not args.no_notify,
             output_format=args.format,
+            provider=args.provider,
         )
 
         if args.format == "telegram":

@@ -1,6 +1,6 @@
 ---
 name: job-search-custom
-description: "Persistent job search pipeline with SQLite dedup, 9-site staggered search, resume scoring, auto-prepared application materials, and Telegram+email notifications. Human approval required."
+description: "Persistent job search pipeline with SQLite dedup, low-volume maintenance search, resume scoring, application material prep, and Telegram+email notifications. Human approval required."
 metadata:
   openclaw:
     requires:
@@ -13,11 +13,22 @@ metadata:
 
 # Job Search Custom Skill v2
 
-**Persistent, multi-site job search pipeline with one-stop-shop application prep.**
+**Persistent, low-volume job search pipeline with one-stop-shop application prep.**
 
-Searches 9 job boards on a staggered schedule, deduplicates across runs via SQLite, scores against resume/profile, auto-prepares tailored materials for strong matches, and notifies via Telegram + email. All data stays local. Human approval required.
+Searches selected job boards on a maintenance schedule, deduplicates across runs via SQLite, scores against resume/profile, prepares tailored materials on demand, and notifies via Telegram + email. All data stays local. Human approval required.
 
 ## Architecture
+
+Maintenance cron mode:
+
+```text
+Mon/Thu 9:00 AM  -> LinkedIn      -> DB insert (dedup)
+Mon/Thu 9:30 AM  -> CyberSecJobs  -> DB insert (dedup)
+Mon     10:00 AM -> USAJobs API   -> DB insert (dedup)
+Mon/Thu 10:30 AM -> COMPILE: score + digest, no auto-prepare
+```
+
+Historical full-volume mode:
 
 ```
 9:00 AM  → LinkedIn    (1 cr)  → DB insert (dedup) → score
@@ -49,6 +60,10 @@ python3 job_search_secure.py search --query "Security Engineer" --location "Seat
 
 # Specific sites
 python3 job_search_secure.py search --query "Threat Hunter" --location "Remote" --sites linkedin,dice,cybersecjobs
+
+# Force fallback providers for verification
+python3 job_search_secure.py search --query "SOC Analyst" --location "Remote" --sites usajobs --provider usajobs
+python3 job_search_secure.py search --query "SOC Analyst" --location "Remote" --sites linkedin --provider brave
 ```
 
 ### Score Jobs
@@ -74,14 +89,17 @@ Creates `/data/clawguard/applications/{job_id}/` with:
 
 ### Daily Digest
 ```bash
-# Single-site staggered run (called by cron)
-python3 job_search_secure.py digest --site linkedin --budget 6
+# Single-site maintenance run (called by cron)
+python3 job_search_secure.py digest --site linkedin --budget 2 --max-results-per-site 5
 
 # Compile today's results (no new searches)
-python3 job_search_secure.py digest --compile --format telegram
+python3 job_search_secure.py digest --compile --format telegram --no-prepare
 
 # Full run (all sites + compile)
 python3 job_search_secure.py digest --budget 50 --format telegram
+
+# Force fallback provider during a test run
+python3 job_search_secure.py digest --site linkedin --provider brave --budget 0 --no-notify
 ```
 
 ### Browse Database
@@ -145,6 +163,19 @@ All persistent data at `/data/clawguard/` (Docker volume, survives restarts):
   logs/                      — Cron and search logs
 ```
 
+## Optional Fallback Environment
+
+- `BRAVE_SEARCH_API_KEY` - enables Brave Search fallback for job board result discovery
+- `USAJOBS_AUTH_KEY` - enables native USAJobs Search API
+- `USAJOBS_USER_AGENT` - email address registered with USAJobs API access
+- `CLAWGUARD_SEARCH_PROVIDER` - default provider override: `auto`, `oxylabs`, `brave`, or `usajobs`
+- `CLAWGUARD_DISABLE_OXYLABS=1` - force fallback path without attempting Oxylabs
+- `CLAWGUARD_FALLBACK_ON_EMPTY=1` - try fallback when the primary provider returns zero jobs
+- `CLAWGUARD_AUTO_PREPARE_THRESHOLD=0.75` - strong-match threshold for automatic preparation when enabled
+- `CLAWGUARD_ENRICHMENT_DAILY_CAP=10` - cap JD enrichment in maintenance mode
+- `CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE=5` - cap per-site result volume in cron runs
+- `CLAWGUARD_DIGEST_TOP_MATCH_LIMIT=10` - cap digest match display volume
+
 ## Resume Tailoring Rules
 
 Materials are generated using `tailoring_rules.json`:
@@ -160,6 +191,8 @@ Materials are generated using `tailoring_rules.json`:
 - Confirmation code required for submission approval
 - No auto-submit capability exists
 - Email credentials stored in .env only, never in code
+- USAJobs native API and Brave Search are fallback providers; force with `--provider usajobs` or `--provider brave`
+- ASI06 JD content detections flag skill stuffing, prompt injection, PII requests, and suspicious apply URL domains before prep
 
 ## When to Use
 

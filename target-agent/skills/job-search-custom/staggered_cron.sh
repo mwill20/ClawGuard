@@ -1,22 +1,17 @@
 #!/bin/bash
 # ============================================================================
-# ClawGuard Staggered Job Search Pipeline — Cron Script
+# ClawGuard Maintenance Job Search Pipeline - Cron Script
 #
-# Called by cron with a single argument: site key or "compile"
-# Each site runs at a different time (30-min intervals, 9am-12:30pm Pacific)
-# Final "compile" at 1pm assembles digest, auto-prepares materials, notifies
+# Called by cron with a single argument: site key or "compile".
+# Low-volume mode while active interview/offer loops are in progress.
+# Searches only the highest-signal sources twice weekly and compiles without
+# auto-preparing new application packages.
 #
 # Cron schedule (add to VPS host crontab):
-#   0  16 * * 1-5  .../staggered_cron.sh linkedin
-#   30 16 * * 1-5  .../staggered_cron.sh cybersecjobs
-#   0  17 * * 1-5  .../staggered_cron.sh infosecjobs
-#   30 17 * * 1-5  .../staggered_cron.sh indeed
-#   0  18 * * 1-5  .../staggered_cron.sh dice
-#   30 18 * * 1-5  .../staggered_cron.sh monster
-#   0  19 * * 1-5  .../staggered_cron.sh simplyhired
-#   30 19 * * 1-5  .../staggered_cron.sh usajobs
-#   0  19 * * 1-5  .../staggered_cron.sh remotehunter  # shares 12pm slot
-#   0  20 * * 1-5  .../staggered_cron.sh compile
+#   0  16 * * 1,4  .../staggered_cron.sh linkedin
+#   30 16 * * 1,4  .../staggered_cron.sh cybersecjobs
+#   0  17 * * 1    .../staggered_cron.sh usajobs
+#   30 17 * * 1,4  .../staggered_cron.sh compile
 # ============================================================================
 
 set -euo pipefail
@@ -42,8 +37,23 @@ get_env() {
 }
 
 API_KEY=$(get_env "OXYLABS_AISTUDIO_API_KEY")
+BRAVE_API_KEY=$(get_env "BRAVE_SEARCH_API_KEY")
+USAJOBS_KEY=$(get_env "USAJOBS_AUTH_KEY")
+USAJOBS_AGENT=$(get_env "USAJOBS_USER_AGENT")
+SEARCH_PROVIDER=$(get_env "CLAWGUARD_SEARCH_PROVIDER")
+DISABLE_OXYLABS=$(get_env "CLAWGUARD_DISABLE_OXYLABS")
+FALLBACK_ON_EMPTY=$(get_env "CLAWGUARD_FALLBACK_ON_EMPTY")
+AUTO_PREPARE_THRESHOLD=$(get_env "CLAWGUARD_AUTO_PREPARE_THRESHOLD")
+ENRICHMENT_DAILY_CAP=$(get_env "CLAWGUARD_ENRICHMENT_DAILY_CAP")
+DIGEST_MAX_RESULTS_PER_SITE=$(get_env "CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE")
+TOP_MATCH_LIMIT=$(get_env "CLAWGUARD_DIGEST_TOP_MATCH_LIMIT")
 EMAIL_FROM=$(get_env "CLAWGUARD_EMAIL_FROM")
 EMAIL_PASS=$(get_env "CLAWGUARD_EMAIL_PASSWORD")
+
+AUTO_PREPARE_THRESHOLD="${AUTO_PREPARE_THRESHOLD:-0.75}"
+ENRICHMENT_DAILY_CAP="${ENRICHMENT_DAILY_CAP:-10}"
+DIGEST_MAX_RESULTS_PER_SITE="${DIGEST_MAX_RESULTS_PER_SITE:-5}"
+TOP_MATCH_LIMIT="${TOP_MATCH_LIMIT:-10}"
 
 # Ensure pip package is installed (idempotent, survives container restarts)
 docker exec "$CONTAINER" pip install oxylabs-ai-studio --break-system-packages -q 2>/dev/null || true
@@ -51,9 +61,19 @@ docker exec "$CONTAINER" pip install oxylabs-ai-studio --break-system-packages -
 echo "[$TIMESTAMP] Running: $SITE" | tee -a "$LOG_DIR/cron.log"
 
 if [ "$SITE" = "compile" ]; then
-    # Final compilation: score, auto-prepare STRONG+GOOD, notify via Telegram + email
+    # Maintenance compilation: score + notify, no new application packages.
     docker exec \
       -e OXYLABS_AISTUDIO_API_KEY="$API_KEY" \
+      -e BRAVE_SEARCH_API_KEY="$BRAVE_API_KEY" \
+      -e USAJOBS_AUTH_KEY="$USAJOBS_KEY" \
+      -e USAJOBS_USER_AGENT="$USAJOBS_AGENT" \
+      -e CLAWGUARD_SEARCH_PROVIDER="$SEARCH_PROVIDER" \
+      -e CLAWGUARD_DISABLE_OXYLABS="$DISABLE_OXYLABS" \
+      -e CLAWGUARD_FALLBACK_ON_EMPTY="$FALLBACK_ON_EMPTY" \
+      -e CLAWGUARD_AUTO_PREPARE_THRESHOLD="$AUTO_PREPARE_THRESHOLD" \
+      -e CLAWGUARD_ENRICHMENT_DAILY_CAP="$ENRICHMENT_DAILY_CAP" \
+      -e CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE="$DIGEST_MAX_RESULTS_PER_SITE" \
+      -e CLAWGUARD_DIGEST_TOP_MATCH_LIMIT="$TOP_MATCH_LIMIT" \
       -e CLAWGUARD_EMAIL_FROM="$EMAIL_FROM" \
       -e CLAWGUARD_EMAIL_PASSWORD="$EMAIL_PASS" \
       -e CLAWGUARD_DATA_DIR="/data/clawguard" \
@@ -62,17 +82,29 @@ if [ "$SITE" = "compile" ]; then
       python3 job_search_secure.py digest \
         --compile \
         --format telegram \
+        --no-prepare \
       2>&1 | tee "$LOG_DIR/compile_${DATE}.log"
 else
-    # Search single site, store to DB
+    # Search single site, store to DB.
     docker exec \
       -e OXYLABS_AISTUDIO_API_KEY="$API_KEY" \
+      -e BRAVE_SEARCH_API_KEY="$BRAVE_API_KEY" \
+      -e USAJOBS_AUTH_KEY="$USAJOBS_KEY" \
+      -e USAJOBS_USER_AGENT="$USAJOBS_AGENT" \
+      -e CLAWGUARD_SEARCH_PROVIDER="$SEARCH_PROVIDER" \
+      -e CLAWGUARD_DISABLE_OXYLABS="$DISABLE_OXYLABS" \
+      -e CLAWGUARD_FALLBACK_ON_EMPTY="$FALLBACK_ON_EMPTY" \
+      -e CLAWGUARD_AUTO_PREPARE_THRESHOLD="$AUTO_PREPARE_THRESHOLD" \
+      -e CLAWGUARD_ENRICHMENT_DAILY_CAP="$ENRICHMENT_DAILY_CAP" \
+      -e CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE="$DIGEST_MAX_RESULTS_PER_SITE" \
+      -e CLAWGUARD_DIGEST_TOP_MATCH_LIMIT="$TOP_MATCH_LIMIT" \
       -e CLAWGUARD_DATA_DIR="/data/clawguard" \
       -w "$SKILL_DIR" \
       "$CONTAINER" \
       python3 job_search_secure.py digest \
         --site "$SITE" \
-        --budget 6 \
+        --budget 2 \
+        --max-results-per-site "$DIGEST_MAX_RESULTS_PER_SITE" \
         --no-notify \
       2>&1 | tee "$LOG_DIR/search_${SITE}_${DATE}.log"
 fi

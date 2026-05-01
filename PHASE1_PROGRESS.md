@@ -193,8 +193,12 @@ Cron (VPS host): 9 AM Pacific Mon-Fri → daily_digest_cron.sh → digest comman
 ```
 C:\Projects\ClawGuard\
 ├── PHASE1_PROGRESS.md              ← this file
-├── OPENCLAW_PROJECT_SPEC.md        ← full project spec
-├── CLAUDE_CODE_RUNBOOK_OPENCLAW.md ← deployment runbook
+├── OpenClawSpecs/
+│   ├── OPENCLAW_PROJECT_SPEC.md           ← full OpenClaw project spec
+│   └── CLAUDE_CODE_RUNBOOK_OPENCLAW.md    ← deployment runbook
+├── ClawGuardSpecs/
+│   ├── CLAWGUARD_PROJECT_SPEC.md          ← full ClawGuard project spec
+│   └── CLAUDE_CODE_RUNBOOK_CLAWGUARD.md   ← ClawGuard build runbook
 ├── target-agent/
 │   ├── skills/job-search-custom/
 │   │   ├── SKILL.md                ← skill manifest (updated for 8 sites)
@@ -262,6 +266,15 @@ C:\Projects\ClawGuard\
 - [x] **Apply URL cleanup** — LinkedIn URLs cleaned to direct `/jobs/view/` links, tracking params stripped.
 - [x] **Email notifications** — Gmail SMTP with App Password, sent on compile step.
 - [x] **PR #1 merged** — All Phase 1 work merged to main.
+
+## Fallback + ASI06 Update (Prepared 2026-04-30)
+
+- [x] **Provider fallback hooks** - `job_search_secure.py` now supports `--provider auto|oxylabs|brave|usajobs`.
+- [x] **Brave Search fallback** - requires `BRAVE_SEARCH_API_KEY`; use `--provider brave` for forced verification.
+- [x] **Native USAJobs API** - requires `USAJOBS_AUTH_KEY` and `USAJOBS_USER_AGENT`; use `--provider usajobs` with `--sites usajobs`.
+- [x] **Fallback test switches** - `CLAWGUARD_DISABLE_OXYLABS=1` and `CLAWGUARD_FALLBACK_ON_EMPTY=1` allow controlled fallback verification.
+- [x] **ASI06 inline rules** - skill stuffing, URL mismatch, prompt injection, and PII request detections record to `job_security_findings` and annotate prepared materials.
+- [x] **Maintenance cadence** - while active offer/interview loops are in progress, cron searches only LinkedIn + CyberSecJobs on Monday/Thursday and USAJobs on Monday, with compile using `--no-prepare`.
 
 ## Remaining Nice-to-Haves
 

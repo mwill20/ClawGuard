@@ -1,0 +1,17 @@
+# ============================================================================
+# ClawGuard Maintenance Job Search Pipeline
+# Times in UTC (Pacific = UTC-7 during PDT)
+# Low-volume mode while active interview/offer loops are in progress.
+# ============================================================================
+
+# 9:00 AM PT Mon/Thu - LinkedIn
+0 16 * * 1,4 /docker/openclaw-utxu/data/clawguard/staggered_cron.sh linkedin >> /docker/openclaw-utxu/data/clawguard/logs/cron_stdout.log 2>&1
+
+# 9:30 AM PT Mon/Thu - CyberSecJobs
+30 16 * * 1,4 /docker/openclaw-utxu/data/clawguard/staggered_cron.sh cybersecjobs >> /docker/openclaw-utxu/data/clawguard/logs/cron_stdout.log 2>&1
+
+# 10:00 AM PT Monday - USAJobs native API
+0 17 * * 1 /docker/openclaw-utxu/data/clawguard/staggered_cron.sh usajobs >> /docker/openclaw-utxu/data/clawguard/logs/cron_stdout.log 2>&1
+
+# 10:30 AM PT Mon/Thu - Compile digest, no auto-prepare
+30 17 * * 1,4 /docker/openclaw-utxu/data/clawguard/staggered_cron.sh compile >> /docker/openclaw-utxu/data/clawguard/logs/cron_stdout.log 2>&1

@@ -24,6 +24,7 @@ node_modules/
 package-lock.json
 
 # IDE
+.claude/
 .vscode/
 .idea/
 *.swp

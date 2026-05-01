@@ -1,7 +1,7 @@
 # ASI06-001: Adversarial Content in Ingested Job Descriptions
 
 **Category:** ASI06 — Memory Poisoning / Content Injection
-**Status:** Concept (draft detection rule)
+**Status:** Implemented inline in `job_search_secure.py`
 **Priority:** Medium — real attack surface, no exploit observed yet
 **Created:** 2026-03-25
 
@@ -121,6 +121,8 @@ PII_REQUEST_PATTERNS = [
 **Action:** Add `[PII REQUEST WARNING]` to cover letter and checklist.
 
 ## Integration Points
+
+**Implementation update:** The rules now run inline in `job_search_secure.py` after JD enrichment, during scoring, and during application prep. Findings are persisted in `job_security_findings`, and skill stuffing applies the documented score penalty.
 
 These rules should be called:
 1. **After JD enrichment** — in `enrich_job_description()` before DB update
