@@ -22,10 +22,10 @@ Searches selected job boards on a maintenance schedule, deduplicates across runs
 Maintenance cron mode:
 
 ```text
-Mon/Thu 9:00 AM  -> LinkedIn      -> DB insert (dedup)
-Mon/Thu 9:30 AM  -> CyberSecJobs  -> DB insert (dedup)
-Mon     10:00 AM -> USAJobs API   -> DB insert (dedup)
-Mon/Thu 10:30 AM -> COMPILE: score + digest, no auto-prepare
+Daily 9:00 AM -> LinkedIn      -> DB insert (dedup)
+Daily 9:10 AM -> CyberSecJobs  -> DB insert (dedup)
+Daily 9:20 AM -> USAJobs API   -> DB insert (dedup)
+Daily 9:30 AM -> COMPILE: score + digest, no auto-prepare, no JD enrichment
 ```
 
 Historical full-volume mode:
@@ -172,7 +172,7 @@ All persistent data at `/data/clawguard/` (Docker volume, survives restarts):
 - `CLAWGUARD_DISABLE_OXYLABS=1` - force fallback path without attempting Oxylabs
 - `CLAWGUARD_FALLBACK_ON_EMPTY=1` - try fallback when the primary provider returns zero jobs
 - `CLAWGUARD_AUTO_PREPARE_THRESHOLD=0.75` - strong-match threshold for automatic preparation when enabled
-- `CLAWGUARD_ENRICHMENT_DAILY_CAP=10` - cap JD enrichment in maintenance mode
+- `CLAWGUARD_ENRICHMENT_DAILY_CAP=0` - disable JD enrichment in maintenance mode
 - `CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE=5` - cap per-site result volume in cron runs
 - `CLAWGUARD_DIGEST_TOP_MATCH_LIMIT=10` - cap digest match display volume
 

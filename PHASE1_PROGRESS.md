@@ -274,7 +274,7 @@ C:\Projects\ClawGuard\
 - [x] **Native USAJobs API** - requires `USAJOBS_AUTH_KEY` and `USAJOBS_USER_AGENT`; use `--provider usajobs` with `--sites usajobs`.
 - [x] **Fallback test switches** - `CLAWGUARD_DISABLE_OXYLABS=1` and `CLAWGUARD_FALLBACK_ON_EMPTY=1` allow controlled fallback verification.
 - [x] **ASI06 inline rules** - skill stuffing, URL mismatch, prompt injection, and PII request detections record to `job_security_findings` and annotate prepared materials.
-- [x] **Maintenance cadence** - while active offer/interview loops are in progress, cron searches only LinkedIn + CyberSecJobs on Monday/Thursday and USAJobs on Monday, with compile using `--no-prepare`.
+- [x] **Maintenance cadence** - while active offer/interview loops are in progress, cron runs the minimal LinkedIn + CyberSecJobs + USAJobs source set daily starting at 9 AM PT, with compile using `--no-prepare` and `CLAWGUARD_ENRICHMENT_DAILY_CAP=0`.
 
 ## Remaining Nice-to-Haves
 

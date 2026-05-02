@@ -4,14 +4,14 @@
 #
 # Called by cron with a single argument: site key or "compile".
 # Low-volume mode while active interview/offer loops are in progress.
-# Searches only the highest-signal sources twice weekly and compiles without
-# auto-preparing new application packages.
+# Runs the minimal source set daily, staggered within the 9 AM PT hour, and
+# compiles without auto-preparing new application packages or enriching JDs.
 #
 # Cron schedule (add to VPS host crontab):
-#   0  16 * * 1,4  .../staggered_cron.sh linkedin
-#   30 16 * * 1,4  .../staggered_cron.sh cybersecjobs
-#   0  17 * * 1    .../staggered_cron.sh usajobs
-#   30 17 * * 1,4  .../staggered_cron.sh compile
+#   0  16 * * *  .../staggered_cron.sh linkedin
+#   10 16 * * *  .../staggered_cron.sh cybersecjobs
+#   20 16 * * *  .../staggered_cron.sh usajobs
+#   30 16 * * *  .../staggered_cron.sh compile
 # ============================================================================
 
 set -euo pipefail
@@ -51,7 +51,7 @@ EMAIL_FROM=$(get_env "CLAWGUARD_EMAIL_FROM")
 EMAIL_PASS=$(get_env "CLAWGUARD_EMAIL_PASSWORD")
 
 AUTO_PREPARE_THRESHOLD="${AUTO_PREPARE_THRESHOLD:-0.75}"
-ENRICHMENT_DAILY_CAP="${ENRICHMENT_DAILY_CAP:-10}"
+ENRICHMENT_DAILY_CAP="${ENRICHMENT_DAILY_CAP:-0}"
 DIGEST_MAX_RESULTS_PER_SITE="${DIGEST_MAX_RESULTS_PER_SITE:-5}"
 TOP_MATCH_LIMIT="${TOP_MATCH_LIMIT:-10}"
 
