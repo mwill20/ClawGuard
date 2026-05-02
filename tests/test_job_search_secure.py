@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -146,7 +147,7 @@ class JobSearchSecureTests(unittest.TestCase):
             db = job_search_secure.JobDatabase(Path(tmpdir) / "jobs.db")
             try:
                 db.upsert_job(job)
-                job_search_secure.score_job(job, profile, db=db)
+                job_search_secure.score_job(job, profile, db=db, agent_session_id="test-session-1")
                 findings = db.get_security_findings(job.job_id)
             finally:
                 db.close()
@@ -155,6 +156,11 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertIn("ASI06_PROMPT_INJECTION", rule_ids)
         self.assertIn("ASI06_PII_REQUEST", rule_ids)
         self.assertIn("ASI06_URL_MISMATCH", rule_ids)
+        self.assertTrue(all(finding["job_id"] == job.job_id for finding in findings))
+        self.assertTrue(all(finding["agent_session_id"] == "test-session-1" for finding in findings))
+        contexts = [json.loads(finding["context"]) for finding in findings]
+        self.assertTrue(all(context["source_platform"] == "linkedin" for context in contexts))
+        self.assertTrue(all(context["job_title"] == "SOC Analyst" for context in contexts))
 
 
 if __name__ == "__main__":

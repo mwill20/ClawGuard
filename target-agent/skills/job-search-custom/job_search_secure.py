@@ -272,6 +272,7 @@ class SecurityFinding:
     severity: FindingSeverity
     message: str
     evidence: Dict
+    context: Dict = field(default_factory=dict)
 
 # ============================================================================
 # SQLITE JOB DATABASE
@@ -350,13 +351,16 @@ class JobDatabase:
             CREATE TABLE IF NOT EXISTS job_security_findings (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 job_id      TEXT NOT NULL REFERENCES jobs(job_id),
+                agent_session_id TEXT,
                 rule_id     TEXT NOT NULL,
                 severity    TEXT NOT NULL,
                 message     TEXT NOT NULL,
                 evidence    TEXT,
+                context     TEXT,
                 detected_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
             CREATE INDEX IF NOT EXISTS idx_findings_job_id ON job_security_findings(job_id);
+            CREATE INDEX IF NOT EXISTS idx_findings_agent_session ON job_security_findings(agent_session_id);
             CREATE INDEX IF NOT EXISTS idx_findings_rule_id ON job_security_findings(rule_id);
 
             CREATE TABLE IF NOT EXISTS quota (
@@ -366,7 +370,20 @@ class JobDatabase:
                 last_updated TEXT
             );
         """)
+        self._ensure_column("job_security_findings", "agent_session_id", "TEXT")
+        self._ensure_column("job_security_findings", "context", "TEXT")
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_findings_agent_session ON job_security_findings(agent_session_id)"
+        )
         self.conn.commit()
+
+    def _ensure_column(self, table: str, column: str, column_type: str):
+        existing = {
+            row["name"]
+            for row in self.conn.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in existing:
+            self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
     def close(self):
         self.conn.close()
@@ -621,7 +638,12 @@ class JobDatabase:
 
     # -- Security findings --
 
-    def record_security_findings(self, job_id: str, findings: List[SecurityFinding]):
+    def record_security_findings(
+        self,
+        job_id: str,
+        findings: List[SecurityFinding],
+        agent_session_id: Optional[str] = None,
+    ):
         """Replace current ASI06 findings for a job with the latest evaluation."""
         self.conn.execute(
             "DELETE FROM job_security_findings WHERE job_id = ? AND rule_id LIKE 'ASI06_%'",
@@ -629,20 +651,28 @@ class JobDatabase:
         )
         for finding in findings:
             self.conn.execute("""
-                INSERT INTO job_security_findings (job_id, rule_id, severity, message, evidence)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO job_security_findings
+                    (job_id, agent_session_id, rule_id, severity, message, evidence, context)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 job_id,
+                agent_session_id,
                 finding.rule_id,
                 finding.severity.value,
                 finding.message,
                 json.dumps(finding.evidence, sort_keys=True),
+                json.dumps(finding.context, sort_keys=True),
             ))
         self.conn.commit()
 
     def get_security_findings(self, job_id: str) -> List[dict]:
         rows = self.conn.execute(
-            "SELECT rule_id, severity, message, evidence, detected_at FROM job_security_findings WHERE job_id = ? ORDER BY id",
+            """
+            SELECT job_id, agent_session_id, rule_id, severity, message, evidence, context, detected_at
+            FROM job_security_findings
+            WHERE job_id = ?
+            ORDER BY id
+            """,
             (job_id,)
         ).fetchall()
         return [dict(r) for r in rows]
@@ -1728,19 +1758,37 @@ def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[
         detect_prompt_injection(text),
         detect_pii_request(text),
     ]
-    return [finding for finding in findings if finding]
+    base_context = {
+        "job_id": job.job_id,
+        "job_title": job.title,
+        "company": job.company,
+        "source_platform": job.source,
+        "apply_url": job.url,
+        "field": "title_and_description",
+    }
+    active_findings = []
+    for finding in findings:
+        if finding:
+            finding.context = {**base_context, **finding.context}
+            active_findings.append(finding)
+    return active_findings
 
 
 # ============================================================================
 # SCORING
 # ============================================================================
 
-def score_job(job: Job, profile: Profile, db: Optional[JobDatabase] = None) -> ScoredJob:
+def score_job(
+    job: Job,
+    profile: Profile,
+    db: Optional[JobDatabase] = None,
+    agent_session_id: Optional[str] = None,
+) -> ScoredJob:
     """Score job against profile. Optionally persist to DB."""
     jd_text = f"{job.title} {job.description}".lower()
     security_findings = run_jd_security_detections(job, jd_text)
     if db:
-        db.record_security_findings(job.job_id, security_findings)
+        db.record_security_findings(job.job_id, security_findings, agent_session_id=agent_session_id)
 
     # 1. Skill match (40%)
     jd_skills = set(extract_skills_advanced(jd_text))
@@ -1817,7 +1865,8 @@ def score_job(job: Job, profile: Profile, db: Optional[JobDatabase] = None) -> S
 
 def prepare_application(job: Job, profile: Profile,
                         tailoring: Optional[TailoringEngine] = None,
-                        db: Optional[JobDatabase] = None) -> Dict:
+                        db: Optional[JobDatabase] = None,
+                        agent_session_id: Optional[str] = None) -> Dict:
     """Prepare application materials and save to per-job directory."""
     logger.info(f"Preparing: {job.company} — {job.title}")
     audit_log("PREPARE_STARTED", job_id=job.job_id, company=job.company, title=job.title)
@@ -1842,7 +1891,7 @@ def prepare_application(job: Job, profile: Profile,
 
     security_findings = run_jd_security_detections(job)
     if db:
-        db.record_security_findings(job.job_id, security_findings)
+        db.record_security_findings(job.job_id, security_findings, agent_session_id=agent_session_id)
 
     review_checklist = [
         "[ ] Verify resume bullets are accurate for this specific role",
@@ -1881,6 +1930,7 @@ def prepare_application(job: Job, profile: Profile,
                 "severity": finding.severity.value,
                 "message": finding.message,
                 "evidence": finding.evidence,
+                "context": finding.context,
             }
             for finding in security_findings
         ],
@@ -2125,6 +2175,7 @@ def run_daily_digest(
     rate_limiter = RateLimiter(db)
     profile = load_profile()
     tailoring = TailoringEngine(profile.resume_text, TAILORING_RULES_PATH)
+    agent_session_id = f"digest-{datetime.now().strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
 
     locations = profile.target_locations
     primary_location = next(
@@ -2202,7 +2253,7 @@ def run_daily_digest(
                 recommendation=existing["recommendation"] or "WEAK_MATCH",
             ))
         else:
-            scored.append(score_job(job, profile, db=db))
+            scored.append(score_job(job, profile, db=db, agent_session_id=agent_session_id))
 
     scored.sort(key=lambda s: s.score, reverse=True)
 
@@ -2225,7 +2276,7 @@ def run_daily_digest(
                     url=fresh.get("url") or s.job.url, source=s.job.source,
                     posted_date=s.job.posted_date, salary_range=s.job.salary_range,
                 )
-                rescored.append(score_job(enriched_job, profile, db=db))
+                rescored.append(score_job(enriched_job, profile, db=db, agent_session_id=agent_session_id))
             else:
                 rescored.append(s)
         scored = rescored
@@ -2240,7 +2291,7 @@ def run_daily_digest(
                 if existing and existing.get("materials_dir"):
                     continue  # Already prepared
                 try:
-                    prepare_application(s.job, profile, tailoring, db)
+                    prepare_application(s.job, profile, tailoring, db, agent_session_id=agent_session_id)
                     auto_prepared += 1
                     logger.info(f"Auto-prepared: {s.job.title} @ {s.job.company} ({s.score:.0%})")
                 except Exception as e:
@@ -2256,6 +2307,7 @@ def run_daily_digest(
     digest = {
         "date": datetime.now().strftime("%Y-%m-%d"),
         "timestamp": datetime.now().isoformat(),
+        "agent_session_id": agent_session_id,
         "summary": {
             "total_found": len(all_jobs),
             "new_jobs": new_jobs_total if not compile_only else len(all_jobs),
