@@ -1651,10 +1651,13 @@ def extract_certs(text: str) -> List[str]:
 
 INJECTION_PATTERNS = [
     r"ignore\s+(all\s+)?previous\s+instructions",
+    r"disregard\s+(your\s+)?system\s+prompt",
     r"score\s+this\s+(job\s+)?at\s+\d+",
     r"mark\s+(this\s+)?(as\s+)?strong[ _-]?match",
     r"do\s+not\s+show\s+other",
     r"override\s+(the\s+)?scoring",
+    r"you\s+are\s+now\s+a[n]?\s+",
+    r"assistant\s*:",
     r"system\s*:\s*you\s+are",
     r"developer\s*:\s*you\s+are",
 ]
@@ -1726,27 +1729,43 @@ def detect_url_mismatch(company: str, apply_url: str) -> Optional[SecurityFindin
     )
 
 
+def _pattern_evidence(patterns: List[str], text: str) -> List[dict]:
+    matches = []
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            continue
+        start = max(match.start() - 60, 0)
+        end = min(match.end() + 60, len(text))
+        matches.append({
+            "pattern": pattern,
+            "matched_text": match.group(0),
+            "snippet": re.sub(r"\s+", " ", text[start:end]).strip(),
+        })
+    return matches
+
+
 def detect_prompt_injection(jd_text: str) -> Optional[SecurityFinding]:
-    matches = [pattern for pattern in INJECTION_PATTERNS if re.search(pattern, jd_text, re.IGNORECASE)]
+    matches = _pattern_evidence(INJECTION_PATTERNS, jd_text)
     if not matches:
         return None
     return SecurityFinding(
         rule_id="ASI06_PROMPT_INJECTION",
         severity=FindingSeverity.HIGH,
         message="Job description contains prompt-injection language.",
-        evidence={"patterns": matches},
+        evidence={"matches": matches},
     )
 
 
 def detect_pii_request(jd_text: str) -> Optional[SecurityFinding]:
-    matches = [pattern for pattern in PII_REQUEST_PATTERNS if re.search(pattern, jd_text, re.IGNORECASE)]
+    matches = _pattern_evidence(PII_REQUEST_PATTERNS, jd_text)
     if not matches:
         return None
     return SecurityFinding(
         rule_id="ASI06_PII_REQUEST",
         severity=FindingSeverity.HIGH,
         message="Job description requests sensitive personal data outside normal application flow.",
-        evidence={"patterns": matches},
+        evidence={"matches": matches},
     )
 
 

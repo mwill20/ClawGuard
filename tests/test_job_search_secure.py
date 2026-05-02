@@ -120,6 +120,8 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertIn("ASI06_PROMPT_INJECTION", rule_ids)
         self.assertIn("ASI06_PII_REQUEST", rule_ids)
         self.assertIn("ASI06_URL_MISMATCH", rule_ids)
+        prompt_finding = next(finding for finding in findings if finding.rule_id == "ASI06_PROMPT_INJECTION")
+        self.assertEqual(prompt_finding.evidence["matches"][0]["matched_text"].lower(), "ignore all previous instructions")
 
     def test_score_records_security_findings_in_database(self):
         job = job_search_secure.Job(
