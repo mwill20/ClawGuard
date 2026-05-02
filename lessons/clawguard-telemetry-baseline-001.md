@@ -122,11 +122,24 @@ This baseline provides real events for Phase 1 ClawGuard integration:
 - DB insert and dedup outcomes.
 - Scoring distribution.
 - No-prep and no-enrichment control validation.
-- Early ASI06 job content findings through `job_security_findings`.
+- Zero ASI06 findings across 22 jobs in session `digest-20260502T143953-c9eb7f4c`.
+
+## Detection Signal
+
+No ASI06 job-content findings were produced during this baseline run.
+
+This is a valid measurement, not a failure. It establishes the initial clean-content baseline for the OpenClaw job-search pipeline:
+
+- LinkedIn: 14 new jobs, 0 ASI06 findings.
+- CyberSecJobs: 8 new jobs, 0 ASI06 findings.
+- USAJobs: 0 new jobs, 0 ASI06 findings.
+- Total: 22 jobs evaluated, 0 ASI06 findings.
+
+This baseline should be used as the comparison point for later runs that produce prompt-injection, PII-request, skill-stuffing, or suspicious apply-domain findings.
 
 ## Follow-Up
 
 - Keep ASI06 inline through additional real events.
-- Add `agent_session_id` and structured `context` to `job_security_findings`.
+- `agent_session_id` and structured `context` are now present in `job_security_findings`.
 - Extract ASI06 into a dedicated `detections/` module after enough live examples exist.
 - Keep Oxylabs debug isolated from the maintenance pipeline.
