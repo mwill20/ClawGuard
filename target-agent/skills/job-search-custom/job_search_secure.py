@@ -1764,7 +1764,7 @@ def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[
         "company": job.company,
         "source_platform": job.source,
         "apply_url": job.url,
-        "field": "title_and_description",
+        "source_field": "title_and_description",
     }
     active_findings = []
     for finding in findings:

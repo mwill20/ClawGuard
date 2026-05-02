@@ -161,6 +161,7 @@ class JobSearchSecureTests(unittest.TestCase):
         contexts = [json.loads(finding["context"]) for finding in findings]
         self.assertTrue(all(context["source_platform"] == "linkedin" for context in contexts))
         self.assertTrue(all(context["job_title"] == "SOC Analyst" for context in contexts))
+        self.assertTrue(all(context["source_field"] == "title_and_description" for context in contexts))
 
 
 if __name__ == "__main__":
