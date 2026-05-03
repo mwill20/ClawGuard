@@ -26,6 +26,7 @@ Daily 9:00 AM -> LinkedIn      -> DB insert (dedup)
 Daily 9:10 AM -> CyberSecJobs  -> DB insert (dedup)
 Daily 9:20 AM -> USAJobs API   -> DB insert (dedup)
 Daily 9:30 AM -> COMPILE: score + digest, no auto-prepare, no JD enrichment
+             -> POST-COMPILE: ClawGuard telemetry summary
 ```
 
 Historical full-volume mode:
@@ -160,6 +161,7 @@ All persistent data at `/data/clawguard/` (Docker volume, survives restarts):
   tailoring_rules.json       — Resume tailoring rules
   applications/{job_id}/     — Per-job materials
   digests/                   — Daily digest archives
+  telemetry/                 — ClawGuard post-compile summaries
   logs/                      — Cron and search logs
 ```
 

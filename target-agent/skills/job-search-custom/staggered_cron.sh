@@ -26,6 +26,7 @@ CONTAINER="openclaw-utxu-openclaw-1"
 SKILL_DIR="/usr/local/lib/node_modules/openclaw/skills/job-search-custom"
 ENV_FILE="/docker/openclaw-utxu/.env"
 LOG_DIR="/docker/openclaw-utxu/data/clawguard/logs"
+POST_COMPILE_HOOK="/docker/openclaw-utxu/data/clawguard/clawguard_post_compile.sh"
 DATE=$(date +%Y-%m-%d)
 TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
 
@@ -62,6 +63,7 @@ echo "[$TIMESTAMP] Running: $SITE" | tee -a "$LOG_DIR/cron.log"
 
 if [ "$SITE" = "compile" ]; then
     # Maintenance compilation: score + notify, no new application packages.
+    set +e
     docker exec \
       -e OXYLABS_AISTUDIO_API_KEY="$API_KEY" \
       -e BRAVE_SEARCH_API_KEY="$BRAVE_API_KEY" \
@@ -84,8 +86,23 @@ if [ "$SITE" = "compile" ]; then
         --format telegram \
         --no-prepare \
       2>&1 | tee "$LOG_DIR/compile_${DATE}.log"
+    EXIT_CODE=${PIPESTATUS[0]}
+    set -e
+
+    if [ "$EXIT_CODE" -eq 0 ] && [ -x "$POST_COMPILE_HOOK" ]; then
+        set +e
+        "$POST_COMPILE_HOOK" 2>&1 | tee -a "$LOG_DIR/post_compile_${DATE}.log"
+        POST_EXIT=${PIPESTATUS[0]}
+        set -e
+        if [ "$POST_EXIT" -ne 0 ]; then
+            echo "[$TIMESTAMP] post-compile hook failed (exit=$POST_EXIT)" | tee -a "$LOG_DIR/cron.log"
+        fi
+    elif [ "$EXIT_CODE" -eq 0 ]; then
+        echo "[$TIMESTAMP] post-compile hook not found or not executable: $POST_COMPILE_HOOK" | tee -a "$LOG_DIR/cron.log"
+    fi
 else
     # Search single site, store to DB.
+    set +e
     docker exec \
       -e OXYLABS_AISTUDIO_API_KEY="$API_KEY" \
       -e BRAVE_SEARCH_API_KEY="$BRAVE_API_KEY" \
@@ -107,7 +124,9 @@ else
         --max-results-per-site "$DIGEST_MAX_RESULTS_PER_SITE" \
         --no-notify \
       2>&1 | tee "$LOG_DIR/search_${SITE}_${DATE}.log"
+    EXIT_CODE=${PIPESTATUS[0]}
+    set -e
 fi
 
-EXIT_CODE=${PIPESTATUS[0]}
 echo "[$TIMESTAMP] $SITE completed (exit=$EXIT_CODE)" | tee -a "$LOG_DIR/cron.log"
+exit "$EXIT_CODE"
