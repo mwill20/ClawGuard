@@ -216,6 +216,7 @@ def setup_logging():
     )
 
 logger = logging.getLogger(__name__)
+ASI06_DETECTOR_MODE_LOGGED = False
 
 def audit_log(event_type: str, **details):
     log_entry = {
@@ -1794,8 +1795,12 @@ def _security_finding_from_clawguard(finding) -> SecurityFinding:
 
 
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
+    global ASI06_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
     if ClawGuardASI06JobContentDetector is not None:
+        if not ASI06_DETECTOR_MODE_LOGGED:
+            logger.info("ClawGuard ASI06 detector module active")
+            ASI06_DETECTOR_MODE_LOGGED = True
         detector = ClawGuardASI06JobContentDetector(
             skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
         )
@@ -1803,6 +1808,10 @@ def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[
             _security_finding_from_clawguard(finding)
             for finding in detector.detect(job, jd_text=text)
         ]
+
+    if not ASI06_DETECTOR_MODE_LOGGED:
+        logger.warning("ClawGuard ASI06 detector module unavailable; using inline fallback")
+        ASI06_DETECTOR_MODE_LOGGED = True
 
     findings = [
         detect_skill_stuffing(text),
