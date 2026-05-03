@@ -37,7 +37,7 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 |---|---|---|
 | Goal hijack detection | ASI01 | Scaffolded after three clean OpenClaw telemetry sessions |
 | Tool misuse detection | ASI02 | Planned |
-| Job-description content detection | ASI06 | Detector module implemented, OpenClaw runtime inline |
+| Job-description content detection | ASI06 | Detector-backed runtime with inline fallback |
 
 The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing `pattern`, `matched_text`, and `snippet`.
 
@@ -78,7 +78,7 @@ ClawGuard/
 ## Key Artifacts
 
 - `PHASE1_PROGRESS.md` - current operational tracker and AI handoff.
-- `target-agent/skills/job-search-custom/job_search_secure.py` - live job-search runtime with inline ASI06 checks.
+- `target-agent/skills/job-search-custom/job_search_secure.py` - live job-search runtime; prefers the ASI06 detector module when packaged, with an inline fallback for single-file deploys.
 - `target-agent/skills/job-search-custom/staggered_cron.sh` - daily maintenance schedule driver.
 - `target-agent/skills/job-search-custom/clawguard_post_compile.sh` - post-compile telemetry hook.
 - `detections/asi06_jd_content/detector.py` - first importable ClawGuard detection engine module.
@@ -96,7 +96,7 @@ Zero findings are meaningful telemetry. They establish a clean-content baseline 
 
 - Let the daily 9:00-9:30 AM PT chain run and accumulate clean sessions.
 - After the next full cron chain, review `/data/clawguard/telemetry/telemetry_latest.md`.
-- Wire OpenClaw to `detections/asi06_jd_content/detector.py` during a deploy-safe integration pass.
+- Ship the `detections/` package with the next VPS deploy, verify detector-backed ASI06 findings, then remove the inline fallback.
 - Keep ASI01 as a docs-only scaffold until a live redirect signal or ASI06 prompt-injection event appears.
 - Keep Oxylabs debugging isolated from the maintenance pipeline.
 

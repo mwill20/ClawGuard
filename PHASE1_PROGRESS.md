@@ -18,7 +18,7 @@ Current posture:
 - Brave Search and USAJobs native API are verified.
 - JD enrichment is disabled.
 - Application auto-prep is disabled in cron.
-- ASI06 checks run inline in `job_search_secure.py`.
+- ASI06 checks prefer the ClawGuard detector module and keep an inline fallback for single-file VPS deploys.
 - `job_security_findings` schema contains correlation and context fields.
 - Post-compile telemetry hook writes JSON and Markdown summaries.
 - Repo telemetry samples are exported manually, not auto-pushed from the VPS.
@@ -201,16 +201,16 @@ Rule spec:
 detections/asi06_jd_content/ASI06-001.md
 ```
 
-Implemented inline detections:
+Detector-backed ASI06 detections:
 
 - `ASI06_SKILL_STUFFING`
 - `ASI06_PROMPT_INJECTION`
 - `ASI06_PII_REQUEST`
 - `ASI06_URL_MISMATCH`
 
-Extraction trigger:
+Deployment trigger:
 
-- Extract ASI06 into `detections/asi06_jd_content/` after the first confirmed prompt-injection example or after at least three live ASI06 findings.
+- Ship `detections/` with the next VPS deployment, verify detector-backed ASI06 findings, then remove the inline fallback.
 
 Three clean sessions have now landed, so ASI01 is scaffolded as documentation. Runtime ASI01 logic still waits for a live redirect signal or ASI06 prompt-injection event.
 
@@ -310,7 +310,7 @@ VPS:
 - `agent_session_id` added to digest output.
 - `job_security_findings` schema expanded with `job_id`, `agent_session_id`, and `context`.
 - ASI06 prompt-injection evidence hardened with `pattern`, `matched_text`, and `snippet`.
-- ASI06 detector module added under `detections/asi06_jd_content/detector.py`.
+- ASI06 detector module added under `detections/asi06_jd_content/detector.py` and wired into `job_search_secure.py` with an inline fallback.
 - ASI01 semantic-first rule scaffold added under `detections/` after three clean telemetry sessions.
 - Baseline telemetry docs added under `lessons/`.
 - Post-compile telemetry hook added, deployed, and directly verified.

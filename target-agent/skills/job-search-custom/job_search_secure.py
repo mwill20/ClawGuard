@@ -38,6 +38,13 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urlencode, urlparse
 from urllib.request import Request, urlopen
 
+try:
+    from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
+except ModuleNotFoundError as exc:
+    if exc.name and not exc.name.startswith("detections"):
+        raise
+    ClawGuardASI06JobContentDetector = None
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
@@ -1773,8 +1780,30 @@ def detect_pii_request(jd_text: str) -> Optional[SecurityFinding]:
     )
 
 
+def _security_finding_from_clawguard(finding) -> SecurityFinding:
+    severity = finding.severity
+    if not isinstance(severity, FindingSeverity):
+        severity = FindingSeverity(str(severity))
+    return SecurityFinding(
+        rule_id=finding.rule_id,
+        severity=severity,
+        message=finding.message,
+        evidence=dict(finding.evidence),
+        context=dict(finding.context),
+    )
+
+
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
+    if ClawGuardASI06JobContentDetector is not None:
+        detector = ClawGuardASI06JobContentDetector(
+            skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
+        )
+        return [
+            _security_finding_from_clawguard(finding)
+            for finding in detector.detect(job, jd_text=text)
+        ]
+
     findings = [
         detect_skill_stuffing(text),
         detect_url_mismatch(job.company, job.url),

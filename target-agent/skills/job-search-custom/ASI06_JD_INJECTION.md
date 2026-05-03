@@ -1,6 +1,6 @@
 # ASI06: Adversarial Content In Ingested Job Descriptions
 
-Status: Implemented inline in `job_search_secure.py`
+Status: Detector-backed in `job_search_secure.py` with inline fallback
 Primary ClawGuard rule spec: `detections/asi06_jd_content/ASI06-001.md`
 Primary ClawGuard module: `detections/asi06_jd_content/detector.py`
 Last updated: 2026-05-03
@@ -18,7 +18,7 @@ Potential attacks:
 
 ## Current Runtime Rules
 
-Inline rule IDs:
+Runtime rule IDs:
 
 | Rule ID | Severity | Purpose |
 |---|---|---|
@@ -94,4 +94,4 @@ The standalone ClawGuard detector now exists in:
 detections/asi06_jd_content/detector.py
 ```
 
-OpenClaw runtime enforcement remains inline so the deployed skill stays self-contained until the next deploy-safe integration pass.
+OpenClaw now prefers this detector when the `detections/` package is available. The inline implementation remains as a compatibility fallback for single-file VPS deploys.

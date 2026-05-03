@@ -161,7 +161,7 @@ CLAWGUARD_SKILL_STUFFING_PENALTY=0.15
 
 ## ASI06 Runtime Checks
 
-Inline rules currently record findings to `job_security_findings`:
+Detector-backed rules record findings to `job_security_findings`:
 
 - `ASI06_SKILL_STUFFING`
 - `ASI06_PROMPT_INJECTION`
@@ -187,7 +187,7 @@ The standalone ClawGuard detector module lives at:
 detections/asi06_jd_content/detector.py
 ```
 
-The OpenClaw runtime remains inline until the next deploy-safe integration pass.
+The OpenClaw runtime prefers this module when the `detections/` package is available. The inline implementation remains as a compatibility fallback for single-file VPS deploys.
 
 ## Application Prep Rules
 

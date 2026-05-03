@@ -1,6 +1,6 @@
 # ASI06 JD Content Detection
 
-Status: Detector module implemented; OpenClaw runtime still inline
+Status: Detector module implemented; OpenClaw runtime prefers detector with inline fallback
 
 This module will house ClawGuard detection rules for adversarial or unsafe job-description content observed through the OpenClaw `job-search-custom` pipeline.
 
@@ -10,13 +10,13 @@ Detector implementation:
 detections/asi06_jd_content/detector.py
 ```
 
-OpenClaw runtime enforcement currently remains inline in:
+OpenClaw runtime integration lives in:
 
 ```text
 target-agent/skills/job-search-custom/job_search_secure.py
 ```
 
-The ClawGuard module preserves the runtime contract while keeping the deployed OpenClaw skill self-contained until a deploy-safe integration pass.
+The OpenClaw runtime imports this detector when the `detections/` package is present. The previous inline implementation remains as a compatibility fallback for single-file VPS deploys.
 
 ## Planned Rules
 
@@ -25,7 +25,7 @@ The ClawGuard module preserves the runtime contract while keeping the deployed O
 | ASI06-001 | Job Description Prompt Injection | Implemented in detector |
 | ASI06-002 | Job Description PII Request | Implemented in detector |
 | ASI06-003 | Job Description Skill Stuffing | Implemented in detector |
-| ASI06-004 | Suspicious Apply Domain | Implemented in detector |
+| ASI06-004 | Suspicious Apply Domain | Implemented in detector; ClawGuard-original rule |
 
 ## Telemetry Inputs
 
@@ -77,4 +77,4 @@ Each finding includes `rule_id`, `severity`, `message`, `evidence`, and `context
 
 ## Next Step
 
-Wire the OpenClaw runtime to this detector in a deploy-safe pass, or keep the runtime inline until the next VPS deployment window. Three clean sessions have landed, so ASI01 is now scaffolded separately while ASI06 has the first importable detection engine module.
+Ship the `detections/` package with the next VPS deployment, verify detector-backed ASI06 findings, then remove the inline fallback. Three clean sessions have landed, so ASI01 is now scaffolded separately while ASI06 has the first importable detection engine module.
