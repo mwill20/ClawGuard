@@ -7,6 +7,7 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | Artifact | Status | Purpose |
 |---|---|---|
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
+| `clawguard-telemetry-baseline-002-template.md` | Template | Capture the first autonomous full cron-chain telemetry run |
 
 ## Planned Entries
 
@@ -37,6 +38,12 @@ Curated samples can be pulled into `lessons/telemetry/` manually:
 
 ```powershell
 .\scripts\export_latest_telemetry.ps1
+```
+
+To inspect the latest VPS telemetry without exporting files:
+
+```powershell
+.\scripts\check_latest_telemetry.ps1
 ```
 
 Do not auto-push telemetry from the VPS. The current architecture decision is:

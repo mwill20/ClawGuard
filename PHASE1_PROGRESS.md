@@ -326,3 +326,29 @@ Then choose:
 - If an ASI06 finding exists: triage it and prepare for ASI06 extraction.
 - If the third clean session lands: start the ASI01 detection scaffold.
 - If the cron chain fails: fix schedule, provider env, or post-compile hook before adding new detection work.
+
+## Queued After 9:30 AM PT Cron Verification
+
+These items are intentionally held until the first autonomous cron chain proves the post-compile hook works end to end.
+
+1. ASI01 scaffold docs only:
+
+```text
+detections/asi01_goal_hijack/README.md
+detections/asi01_goal_hijack/ASI01-001.md
+```
+
+Initial rule focus: goal redirection through ingested external content, using the job-search pipeline as the first observed target surface.
+
+2. Correlation and evidence tests:
+
+```text
+tests/test_job_search_secure.py
+```
+
+Test targets:
+
+- `agent_session_id` format: `digest-YYYYMMDDTHHMMSS-xxxxxxxx`
+- `context.source_field` is present and normalized.
+- ASI06 prompt-injection evidence preserves `pattern`, `matched_text`, and `snippet`.
+- Findings remain queryable by `agent_session_id`.
