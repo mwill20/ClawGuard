@@ -1,6 +1,6 @@
 # Lessons
 
-Teaching-oriented documentation built alongside the project. Each entry captures real insights from building ClawGuard — not theoretical, but grounded in actual deployment experience.
+Teaching-oriented documentation built alongside the project. Each entry captures real insights from building ClawGuard, grounded in actual deployment experience.
 
 These are designed to be LinkedIn-ready articles and interview talking points.
 
@@ -8,10 +8,26 @@ These are designed to be LinkedIn-ready articles and interview talking points.
 
 | # | Title | Status |
 |---|---|---|
-| 1 | What Job Site Bot Detection Teaches Us About AI Agent Security Monitoring | 🔲 Draft |
-| 2 | Skill Supply Chain Security: Why We Write Our Own OpenClaw Skills | 🔲 Draft |
+| 1 | What Job Site Bot Detection Teaches Us About AI Agent Security Monitoring | Draft |
+| 2 | Skill Supply Chain Security: Why We Write Our Own OpenClaw Skills | Draft |
 
-## Entry 1 Preview: Bot Detection ↔ Agent Monitoring
+## Telemetry Artifacts
+
+OpenClaw writes continuous ClawGuard telemetry on the VPS under:
+
+```text
+/data/clawguard/telemetry/
+```
+
+Curated samples can be pulled into `lessons/telemetry/` manually:
+
+```powershell
+.\scripts\export_latest_telemetry.ps1
+```
+
+Do not auto-push telemetry from the VPS. Keep the VPS as the operational record and commit only reviewed samples that are useful for lessons, demos, or architecture review.
+
+## Entry 1 Preview: Bot Detection And Agent Monitoring
 
 Job platform anti-bot techniques map directly to AI agent security monitoring patterns:
 

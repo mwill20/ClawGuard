@@ -30,6 +30,12 @@ from datetime import datetime
 from pathlib import Path
 
 
+def atomic_write(path: Path, content: str):
+    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp_path.write_text(content)
+    os.replace(tmp_path, path)
+
+
 data_dir = Path(os.getenv("CLAWGUARD_DATA_DIR", "/data/clawguard"))
 digests_dir = data_dir / "digests"
 telemetry_dir = data_dir / "telemetry"
@@ -106,8 +112,9 @@ safe_session = agent_session_id or "no-session"
 json_path = telemetry_dir / f"telemetry_{digest_date}_{safe_session}.json"
 md_path = telemetry_dir / f"telemetry_{digest_date}_{safe_session}.md"
 
-json_path.write_text(json.dumps(summary, indent=2, sort_keys=True))
-(telemetry_dir / "telemetry_latest.json").write_text(json.dumps(summary, indent=2, sort_keys=True))
+summary_json = json.dumps(summary, indent=2, sort_keys=True)
+atomic_write(json_path, summary_json)
+atomic_write(telemetry_dir / "telemetry_latest.json", summary_json)
 
 md_lines = [
     f"# ClawGuard Telemetry Summary - {digest_date}",
@@ -152,8 +159,9 @@ else:
         "",
     ])
 
-md_path.write_text("\n".join(md_lines))
-(telemetry_dir / "telemetry_latest.md").write_text("\n".join(md_lines))
+summary_md = "\n".join(md_lines)
+atomic_write(md_path, summary_md)
+atomic_write(telemetry_dir / "telemetry_latest.md", summary_md)
 
 print(json.dumps({
     "agent_session_id": agent_session_id,
