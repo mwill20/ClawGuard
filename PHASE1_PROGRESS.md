@@ -310,7 +310,7 @@ VPS:
 - `agent_session_id` added to digest output.
 - `job_security_findings` schema expanded with `job_id`, `agent_session_id`, and `context`.
 - ASI06 prompt-injection evidence hardened with `pattern`, `matched_text`, and `snippet`.
-- ASI06 rule scaffold added under `detections/`.
+- ASI06 detector module added under `detections/asi06_jd_content/detector.py`.
 - ASI01 semantic-first rule scaffold added under `detections/` after three clean telemetry sessions.
 - Baseline telemetry docs added under `lessons/`.
 - Post-compile telemetry hook added, deployed, and directly verified.

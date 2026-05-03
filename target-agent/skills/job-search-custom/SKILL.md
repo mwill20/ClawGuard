@@ -181,6 +181,14 @@ Findings preserve:
 
 Prompt-injection evidence includes `pattern`, `matched_text`, and `snippet`.
 
+The standalone ClawGuard detector module lives at:
+
+```text
+detections/asi06_jd_content/detector.py
+```
+
+The OpenClaw runtime remains inline until the next deploy-safe integration pass.
+
 ## Application Prep Rules
 
 Materials are generated using local resume/profile data only:

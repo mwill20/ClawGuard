@@ -2,6 +2,7 @@
 
 Status: Implemented inline in `job_search_secure.py`
 Primary ClawGuard rule spec: `detections/asi06_jd_content/ASI06-001.md`
+Primary ClawGuard module: `detections/asi06_jd_content/detector.py`
 Last updated: 2026-05-03
 
 ## Threat Model
@@ -85,11 +86,12 @@ Baseline session `digest-20260502T143953-c9eb7f4c` evaluated 22 jobs and produce
 
 Zero findings are still telemetry. They establish the initial clean-content baseline.
 
-## Extraction Criteria
+## ClawGuard Module Status
 
-Keep ASI06 inline until one of these happens:
+The standalone ClawGuard detector now exists in:
 
-- A confirmed prompt-injection finding appears in live production telemetry.
-- At least three live ASI06 findings exist across real postings.
+```text
+detections/asi06_jd_content/detector.py
+```
 
-After that, extract the implementation into `detections/asi06_jd_content/` using `ASI06-001.md` as the rule contract.
+OpenClaw runtime enforcement remains inline so the deployed skill stays self-contained until the next deploy-safe integration pass.

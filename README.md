@@ -37,7 +37,7 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 |---|---|---|
 | Goal hijack detection | ASI01 | Scaffolded after three clean OpenClaw telemetry sessions |
 | Tool misuse detection | ASI02 | Planned |
-| Job-description content detection | ASI06 | Inline runtime checks plus rule scaffold |
+| Job-description content detection | ASI06 | Detector module implemented, OpenClaw runtime inline |
 
 The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing `pattern`, `matched_text`, and `snippet`.
 
@@ -81,6 +81,7 @@ ClawGuard/
 - `target-agent/skills/job-search-custom/job_search_secure.py` - live job-search runtime with inline ASI06 checks.
 - `target-agent/skills/job-search-custom/staggered_cron.sh` - daily maintenance schedule driver.
 - `target-agent/skills/job-search-custom/clawguard_post_compile.sh` - post-compile telemetry hook.
+- `detections/asi06_jd_content/detector.py` - first importable ClawGuard detection engine module.
 - `detections/asi06_jd_content/ASI06-001.md` - first ClawGuard detection rule spec.
 - `lessons/clawguard-telemetry-baseline-001.md` - first clean telemetry baseline.
 - `scripts/export_latest_telemetry.ps1` - manual export path for VPS telemetry samples.
@@ -89,13 +90,13 @@ ClawGuard/
 
 Baseline `digest-20260502T143953-c9eb7f4c` evaluated 22 jobs across LinkedIn and CyberSecJobs with 0 ASI06 findings, 0 auto-prepared applications, and 0 Oxylabs credits used.
 
-Zero findings are meaningful telemetry. They establish a clean-content baseline before ASI01 scaffolding or ASI06 extraction work continues.
+Zero findings are meaningful telemetry. They establish a clean-content baseline for detector tuning and future runtime integration.
 
 ## Immediate Next Steps
 
 - Let the daily 9:00-9:30 AM PT chain run and accumulate clean sessions.
 - After the next full cron chain, review `/data/clawguard/telemetry/telemetry_latest.md`.
-- If a real ASI06 finding fires, extract the inline ASI06 logic into `detections/asi06_jd_content/`.
+- Wire OpenClaw to `detections/asi06_jd_content/detector.py` during a deploy-safe integration pass.
 - Keep ASI01 as a docs-only scaffold until a live redirect signal or ASI06 prompt-injection event appears.
 - Keep Oxylabs debugging isolated from the maintenance pipeline.
 

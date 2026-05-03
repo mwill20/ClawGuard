@@ -98,6 +98,7 @@ The OpenClaw skill ecosystem is powerful but expands the agent supply chain. Cla
 A clean ASI06 session is not a failure. It establishes:
 
 - The detector can run without producing noise.
+- The ASI06 detector module can be tested independently of OpenClaw deployment timing.
 - The source mix can generate useful job telemetry without spending Oxylabs credits.
 - The pipeline preserves correlation fields before the first live finding arrives.
 - Future findings can be compared against a known clean baseline.
