@@ -311,7 +311,7 @@ VPS:
 - `job_security_findings` schema expanded with `job_id`, `agent_session_id`, and `context`.
 - ASI06 prompt-injection evidence hardened with `pattern`, `matched_text`, and `snippet`.
 - ASI06 rule scaffold added under `detections/`.
-- ASI01 rule scaffold added under `detections/` after three clean telemetry sessions.
+- ASI01 semantic-first rule scaffold added under `detections/` after three clean telemetry sessions.
 - Baseline telemetry docs added under `lessons/`.
 - Post-compile telemetry hook added, deployed, and directly verified.
 - First autonomous post-hook cron chain verified with `digest-20260503T163003-b91b67e1`.
@@ -341,7 +341,7 @@ This unlocked the ASI01 documentation scaffold. Runtime ASI01 logic still waits 
 
 1. Improve daily digest semantics so re-seen candidates are not confused with failed source searches.
 
-2. Runtime ASI01 implementation after a live redirect signal or ASI06 prompt-injection event.
+2. Runtime ASI01 implementation after a live redirect signal or ASI06 prompt-injection event. ASI01 should be semantic and behavioral first; regex should only seed review.
 
 3. Correlation and evidence tests:
 

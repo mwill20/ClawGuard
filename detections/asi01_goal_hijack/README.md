@@ -32,6 +32,19 @@ Hijack attempt:
 |---|---|---|
 | ASI01-001 | External Content Goal Redirection | Documented stub |
 
+## Detection Approach
+
+ASI01 is semantic and behavioral first. Regex can identify seed indicators such as "ignore previous instructions" or "do not tell the user," but those strings alone do not prove goal hijack.
+
+The detector needs to compare:
+
+- The user's intended goal.
+- The configured agent policy.
+- The untrusted external instruction.
+- The agent's resulting behavior or proposed action.
+
+This differs from ASI06, where the first useful layer can be direct job-content pattern matching. ASI01 should not become a duplicate regex scanner; it should classify whether unsafe content changed or attempted to change the agent objective.
+
 ## Telemetry Inputs
 
 Initial inputs will come from existing OpenClaw job-search telemetry:
