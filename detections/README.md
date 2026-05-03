@@ -8,7 +8,7 @@ Detection modules for OWASP Agentic Top 10 threats. Each detection targets a spe
 |---|---|---|
 | Goal Hijack Detection | ASI01 | Planned |
 | Tool Misuse Detection | ASI02 | Planned |
-| JD Content Detection | ASI06 | Scaffolded |
+| JD Content Detection | ASI06 | Rule spec complete, runtime inline |
 
 ## Detection Architecture
 
@@ -24,8 +24,11 @@ Each detection module follows the 5-layer defense-in-depth pattern:
 
 - `asi06_jd_content/ASI06-001.md` documents the prompt-injection rule currently running inline in `job_search_secure.py`.
 - `asi06_jd_content/README.md` defines the event schema, baseline, and extraction criteria.
+- `job_security_findings` now stores `job_id`, `agent_session_id`, structured `context`, and JSON evidence.
 
 ASI06 remains inline until enough live telemetry exists to extract the rules without guessing at the data shape.
+
+The first clean baseline is `digest-20260502T143953-c9eb7f4c`: 22 jobs evaluated, 0 ASI06 findings.
 
 ## Development Guide
 

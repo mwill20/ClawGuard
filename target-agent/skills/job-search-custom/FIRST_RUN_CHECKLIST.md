@@ -1,125 +1,118 @@
-# First Live Run Observation Checklist — 2026-03-26
+# Maintenance Run Observation Checklist
 
-**Expected compile time:** 1:00 PM Pacific (20:00 UTC)
-**Check at:** 1:05 PM Pacific
+Last updated: 2026-05-03
 
----
+This checklist replaces the original March full-volume first-run checklist. The active pipeline is now a low-volume ClawGuard telemetry generator.
+
+## Expected Daily Schedule
+
+| Time PT | Command |
+|---|---|
+| 9:00 AM | `staggered_cron.sh linkedin` |
+| 9:10 AM | `staggered_cron.sh cybersecjobs` |
+| 9:20 AM | `staggered_cron.sh usajobs` |
+| 9:30 AM | `staggered_cron.sh compile` |
 
 ## Quick Health Check
+
+Run on the VPS:
 
 ```bash
 ssh root@31.97.139.139
 
-# 1. Did cron fire? Check logs for each site
-tail -20 /docker/openclaw-utxu/data/clawguard/logs/cron.log
-
-# 2. How many jobs found today?
-KEY=$(grep "^OXYLABS_AISTUDIO_API_KEY=" /docker/openclaw-utxu/.env | cut -d= -f2)
-docker exec -e OXYLABS_AISTUDIO_API_KEY="$KEY" -e CLAWGUARD_DATA_DIR="/data/clawguard" \
-  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
-  openclaw-utxu-openclaw-1 python3 job_search_secure.py browse --summary
-
-# 3. Today's digest
-cat /docker/openclaw-utxu/data/clawguard/digests/digest_2026-03-26.json | python3 -m json.tool | head -30
-
-# 4. Per-site job counts (baseline data)
-cat /docker/openclaw-utxu/data/clawguard/logs/search_*_2026-03-26.log | grep "Found.*jobs"
-
-# 5. Credit usage
-docker exec -e OXYLABS_AISTUDIO_API_KEY="$KEY" -e CLAWGUARD_DATA_DIR="/data/clawguard" \
-  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
-  openclaw-utxu-openclaw-1 python3 job_search_secure.py quota
-
-# 6. Application packages created
-ls -la /docker/openclaw-utxu/data/clawguard/applications/
-
-# 7. Any errors?
-grep -i "error\|failed\|exception" /docker/openclaw-utxu/data/clawguard/logs/cron.log | tail -10
+tail -80 /docker/openclaw-utxu/data/clawguard/logs/cron.log
+tail -80 /docker/openclaw-utxu/data/clawguard/logs/compile_$(date +%Y-%m-%d).log
+tail -80 /docker/openclaw-utxu/data/clawguard/logs/post_compile_$(date +%Y-%m-%d).log
 ```
 
-## Fallback Verification
+Check latest telemetry:
 
 ```bash
-# Brave fallback: force Brave for a single LinkedIn-shaped search
-docker exec -e BRAVE_SEARCH_API_KEY="$(grep '^BRAVE_SEARCH_API_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
-  -e CLAWGUARD_DATA_DIR="/data/clawguard" \
-  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
-  openclaw-utxu-openclaw-1 python3 job_search_secure.py search \
-    --query "SOC Analyst" --location "Remote" --sites linkedin --provider brave --max-results 5
+cat /docker/openclaw-utxu/data/clawguard/telemetry/telemetry_latest.md
+```
 
-# USAJobs native API: force USAJobs provider
-docker exec -e USAJOBS_AUTH_KEY="$(grep '^USAJOBS_AUTH_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
-  -e USAJOBS_USER_AGENT="$(grep '^USAJOBS_USER_AGENT=' /docker/openclaw-utxu/.env | cut -d= -f2)" \
-  -e CLAWGUARD_DATA_DIR="/data/clawguard" \
+Check database summary:
+
+```bash
+docker exec \
+  -e CLAWGUARD_DATA_DIR=/data/clawguard \
   -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
-  openclaw-utxu-openclaw-1 python3 job_search_secure.py search \
+  openclaw-utxu-openclaw-1 \
+  python3 -B job_search_secure.py browse --summary
+```
+
+## Findings Query
+
+```bash
+docker exec -i openclaw-utxu-openclaw-1 sqlite3 /data/clawguard/jobs.db <<'SQL'
+SELECT
+  agent_session_id,
+  rule_id,
+  severity,
+  json_extract(context, '$.source_platform') AS source_platform,
+  json_extract(context, '$.source_field') AS source_field,
+  detected_at
+FROM job_security_findings
+ORDER BY detected_at DESC
+LIMIT 20;
+SQL
+```
+
+## Expected Signals
+
+| Signal | Expected | Investigate If |
+|---|---|---|
+| Cron chain | Four jobs complete daily | Any site or compile step missing |
+| Credits used | 0 in maintenance mode | Oxylabs was called unexpectedly |
+| Auto-prepared | 0 | Compile omitted `--no-prepare` |
+| JD enrichment | 0 | `CLAWGUARD_ENRICHMENT_DAILY_CAP` not applied |
+| Findings | 0 is acceptable | Any finding needs triage and evidence review |
+| `telemetry_latest.*` | Updated after compile | Post-compile hook failed or was not executable |
+
+## Manual Provider Checks
+
+Force Brave:
+
+```bash
+docker exec \
+  -e BRAVE_SEARCH_API_KEY="$(grep '^BRAVE_SEARCH_API_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2-)" \
+  -e CLAWGUARD_DATA_DIR=/data/clawguard \
+  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
+  openclaw-utxu-openclaw-1 \
+  python3 -B job_search_secure.py search \
+    --query "SOC Analyst" --location "Remote" --sites linkedin --provider brave --max-results 5
+```
+
+Force USAJobs:
+
+```bash
+docker exec \
+  -e USAJOBS_AUTH_KEY="$(grep '^USAJOBS_AUTH_KEY=' /docker/openclaw-utxu/.env | cut -d= -f2-)" \
+  -e USAJOBS_USER_AGENT="$(grep '^USAJOBS_USER_AGENT=' /docker/openclaw-utxu/.env | cut -d= -f2-)" \
+  -e CLAWGUARD_DATA_DIR=/data/clawguard \
+  -w /usr/local/lib/node_modules/openclaw/skills/job-search-custom \
+  openclaw-utxu-openclaw-1 \
+  python3 -B job_search_secure.py search \
     --query "Security Analyst" --location "Seattle, WA" --sites usajobs --provider usajobs --max-results 5
 ```
 
----
+## Baseline Data To Record
 
-## Observation Matrix
-
-| Signal | Expected | Concern If | Action |
-|--------|----------|------------|--------|
-| Total jobs in digest | 15-40 | 0 = cron didn't fire, 100+ = queries too broad | Check cron.log |
-| Jobs scored 60%+ | 3-10 | 0 = scoring too strict | Lower MIN_SCORE_THRESHOLD |
-| Auto-prepared packages | 2-8 | 0 = no 60%+ matches | Check scoring weights |
-| JD enrichment rate | 80%+ of new jobs | <50% = detail scrape failing | Check site-specific errors |
-| Credits used | 30-60 | >80 = budget cap not working | Check budget_limit logic |
-| Email received | Yes | No = Gmail SMTP issue | Check compile log |
-| Per-site breakdown | Even across sites | 0 from any site = that site blocked | Disable failing sites |
-
----
-
-## Spot-Check Protocol (Pick 2-3 Jobs)
-
-For each spot-checked job:
-
-1. **Score feels right?**
-   - Open `applications/{job_id}/metadata.json` — check score + recommendation
-   - Open `applications/{job_id}/jd.txt` — read the actual JD
-   - Does the score match your gut feel? (e.g., a SOC Analyst role with SIEM/EDR requirements should be 70%+)
-
-2. **Application package coherent?**
-   - `resume_tailored.md` — are the bullets accurate? Any fabrication?
-   - `cover_letter.md` — does it reference real experience (PurpleLens, 60+ clients)?
-   - `screening_answers.json` — are the [HUMAN:] markers in the right places?
-
-3. **URL works?**
-   - Click the apply_url in metadata.json — does it go to the actual job posting?
-   - If it goes to a company page, note the source site (LinkedIn URL issue)
-
----
-
-## Baseline Data to Capture
-
-After the run, record these numbers (they become your drift detection baseline):
-
-```
-Date: 2026-03-26
-LinkedIn:      ___ jobs found, ___ new, ___ enriched
-CyberSecJobs:  ___ jobs found, ___ new, ___ enriched
-InfoSec Jobs:  ___ jobs found, ___ new, ___ enriched
-Indeed:        ___ jobs found, ___ new, ___ enriched
-Dice:          ___ jobs found, ___ new, ___ enriched
-Monster:       ___ jobs found, ___ new, ___ enriched
-SimplyHired:   ___ jobs found, ___ new, ___ enriched
-RemoteHunter:  ___ jobs found, ___ new, ___ enriched
-USAJobs:       ___ jobs found, ___ new, ___ enriched
-─────────────
-Total:         ___ jobs, ___ new, ___ enriched
-Credits used:  ___
-Strong matches: ___
-Good matches:   ___
-Auto-prepared:  ___
-Anomalies:      ___
+```text
+Date:
+Agent session:
+LinkedIn new jobs:
+CyberSecJobs new jobs:
+USAJobs new jobs:
+Total jobs in digest:
+Strong matches:
+Good matches:
+Moderate matches:
+Auto-prepared:
+Credits used:
+ASI06 findings:
+Telemetry file:
+Anomalies:
 ```
 
----
-
-## Anomaly Log
-
-| Time | Observation | Severity | Action Taken |
-|------|-------------|----------|--------------|
-| | | | |
+After a clean run, no action is needed beyond letting sessions accumulate. After a finding, preserve `telemetry_latest.json`, review `pattern`, `matched_text`, and `snippet`, then decide whether the rule should stay inline or be extracted.

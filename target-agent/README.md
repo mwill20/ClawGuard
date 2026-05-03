@@ -1,52 +1,74 @@
-# Target Agent — OpenClaw Deployment
+# Target Agent: OpenClaw Deployment
 
-This directory documents the live OpenClaw deployment that ClawGuard monitors. The agent runs on a dedicated VPS and handles real automation tasks, generating authentic telemetry for security monitoring.
+This directory documents the live OpenClaw deployment that ClawGuard monitors. The target runs on a dedicated VPS and produces real telemetry for security monitoring.
 
 ## Deployment Overview
 
 | Component | Detail |
 |---|---|
-| Platform | OpenClaw 2026.3.12 |
-| Hosting | Hostinger KVM 2 (2 vCPU, 8GB RAM, 100GB NVMe) |
-| Runtime | Docker container with Traefik reverse proxy |
-| LLM Backend | Google Gemini 2.5 Flash (API-based, cost-optimized) |
+| Platform | OpenClaw |
+| Hosting | Hostinger KVM 2 |
+| Runtime | Docker container behind Traefik |
 | Interface | Telegram bot |
-| OS | Ubuntu 24.04.4 LTS |
+| OS | Ubuntu 24.04 |
+| Primary monitored skill | `job-search-custom` |
+| Container | `openclaw-utxu-openclaw-1` |
 
-## Use Cases
+## Active Use Case
 
-### 1. Job Hunting Agent (Primary)
-Searches LinkedIn, Indeed, Monster, Dice, Glassdoor, ZipRecruiter for matching roles. Scores JDs against master resume, tailors resume bullets and cover letters for high-match positions. **Human-in-the-loop for final submission** — the agent finds and prepares, you click apply.
+### Job Search Maintenance Pipeline
 
-### 2. Networking / Relationship Manager
-Maintains contact list of LinkedIn connections, colleagues, and mentors. Generates weekly digest of who to reach out to with suggested messages and recent activity context. Does NOT auto-send messages.
+The active target is the `job-search-custom` skill. It searches a minimal source set, stores job records in SQLite, scores jobs against the local profile, and produces ClawGuard telemetry after digest compilation.
 
-### 3. Threat Intel Morning Brief
-Daily scan of CISA, BleepingComputer, Krebs on Security, The Hacker News, and OWASP feeds. Summarizes top 5 items relevant to AI security and SOC operations. Pushes morning brief to Telegram.
+Current maintenance schedule:
+
+```text
+9:00 AM PT  LinkedIn
+9:10 AM PT  CyberSecJobs
+9:20 AM PT  USAJobs
+9:30 AM PT  Compile digest and emit ClawGuard telemetry
+```
+
+Current controls:
+
+- Human-in-the-loop remains required for any application submission.
+- Cron compile uses `--no-prepare`.
+- JD enrichment is disabled with `CLAWGUARD_ENRICHMENT_DAILY_CAP=0`.
+- Oxylabs is disabled with `CLAWGUARD_DISABLE_OXYLABS=1`.
+- Brave Search and USAJobs native API provide zero-credit maintenance collection.
+
+## Planned Or Secondary Use Cases
+
+The original OpenClaw target model includes:
+
+- Networking or relationship manager.
+- Threat-intel morning brief.
+
+Those remain useful future telemetry sources, but the current ClawGuard integration work is centered on the job-search pipeline.
 
 ## Skill Security Policy
 
-**No community skills are installed without source code review.** All skills in the `skills/` directory are custom-written or audited line-by-line before deployment. This is a deliberate guardrails-first decision — see `lessons/` for documentation on OpenClaw skill supply chain risks.
+No community skills are installed without source code review. All skills in `skills/` are custom-written or audited line by line before deployment. This is a deliberate guardrails-first decision based on the OpenClaw skill supply-chain risk documented in `lessons/`.
 
 ## OWASP Threat Mapping
 
 | Use Case | OWASP Risk | Attack Vector |
 |---|---|---|
-| Job Hunting | ASI01 (Goal Hijack) | Malicious JD with prompt injection redirects agent behavior |
-| Job Hunting | ASI02 (Tool Misuse) | Agent sends resume/PII to unexpected destinations |
-| Job Hunting | ASI06 (Memory Poisoning) | Adversarial input corrupts learned job preferences |
-| Networking | ASI06 (Memory Poisoning) | Adversarial content on contact profiles poisons agent memory |
-| Threat Intel | ASI01 (Goal Hijack) | Prompt injection embedded in scraped news content |
+| Job search | ASI01 Goal Hijack | Malicious job content redirects agent behavior |
+| Job search | ASI02 Tool Misuse | Agent uses tools beyond intended scope |
+| Job search | ASI06 Memory Poisoning | Adversarial job content affects context, scoring, or generated materials |
+| Skill supply chain | ASI03 Identity and Privilege Abuse | Malicious skill reads secrets or exfiltrates files |
+| Browser/search ingestion | ASI05 Unexpected Code Execution | Unsafe browser or scraper behavior expands runtime risk |
 
 ## Directory Structure
 
-```
+```text
 target-agent/
-├── docs/                  # Attack surface mapping & recon findings
-├── skills/                # Custom-built, audited skills only
-└── README.md              # This file
+  docs/      Attack surface mapping and verification logs
+  skills/    Custom or audited skills only
+  README.md  This file
 ```
 
-## Configuration Notes
+## Current ClawGuard Signal
 
-See `docs/` for detailed attack surface findings and hardening recommendations.
+The first baseline session, `digest-20260502T143953-c9eb7f4c`, evaluated 22 jobs with 0 ASI06 findings and 0 Oxylabs credits. That clean run is documented in `lessons/clawguard-telemetry-baseline-001.md`.

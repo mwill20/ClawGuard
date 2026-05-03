@@ -1,6 +1,6 @@
 # ASI06 JD Content Detection
 
-Status: Scaffolded
+Status: Rule spec complete; runtime checks remain inline
 
 This module will house ClawGuard detection rules for adversarial or unsafe job-description content observed through the OpenClaw `job-search-custom` pipeline.
 
@@ -16,7 +16,7 @@ The extraction is intentionally delayed until enough live telemetry exists to va
 
 | Rule | Name | Status |
 |---|---|---|
-| ASI06-001 | Job Description Prompt Injection | Documented stub |
+| ASI06-001 | Job Description Prompt Injection | Documented, inline runtime active |
 | ASI06-002 | Job Description PII Request | Planned |
 | ASI06-003 | Job Description Skill Stuffing | Planned |
 | ASI06-004 | Suspicious Apply Domain | Planned |
@@ -58,3 +58,7 @@ lessons/clawguard-telemetry-baseline-001.md
 ```
 
 It recorded 22 jobs across LinkedIn and CyberSecJobs with 0 ASI06 findings. That zero-finding state is the initial clean-content baseline for future comparisons.
+
+## Next Step
+
+Keep this module as a rule contract until live findings justify extraction. If a confirmed ASI06 prompt-injection finding appears, extract the inline implementation from `job_search_secure.py` into this module. If three clean sessions land first, keep ASI06 inline and start the ASI01 scaffold.

@@ -1,210 +1,216 @@
 ---
 name: job-search-custom
-description: "Persistent job search pipeline with SQLite dedup, low-volume maintenance search, resume scoring, application material prep, and Telegram+email notifications. Human approval required."
+description: "Persistent job-search pipeline with SQLite deduplication, low-volume maintenance search, resume scoring, application material prep, ASI06 job-content checks, and ClawGuard telemetry."
 metadata:
   openclaw:
     requires:
-      env:
-        - OXYLABS_AISTUDIO_API_KEY
       bins:
         - python3
-    primaryEnv: OXYLABS_AISTUDIO_API_KEY
+    optionalEnv:
+      - OXYLABS_AISTUDIO_API_KEY
+      - BRAVE_SEARCH_API_KEY
+      - USAJOBS_AUTH_KEY
+      - USAJOBS_USER_AGENT
 ---
 
-# Job Search Custom Skill v2
+# Job Search Custom Skill
 
-**Persistent, low-volume job search pipeline with one-stop-shop application prep.**
+Persistent, low-volume job-search pipeline used as the primary OpenClaw telemetry source for ClawGuard Phase 1.
 
-Searches selected job boards on a maintenance schedule, deduplicates across runs via SQLite, scores against resume/profile, prepares tailored materials on demand, and notifies via Telegram + email. All data stays local. Human approval required.
+The skill searches selected job sources, deduplicates results in SQLite, scores jobs against local profile data, prepares application materials on demand, and records ASI06 job-content findings. Human approval is required for any submission.
 
-## Architecture
-
-Maintenance cron mode:
+## Current Maintenance Mode
 
 ```text
-Daily 9:00 AM -> LinkedIn      -> DB insert (dedup)
-Daily 9:10 AM -> CyberSecJobs  -> DB insert (dedup)
-Daily 9:20 AM -> USAJobs API   -> DB insert (dedup)
-Daily 9:30 AM -> COMPILE: score + digest, no auto-prepare, no JD enrichment
-             -> POST-COMPILE: ClawGuard telemetry summary
+Daily 9:00 AM PT  LinkedIn      -> DB insert and dedup
+Daily 9:10 AM PT  CyberSecJobs  -> DB insert and dedup
+Daily 9:20 AM PT  USAJobs API   -> DB insert and dedup
+Daily 9:30 AM PT  Compile digest, no auto-prepare, no JD enrichment
+                 -> ClawGuard post-compile telemetry summary
 ```
 
-Historical full-volume mode:
+Maintenance mode intentionally keeps volume low because the user is already in active interview and offer loops.
 
-```
-9:00 AM  → LinkedIn    (1 cr)  → DB insert (dedup) → score
-9:30 AM  → CyberSecJobs (1 cr) → DB insert (dedup) → score
-10:00 AM → InfoSecJobs  (1 cr) → DB insert (dedup) → score
-10:30 AM → Indeed       (4 cr) → DB insert (dedup) → score
-11:00 AM → Dice         (4 cr) → DB insert (dedup) → score
-11:30 AM → Monster      (4 cr) → DB insert (dedup) → score
-12:00 PM → SimplyHired  (4 cr) → DB insert (dedup) → score
-12:00 PM → RemoteHunter (4 cr) → DB insert (dedup) → score
-12:30 PM → USAJobs      (4 cr) → DB insert (dedup) → score
- 1:00 PM → COMPILE: score all → auto-prepare 60%+ → Telegram + Email
-```
+## Provider Posture
+
+- Brave Search is the current free-tier fallback for normal job-board discovery.
+- USAJobs uses the native USAJobs API when `USAJOBS_AUTH_KEY` and `USAJOBS_USER_AGENT` are configured.
+- Oxylabs remains supported in code but is disabled in the active maintenance schedule with `CLAWGUARD_DISABLE_OXYLABS=1`.
+- The prior Oxylabs `400 Bad Request` issue is not blocking the active maintenance path.
 
 ## Commands
 
-### Initialize Database (run once)
+Initialize database:
+
 ```bash
 python3 job_search_secure.py init-db
 ```
 
-### Search Jobs
-```bash
-# Single site (default: LinkedIn)
-python3 job_search_secure.py search --query "SOC Analyst" --location "Seattle, WA"
+Search jobs:
 
-# All 9 sites with budget cap
+```bash
+# Single site
+python3 job_search_secure.py search --query "SOC Analyst" --location "Seattle, WA" --sites linkedin
+
+# All configured sites with a budget cap
 python3 job_search_secure.py search --query "Security Engineer" --location "Seattle, WA" --sites all --budget 30
 
-# Specific sites
-python3 job_search_secure.py search --query "Threat Hunter" --location "Remote" --sites linkedin,dice,cybersecjobs
-
-# Force fallback providers for verification
-python3 job_search_secure.py search --query "SOC Analyst" --location "Remote" --sites usajobs --provider usajobs
+# Force Brave or USAJobs provider during verification
 python3 job_search_secure.py search --query "SOC Analyst" --location "Remote" --sites linkedin --provider brave
+python3 job_search_secure.py search --query "Security Analyst" --location "Seattle, WA" --sites usajobs --provider usajobs
 ```
 
-### Score Jobs
+Run digest:
+
 ```bash
-# Score all "found" jobs in DB against resume
-python3 job_search_secure.py score --status found --min-score 0.40
+# Single-site maintenance run, normally called by cron
+python3 job_search_secure.py digest --site linkedin --budget 2 --max-results-per-site 5 --no-notify
 
-# Score from legacy JSON file
-python3 job_search_secure.py score --jobs results.json
-```
-
-### Prepare Application Materials
-```bash
-python3 job_search_secure.py prepare --job-id "abc123def456"
-```
-Creates `/data/clawguard/applications/{job_id}/` with:
-- `metadata.json` — apply URL, score, status
-- `jd.txt` — full job description
-- `resume_tailored.md` — rule-governed tailored resume
-- `cover_letter.md` — cover letter draft
-- `screening_answers.json` — pre-filled Q&A
-- `review_checklist.md` — human review items
-
-### Daily Digest
-```bash
-# Single-site maintenance run (called by cron)
-python3 job_search_secure.py digest --site linkedin --budget 2 --max-results-per-site 5
-
-# Compile today's results (no new searches)
+# Compile current-day results without preparing applications
 python3 job_search_secure.py digest --compile --format telegram --no-prepare
 
-# Full run (all sites + compile)
-python3 job_search_secure.py digest --budget 50 --format telegram
-
-# Force fallback provider during a test run
-python3 job_search_secure.py digest --site linkedin --provider brave --budget 0 --no-notify
+# Manual validation compile with JSON output and no notification
+python3 job_search_secure.py digest --compile --no-prepare --no-notify --format json
 ```
 
-### Browse Database
+Score and browse:
+
 ```bash
-# Pipeline summary
+python3 job_search_secure.py score --status found --min-score 0.40
 python3 job_search_secure.py browse --summary
-
-# Today's new jobs
-python3 job_search_secure.py browse
-
-# Jobs by status
-python3 job_search_secure.py browse --status scored
-
-# Single job details
-python3 job_search_secure.py browse --job-id abc123
-
-# Jobs from last 24 hours
 python3 job_search_secure.py browse --since 24h
+python3 job_search_secure.py browse --job-id abc123
 ```
 
-### Track & Submit
-```bash
-# Update job status
-python3 job_search_secure.py track --job-id abc123 --status applied
+Prepare, track, and submit:
 
-# Approve submission (requires confirmation code from prepare)
-python3 job_search_secure.py submit --job-id abc123 --confirmation-code A1B2C3D4
+```bash
+python3 job_search_secure.py prepare --job-id abc123def456
+python3 job_search_secure.py track --job-id abc123def456 --status applied
+python3 job_search_secure.py submit --job-id abc123def456 --confirmation-code A1B2C3D4
 ```
 
-### Utility
+Utility:
+
 ```bash
-python3 job_search_secure.py quota    # Credit usage
-python3 job_search_secure.py sites    # List all 9 sites
+python3 job_search_secure.py quota
+python3 job_search_secure.py sites
 python3 job_search_secure.py export --status scored --output scored.json
 python3 job_search_secure.py migrate --source /path/to/old/digests/
 ```
 
 ## Supported Sites
 
-| Site | Key | JS | Credits | Niche |
-|------|-----|----|---------|-------|
-| LinkedIn | linkedin | No | 1 | General |
-| Indeed | indeed | Yes | 4 | Volume |
-| Monster | monster | Yes | 4 | Traditional |
-| Dice | dice | Yes | 4 | Tech/IT |
-| CyberSecJobs | cybersecjobs | No | 1 | Cybersecurity |
-| InfoSec Jobs | infosecjobs | No | 1 | InfoSec |
-| SimplyHired | simplyhired | Yes | 4 | Aggregator |
-| USAJobs | usajobs | Yes | 4 | Government |
-| RemoteHunter | remotehunter | Yes | 4 | Remote work |
+| Site | Key | Active Maintenance | Primary Maintenance Provider |
+|---|---|---:|---|
+| LinkedIn | `linkedin` | Yes | Brave |
+| CyberSecJobs | `cybersecjobs` | Yes | Brave |
+| USAJobs | `usajobs` | Yes | Native USAJobs API |
+| Indeed | `indeed` | No | Oxylabs when re-enabled |
+| Monster | `monster` | No | Oxylabs when re-enabled |
+| Dice | `dice` | No | Oxylabs when re-enabled |
+| InfoSec Jobs | `infosecjobs` | No | Oxylabs or Brave when re-enabled |
+| SimplyHired | `simplyhired` | No | Oxylabs when re-enabled |
+| RemoteHunter | `remotehunter` | No | Oxylabs when re-enabled |
 
-## Data Storage
+## Persistent Data
 
-All persistent data at `/data/clawguard/` (Docker volume, survives restarts):
-```
+All persistent runtime data is under `/data/clawguard/` inside the container-backed volume:
+
+```text
 /data/clawguard/
-  jobs.db                    — SQLite database (all jobs, scores, status)
-  tailoring_rules.json       — Resume tailoring rules
-  applications/{job_id}/     — Per-job materials
-  digests/                   — Daily digest archives
-  telemetry/                 — ClawGuard post-compile summaries
-  logs/                      — Cron and search logs
+  jobs.db
+  tailoring_rules.json
+  applications/{job_id}/
+  digests/
+  telemetry/
+  logs/
 ```
 
-## Optional Fallback Environment
+## Environment
 
-- `BRAVE_SEARCH_API_KEY` - enables Brave Search fallback for job board result discovery
-- `USAJOBS_AUTH_KEY` - enables native USAJobs Search API
-- `USAJOBS_USER_AGENT` - email address registered with USAJobs API access
-- `CLAWGUARD_SEARCH_PROVIDER` - default provider override: `auto`, `oxylabs`, `brave`, or `usajobs`
-- `CLAWGUARD_DISABLE_OXYLABS=1` - force fallback path without attempting Oxylabs
-- `CLAWGUARD_FALLBACK_ON_EMPTY=1` - try fallback when the primary provider returns zero jobs
-- `CLAWGUARD_AUTO_PREPARE_THRESHOLD=0.75` - strong-match threshold for automatic preparation when enabled
-- `CLAWGUARD_ENRICHMENT_DAILY_CAP=0` - disable JD enrichment in maintenance mode
-- `CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE=5` - cap per-site result volume in cron runs
-- `CLAWGUARD_DIGEST_TOP_MATCH_LIMIT=10` - cap digest match display volume
+Provider and runtime controls:
 
-## Resume Tailoring Rules
+```text
+CLAWGUARD_DATA_DIR=/data/clawguard
+BRAVE_SEARCH_API_KEY=<secret>
+USAJOBS_AUTH_KEY=<secret>
+USAJOBS_USER_AGENT=<registered email>
+OXYLABS_AISTUDIO_API_KEY=<secret>
+CLAWGUARD_SEARCH_PROVIDER=auto
+CLAWGUARD_DISABLE_OXYLABS=1
+CLAWGUARD_FALLBACK_ON_EMPTY=0
+CLAWGUARD_HTTP_TIMEOUT_SECONDS=20
+```
 
-Materials are generated using `tailoring_rules.json`:
-- **No fabrication** — only skills/experience from resume.txt
-- **No embellishment** — actual metrics only (50% MTTR, 60+ clients, etc.)
-- **Pre-approved bullet templates** traced to specific resume sections
-- **[HUMAN:]** markers for anything requiring your judgment
+Maintenance volume controls:
 
-## Security
+```text
+CLAWGUARD_AUTO_PREPARE_THRESHOLD=0.75
+CLAWGUARD_ENRICHMENT_DAILY_CAP=0
+CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE=5
+CLAWGUARD_DIGEST_TOP_MATCH_LIMIT=10
+```
 
-- Resume and contact info NEVER sent to job boards
-- All API calls logged to audit trail
-- Confirmation code required for submission approval
-- No auto-submit capability exists
-- Email credentials stored in .env only, never in code
-- USAJobs native API and Brave Search are fallback providers; force with `--provider usajobs` or `--provider brave`
-- ASI06 JD content detections flag skill stuffing, prompt injection, PII requests, and suspicious apply URL domains before prep
+ASI06 tuning:
 
-## When to Use
+```text
+CLAWGUARD_SKILL_STUFFING_THRESHOLD=15
+CLAWGUARD_SKILL_STUFFING_PENALTY=0.15
+```
 
-Use when user asks to:
-- Search for jobs or find openings
-- Score/rank jobs against resume
-- Prepare cover letters or application materials
-- Run daily digest or check new matches
-- Browse the job database or check pipeline status
-- Track application status
-- Check credit quota
+## ASI06 Runtime Checks
 
-**Always use this skill instead of web_search for job-related queries.**
+Inline rules currently record findings to `job_security_findings`:
+
+- `ASI06_SKILL_STUFFING`
+- `ASI06_PROMPT_INJECTION`
+- `ASI06_PII_REQUEST`
+- `ASI06_APPLY_URL_MISMATCH`
+
+Findings preserve:
+
+- `job_id`
+- `agent_session_id`
+- `rule_id`
+- `severity`
+- `message`
+- `evidence`
+- `context`
+- `detected_at`
+
+Prompt-injection evidence includes `pattern`, `matched_text`, and `snippet`.
+
+## Application Prep Rules
+
+Materials are generated using local resume/profile data only:
+
+- No fabrication.
+- No embellishment.
+- Resume and contact data are never sent to job boards by this skill.
+- Generated materials include human review markers.
+- Confirmation code is required before a submission can be marked approved.
+
+## Security Guarantees
+
+- No auto-submit capability for job boards.
+- Resume data stays local.
+- Provider calls are logged.
+- Application prep is disabled in the active cron path.
+- JD enrichment is disabled in the active cron path.
+- ASI06 checks run before generated materials are trusted.
+- Post-compile telemetry gives ClawGuard a session-correlated summary after successful digest compilation.
+
+## When To Use
+
+Use this skill when the user asks to:
+
+- Search for jobs or find openings.
+- Score or rank jobs against the local profile.
+- Prepare cover letters or application materials.
+- Run or inspect the daily digest.
+- Browse the job database.
+- Track application status.
+- Check provider quota or source health.
+
+Always prefer this skill over generic web search for job-related queries in the OpenClaw target.

@@ -1,99 +1,77 @@
-# Skill Test Log - job-search-custom
+# Skill Test Log: job-search-custom
 
-**Date:** 2026-03-24
-**Tester:** Michael Williams
-**Skill Version:** 1.1 (real Oxylabs AI Studio integration)
+Last updated: 2026-05-03
 
-## Test 1: Telegram Integration — SOC Analyst (Remote)
+## Current Validation Summary
 
-**Command:**
+The `job-search-custom` skill is working as the OpenClaw telemetry target for ClawGuard Phase 1.
+
+Verified current behavior:
+
+- Brave Search fallback works for LinkedIn-shaped maintenance searches.
+- CyberSecJobs maintenance search works through Brave.
+- USAJobs native API authentication works.
+- Compile mode emits an `agent_session_id`.
+- Compile mode can run with `--no-prepare`.
+- JD enrichment can be disabled with `CLAWGUARD_ENRICHMENT_DAILY_CAP=0`.
+- ASI06 findings table exists with correlation fields.
+- Post-compile telemetry hook writes JSON and Markdown summaries.
+- Manual telemetry export works from the local repo.
+
+## 2026-05-02 Maintenance Validation
+
+| Test | Result |
+|---|---|
+| LinkedIn maintenance run | Brave fallback inserted 14 new jobs, 0 credits |
+| CyberSecJobs maintenance run | Brave inserted 8 new jobs, 0 credits |
+| USAJobs native API run | Auth path verified, 0 matches, 0 credits |
+| Digest compile | 22 jobs, 4 strong, 10 good, 5 moderate |
+| Application prep | 0 auto-prepared packages |
+| ASI06 findings query | 0 findings |
+| Post-compile telemetry hook | Direct verification succeeded |
+
+Baseline session:
+
+```text
+digest-20260502T143953-c9eb7f4c
 ```
-Search for SOC Analyst jobs in Remote, max 10 results
+
+Direct post-compile hook verification session:
+
+```text
+digest-20260502T163002-dbe409f3
 ```
 
-**Result:** Agent used `job-search-custom` skill, called Oxylabs AI Studio API via LinkedIn scrape.
+## Current Expected Signals
 
-**CLI verification (direct container test):**
-```
-Security Operations Center Analyst at IonQ (Bothell, WA)
-Senior Security Analyst - SOC at lululemon (Seattle, WA)
-Threat Hunter / Security Analyst at Galvanick (Seattle, WA)
-```
+| Signal | Expected |
+|---|---|
+| Credits used | 0 |
+| Auto-prepared | 0 |
+| JD enrichment | 0 in maintenance mode |
+| ASI06 findings | 0 is valid unless a real unsafe posting appears |
+| Telemetry output | `telemetry_latest.json` and `telemetry_latest.md` updated after compile |
 
-**Success:** Yes
+## Historical March Validation
 
-## Test 2: Telegram Integration — Security Engineer (Seattle)
+The first implementation used Oxylabs heavily and validated that:
 
-**Command:**
-```
-Search for Security Engineer jobs in Seattle WA, max 10 results
-```
+- OpenClaw routed job-search requests to the custom skill.
+- LinkedIn searches returned real structured job data.
+- Rate limits and quota tracking were active.
+- Resume data stayed local.
+- Human approval gates prevented automatic submission.
 
-**Result:** Bot returned 10 real jobs:
-- Security Engineer, New Grad at Stripe (Seattle, WA)
-- Security Engineer II - Red Team at Microsoft (Redmond, WA)
-- Security Engineer at Meta (Bellevue, WA)
-- Security Engineer (Cloud) at Nintendo (Redmond, WA)
-- Security Engineer I, SIRT at Amazon (Seattle, WA)
-- Security Engineer II at Microsoft (Redmond, WA)
-- Security Engineer (Blue Team) at SpaceX (Redmond, WA)
-- Security Engineer, Identity at Google (Kirkland, WA)
-- Security Engineer II at Microsoft (Redmond, WA)
-- Security Engineer at Docusign (Seattle, WA)
+That history remains useful, but it is not the active operating mode. The current maintenance path is Brave/USAJobs-first with Oxylabs disabled.
 
-**Success:** Yes
+## Known Issues
 
-## Test 3: Oxylabs API Response
-
-**Expected:** Search returns jobs with title, company, location, URL
-**Actual:** All fields populated correctly. LinkedIn scrape via Oxylabs AI Studio returns structured JSON with job_title, company_name, location, apply_url, date_posted.
-**Credits used:** ~30-50 per search (1000 total quota)
-
-**Success:** Yes
-
-## Test 4: Rate Limiting
-
-**Expected:** Consecutive searches throttled by 5-second minimum interval
-**Actual:** Rate limiter active in code. Quota tracker logs usage per search.
-
-**Success:** Yes (architectural — enforced in code)
-
-## Issues Encountered
-
-1. **Stubbed API calls (initial):** `_parse_oxylabs_response()` returned `[]` — replaced with real Oxylabs AI Studio SDK implementation.
-2. **Indeed blocked scraper:** Switched to LinkedIn as primary source — works without JavaScript rendering.
-3. **Empty API key in container:** `.env` file had malformed first line (`nano /docker/openclaw-utxu/.envPORT=42822`). Docker Compose bakes env vars at container creation time; `docker restart` does NOT re-read `.env`. Fixed by cleaning `.env` + `docker compose down && up`.
-4. **Oxylabs plugin was skipping:** Same root cause as #3 — empty API key. Resolved after container recreation.
-5. **Skill not routed to agent:** SKILL.md was in `extensions/` (plugin directory) not `skills/` (agent skills). Fixed by copying to built-in skills dir + updating TOOLS.md.
-
-## Fixes Applied
-
-| Fix | File | Description |
-|-----|------|-------------|
-| Real API | `job_search_secure.py` | Implemented `oxylabs-ai-studio` SDK with LinkedIn scrape |
-| Schema | `job_search_secure.py` | Fixed JSON schema for `job_listings` array |
-| CLI arg | `job_search_secure.py` | Added `--location` alias for `--locations` |
-| Env fix | `/docker/openclaw-utxu/.env` | Removed malformed first line |
-| Container | Docker Compose | Recreated container to reload env vars |
-| Skill routing | TOOLS.md + skills dir | Made agent aware of custom skill |
-| Profile | `job_search_profile.json` | Added target roles, locations, preferences |
-| Resume | `resume.txt` | Uploaded to workspace for scoring context |
-
-## Verification
-
-- [x] Skill installs without errors
-- [x] `search` command returns real jobs via Oxylabs AI Studio
-- [x] Telegram bot responds with formatted results
-- [x] Audit log records API calls
-- [x] Rate limiting enforced in code
-- [x] Human approval gates prevent auto-submit (architectural)
-- [x] Resume stays local (never sent to API)
-- [x] All API calls logged
+| Issue | Status |
+|---|---|
+| Oxylabs `400 Bad Request` during later fallback testing | Deferred, not blocking |
+| Full cron chain with post-compile hook | Scheduled to exercise automatically at 9:30 AM PT |
+| First live ASI06 finding | Waiting on real telemetry |
 
 ## Sign-Off
 
-Skill tested and working: **Yes**
-Ready for ClawGuard integration: **Yes**
-
----
-*Last updated: 2026-03-24*
+Ready for current ClawGuard Phase 1 work: yes.
