@@ -35,7 +35,7 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 
 | Detection | OWASP Code | Current State |
 |---|---|---|
-| Goal hijack detection | ASI01 | Planned after three clean OpenClaw telemetry sessions |
+| Goal hijack detection | ASI01 | Scaffolded after three clean OpenClaw telemetry sessions |
 | Tool misuse detection | ASI02 | Planned |
 | Job-description content detection | ASI06 | Inline runtime checks plus rule scaffold |
 
@@ -96,7 +96,7 @@ Zero findings are meaningful telemetry. They establish a clean-content baseline 
 - Let the daily 9:00-9:30 AM PT chain run and accumulate clean sessions.
 - After the next full cron chain, review `/data/clawguard/telemetry/telemetry_latest.md`.
 - If a real ASI06 finding fires, extract the inline ASI06 logic into `detections/asi06_jd_content/`.
-- If three clean sessions land with zero findings, start the ASI01 scaffold.
+- Keep ASI01 as a docs-only scaffold until a live redirect signal or ASI06 prompt-injection event appears.
 - Keep Oxylabs debugging isolated from the maintenance pipeline.
 
 ## Author

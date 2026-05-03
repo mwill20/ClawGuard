@@ -166,7 +166,7 @@ Inline rules currently record findings to `job_security_findings`:
 - `ASI06_SKILL_STUFFING`
 - `ASI06_PROMPT_INJECTION`
 - `ASI06_PII_REQUEST`
-- `ASI06_APPLY_URL_MISMATCH`
+- `ASI06_URL_MISMATCH`
 
 Findings preserve:
 

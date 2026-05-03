@@ -274,6 +274,10 @@ class SecurityFinding:
     evidence: Dict
     context: Dict = field(default_factory=dict)
 
+
+def new_agent_session_id(prefix: str = "digest") -> str:
+    return f"{prefix}-{datetime.now().strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
+
 # ============================================================================
 # SQLITE JOB DATABASE
 # ============================================================================
@@ -2194,7 +2198,7 @@ def run_daily_digest(
     rate_limiter = RateLimiter(db)
     profile = load_profile()
     tailoring = TailoringEngine(profile.resume_text, TAILORING_RULES_PATH)
-    agent_session_id = f"digest-{datetime.now().strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    agent_session_id = new_agent_session_id()
 
     locations = profile.target_locations
     primary_location = next(

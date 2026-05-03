@@ -7,6 +7,7 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | Artifact | Status | Purpose |
 |---|---|---|
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
+| `clawguard-telemetry-baseline-002.md` | Complete | First autonomous full cron-chain telemetry baseline |
 | `clawguard-telemetry-baseline-002-template.md` | Template | Capture the first autonomous full cron-chain telemetry run |
 
 ## Planned Entries
@@ -54,7 +55,7 @@ Repo telemetry = curated artifacts only
 Auto-push      = deferred intentionally
 ```
 
-## Current Baseline
+## Current Baselines
 
 Baseline `digest-20260502T143953-c9eb7f4c` captured:
 
@@ -66,6 +67,15 @@ Baseline `digest-20260502T143953-c9eb7f4c` captured:
 - USAJobs native API auth path verified with zero matches.
 
 This is the clean-content baseline used to compare future sessions.
+
+Baseline `digest-20260503T163003-b91b67e1` captured the first autonomous cron-chain run after telemetry hook deployment:
+
+- Cron fired LinkedIn, CyberSecJobs, USAJobs, and compile.
+- LinkedIn and CyberSecJobs returned already-known candidates.
+- USAJobs returned 0 matches.
+- Digest reported 0 newly inserted jobs.
+- Post-compile telemetry hook completed.
+- 0 findings, 0 auto-prepared packages, 0 credits used.
 
 ## Entry 1 Preview: Bot Detection And Agent Monitoring
 

@@ -206,13 +206,13 @@ Implemented inline detections:
 - `ASI06_SKILL_STUFFING`
 - `ASI06_PROMPT_INJECTION`
 - `ASI06_PII_REQUEST`
-- `ASI06_APPLY_URL_MISMATCH`
+- `ASI06_URL_MISMATCH`
 
 Extraction trigger:
 
 - Extract ASI06 into `detections/asi06_jd_content/` after the first confirmed prompt-injection example or after at least three live ASI06 findings.
 
-If no ASI06 findings appear after three clean sessions, keep the inline implementation and begin ASI01 scaffolding.
+Three clean sessions have now landed, so ASI01 is scaffolded as documentation. Runtime ASI01 logic still waits for a live redirect signal or ASI06 prompt-injection event.
 
 ## Quick Commands
 
@@ -272,10 +272,13 @@ PHASE1_PROGRESS.md
 .env.example
 scripts/export_latest_telemetry.ps1
 detections/README.md
+detections/asi01_goal_hijack/ASI01-001.md
+detections/asi01_goal_hijack/README.md
 detections/asi06_jd_content/ASI06-001.md
 detections/asi06_jd_content/README.md
 lessons/README.md
 lessons/clawguard-telemetry-baseline-001.md
+lessons/clawguard-telemetry-baseline-002.md
 target-agent/README.md
 target-agent/docs/
 target-agent/skills/job-search-custom/
@@ -308,39 +311,39 @@ VPS:
 - `job_security_findings` schema expanded with `job_id`, `agent_session_id`, and `context`.
 - ASI06 prompt-injection evidence hardened with `pattern`, `matched_text`, and `snippet`.
 - ASI06 rule scaffold added under `detections/`.
-- Baseline telemetry doc added under `lessons/`.
+- ASI01 rule scaffold added under `detections/` after three clean telemetry sessions.
+- Baseline telemetry docs added under `lessons/`.
 - Post-compile telemetry hook added, deployed, and directly verified.
+- First autonomous post-hook cron chain verified with `digest-20260503T163003-b91b67e1`.
 - Manual telemetry export helper added.
 - Tests passed for the current job-search changes.
 
-## Next Decision Point
+## Autonomous Cron Baseline
 
-After the next full cron chain completes, inspect:
-
-```text
-/data/clawguard/telemetry/telemetry_latest.md
-```
-
-Then choose:
-
-- If an ASI06 finding exists: triage it and prepare for ASI06 extraction.
-- If the third clean session lands: start the ASI01 detection scaffold.
-- If the cron chain fails: fix schedule, provider env, or post-compile hook before adding new detection work.
-
-## Queued After 9:30 AM PT Cron Verification
-
-These items are intentionally held until the first autonomous cron chain proves the post-compile hook works end to end.
-
-1. ASI01 scaffold docs only:
+The first autonomous post-hook cron chain completed on 2026-05-03:
 
 ```text
-detections/asi01_goal_hijack/README.md
-detections/asi01_goal_hijack/ASI01-001.md
+digest-20260503T163003-b91b67e1
 ```
 
-Initial rule focus: goal redirection through ingested external content, using the job-search pipeline as the first observed target surface.
+Observed behavior:
 
-2. Correlation and evidence tests:
+- LinkedIn ran through Brave and returned already-known candidates.
+- CyberSecJobs ran through Brave and returned already-known candidates.
+- USAJobs native API authenticated and returned 0 matches.
+- Compile completed with 0 newly inserted jobs.
+- Post-compile telemetry hook completed and updated `telemetry_latest.*`.
+- Findings count remained 0.
+
+This unlocked the ASI01 documentation scaffold. Runtime ASI01 logic still waits for a live redirect signal or ASI06 prompt-injection event.
+
+## Current ClawGuard Work Queue
+
+1. Improve daily digest semantics so re-seen candidates are not confused with failed source searches.
+
+2. Runtime ASI01 implementation after a live redirect signal or ASI06 prompt-injection event.
+
+3. Correlation and evidence tests:
 
 ```text
 tests/test_job_search_secure.py

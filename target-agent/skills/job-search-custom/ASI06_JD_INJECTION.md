@@ -24,7 +24,7 @@ Inline rule IDs:
 | `ASI06_SKILL_STUFFING` | Medium | Detect unusually dense canonical skill matches |
 | `ASI06_PROMPT_INJECTION` | High | Detect prompt-injection language in job content |
 | `ASI06_PII_REQUEST` | High | Detect requests for sensitive personal data |
-| `ASI06_APPLY_URL_MISMATCH` | Medium | Detect suspicious apply-domain mismatch |
+| `ASI06_URL_MISMATCH` | Medium | Detect suspicious apply-domain mismatch |
 
 Prompt-injection examples include:
 

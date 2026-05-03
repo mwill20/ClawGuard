@@ -104,5 +104,5 @@ Baseline 002 comparison:
 Choose one after reviewing the autonomous run:
 
 - If ASI06 findings exist: triage evidence and prepare for ASI06 extraction.
-- If this is the third clean session: start the ASI01 scaffold.
+- If this is the third clean session: start or update the ASI01 scaffold.
 - If cron or telemetry failed: fix the chain before adding new detection work.
