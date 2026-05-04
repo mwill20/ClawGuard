@@ -36,18 +36,25 @@ set -u
 LOG_DIR=$(ConvertTo-ShellLiteral $LogDir)
 TELEMETRY_DIR=$(ConvertTo-ShellLiteral $TelemetryDir)
 DATE_VALUE=$(ConvertTo-ShellLiteral $Date)
-PATTERN='ClawGuard ASI06 detector module active'
+PATTERN_ASI06='ClawGuard ASI06 detector module active'
+PATTERN_ASI01='ClawGuard ASI01 detector module active'
 TELEMETRY_JSON="`$TELEMETRY_DIR/telemetry_latest.json"
 TELEMETRY_MD="`$TELEMETRY_DIR/telemetry_latest.md"
 
 echo "== ClawGuard cron confirmation (`$DATE_VALUE) =="
 echo ""
 echo "== Detector module log check =="
-if grep -H "`$PATTERN" "`$LOG_DIR"/*_"`$DATE_VALUE".log "`$LOG_DIR"/cron.log 2>/dev/null; then
-  DETECTOR_OK=1
+DETECTOR_OK=1
+if grep -H "`$PATTERN_ASI06" "`$LOG_DIR"/*_"`$DATE_VALUE".log "`$LOG_DIR"/cron.log 2>/dev/null; then
+  :
 else
   DETECTOR_OK=0
-  echo "MISSING: `$PATTERN"
+  echo "MISSING: `$PATTERN_ASI06"
+fi
+if grep -H "`$PATTERN_ASI01" "`$LOG_DIR"/*_"`$DATE_VALUE".log "`$LOG_DIR"/cron.log 2>/dev/null; then
+  :
+else
+  echo "NOTE: `$PATTERN_ASI01 not seen yet (ASI01 logs only when first invoked)"
 fi
 
 echo ""
@@ -164,4 +171,4 @@ if (-not $SkipTelemetryValidation) {
 }
 
 Write-Host ""
-Write-Host "Cron confirmation passed. Detector-backed ASI06 path is active."
+Write-Host "Cron confirmation passed. Detector-backed ASI06 path is active (ASI01 will log on first invocation)."

@@ -39,6 +39,7 @@ from urllib.parse import quote_plus, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
+from detections.asi01_goal_hijack.detector import ASI01GoalHijackDetector as ClawGuardASI01GoalHijackDetector
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -212,6 +213,7 @@ def setup_logging():
 
 logger = logging.getLogger(__name__)
 ASI06_DETECTOR_MODE_LOGGED = False
+ASI01_DETECTOR_MODE_LOGGED = False
 
 def audit_log(event_type: str, **details):
     log_entry = {
@@ -651,9 +653,10 @@ class JobDatabase:
         findings: List[SecurityFinding],
         agent_session_id: Optional[str] = None,
     ):
-        """Replace current ASI06 findings for a job with the latest evaluation."""
+        """Replace current ASI06/ASI01 findings for a job with the latest evaluation."""
         self.conn.execute(
-            "DELETE FROM job_security_findings WHERE job_id = ? AND rule_id LIKE 'ASI06_%'",
+            "DELETE FROM job_security_findings "
+            "WHERE job_id = ? AND (rule_id LIKE 'ASI06_%' OR rule_id LIKE 'ASI01_%')",
             (job_id,)
         )
         for finding in findings:
@@ -1401,13 +1404,28 @@ def search_site(
 
             if not jobs and method != providers[-1] and CLAWGUARD_FALLBACK_ON_EMPTY:
                 provider_errors.append(f"{method}: returned 0 jobs")
-                audit_log("SEARCH_EMPTY_FALLBACK", method=method, site=site_key)
+                audit_log("SEARCH_EMPTY_FALLBACK", method=method, site=site_key,
+                          source_status="EMPTY")
                 continue
 
             new_count = _persist_search_results(db, run_id, site_key, query, location, jobs, credits)
+            already_known = max(0, len(jobs) - new_count)
+            if not jobs:
+                source_status = "EMPTY"
+                status_note = "no candidates returned"
+            elif new_count == 0:
+                source_status = "ALL_KNOWN"
+                status_note = f"{already_known} already-known candidates"
+            else:
+                source_status = "OK_NEW"
+                status_note = f"{new_count} new, {already_known} already known"
             audit_log("SEARCH_COMPLETED", method=method, site=site_key, results=len(jobs),
-                      new=new_count, cost=credits)
-            logger.info(f"Found {len(jobs)} jobs on {config['name']} via {method} ({new_count} new)")
+                      new=new_count, already_known=already_known,
+                      source_status=source_status, cost=credits)
+            logger.info(
+                f"Found {len(jobs)} jobs on {config['name']} via {method} "
+                f"[{source_status}: {status_note}]"
+            )
             return jobs, new_count
         except Exception as e:
             provider_errors.append(f"{method}: {e}")
@@ -1415,7 +1433,8 @@ def search_site(
             audit_log("SEARCH_PROVIDER_FAILED", method=method, site=site_key, error=str(e))
 
     error = " | ".join(provider_errors)
-    audit_log("SEARCH_FAILED", site=site_key, error=error)
+    final_status = "ERROR" if any(":" in pe and "returned 0 jobs" not in pe for pe in provider_errors) else "EMPTY"
+    audit_log("SEARCH_FAILED", site=site_key, error=error, source_status=final_status)
     if db:
         db.record_search_run(run_id, site_key, query, location, 0, 0, 0, error)
     return [], 0
@@ -1671,18 +1690,25 @@ def _security_finding_from_clawguard(finding) -> SecurityFinding:
 
 
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
-    global ASI06_DETECTOR_MODE_LOGGED
+    global ASI06_DETECTOR_MODE_LOGGED, ASI01_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
     if not ASI06_DETECTOR_MODE_LOGGED:
         logger.info("ClawGuard ASI06 detector module active")
         ASI06_DETECTOR_MODE_LOGGED = True
-    detector = ClawGuardASI06JobContentDetector(
+    asi06_detector = ClawGuardASI06JobContentDetector(
         skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
     )
-    return [
-        _security_finding_from_clawguard(finding)
-        for finding in detector.detect(job, jd_text=text)
-    ]
+    asi06_raw = list(asi06_detector.detect(job, jd_text=text))
+    asi06_findings = [_security_finding_from_clawguard(f) for f in asi06_raw]
+
+    if not ASI01_DETECTOR_MODE_LOGGED:
+        logger.info("ClawGuard ASI01 detector module active")
+        ASI01_DETECTOR_MODE_LOGGED = True
+    asi01_detector = ClawGuardASI01GoalHijackDetector()
+    asi01_raw = asi01_detector.detect(job, jd_text=text, asi06_findings=asi06_raw)
+    asi01_findings = [_security_finding_from_clawguard(f) for f in asi01_raw]
+
+    return asi06_findings + asi01_findings
 
 
 # ============================================================================
@@ -2137,7 +2163,16 @@ def run_daily_digest(
     today_jobs_data = db.get_digest_jobs()
     first_week = db.is_first_week()
     mode_label = "first-week (all jobs)" if first_week else "daily (last 24h)"
-    logger.info(f"Compiling digest ({mode_label}): {len(today_jobs_data)} jobs")
+    if compile_only:
+        logger.info(
+            f"Compiling digest ({mode_label}): {len(today_jobs_data)} jobs to evaluate "
+            f"(compile-only; sources not searched this run)"
+        )
+    else:
+        logger.info(
+            f"Compiling digest ({mode_label}): {len(today_jobs_data)} jobs to evaluate, "
+            f"{new_jobs_total} newly inserted from this run"
+        )
 
     # Convert DB rows to Job objects for scoring
     all_jobs = []
@@ -2222,6 +2257,8 @@ def run_daily_digest(
         "summary": {
             "total_found": len(all_jobs),
             "new_jobs": new_jobs_total if not compile_only else len(all_jobs),
+            "newly_inserted_in_run": new_jobs_total,
+            "compile_only": compile_only,
             "strong_matches": len(strong),
             "good_matches": len(good),
             "moderate_matches": len(moderate),

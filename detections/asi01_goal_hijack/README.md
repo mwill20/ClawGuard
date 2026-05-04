@@ -1,8 +1,10 @@
 # ASI01 Goal Hijack Detection
 
-Status: Scaffolded from live OpenClaw telemetry
+Status: v1 implemented (corroborated-classification mode)
 
-This module will house ClawGuard detection rules for goal redirection attempts against the OpenClaw job-search pipeline and later agent workflows.
+This module houses ClawGuard detection rules for goal redirection attempts against the OpenClaw job-search pipeline and later agent workflows.
+
+The v1 detector at `detections/asi01_goal_hijack/detector.py` consumes ASI06 prompt-injection findings as upstream signals and adds a tightly-scoped imperative-redirect classifier. It fires only when (a) ASI06 prompt-injection corroborates the content, OR (b) the text contains a high-confidence imperative redirect (role-replace or submission-redirect). This keeps the false-positive rate near zero on clean baselines while still surfacing high-severity goal-redirect attempts.
 
 The current scaffold is based on three clean OpenClaw telemetry sessions:
 
@@ -30,7 +32,7 @@ Hijack attempt:
 
 | Rule | Name | Status |
 |---|---|---|
-| ASI01-001 | External Content Goal Redirection | Documented stub |
+| ASI01-001 | External Content Goal Redirection | v1 implemented (corroborated classifier) |
 
 ## Detection Approach
 

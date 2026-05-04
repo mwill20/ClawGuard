@@ -338,23 +338,23 @@ Observed behavior:
 - Post-compile telemetry hook completed and updated `telemetry_latest.*`.
 - Findings count remained 0.
 
-This unlocked the ASI01 documentation scaffold. Runtime ASI01 logic still waits for a live redirect signal or ASI06 prompt-injection event.
+This unlocked the ASI01 documentation scaffold. Runtime ASI01 logic was subsequently implemented in v1 (corroborated-classification mode) on 2026-05-04.
 
-## Current ClawGuard Work Queue
+## Phase 1 Closure
 
-1. Improve daily digest semantics so re-seen candidates are not confused with failed source searches.
+All three Phase 1 cleanup items are complete:
 
-2. Runtime ASI01 implementation after a live redirect signal or ASI06 prompt-injection event. ASI01 should be semantic and behavioral first; regex should only seed review.
+1. Daily digest semantics now distinguish re-seen candidates from failed source searches via the `source_status` audit field (`OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`) and the `already_known` / `newly_inserted_in_run` digest summary fields.
 
-3. Correlation and evidence tests:
+2. ASI01 runtime detector v1 is implemented in `detections/asi01_goal_hijack/detector.py` and wired into `run_jd_security_detections`. It consumes ASI06 prompt-injection findings as upstream signals and adds a tightly-scoped imperative-redirect classifier. Fires only on corroborated evidence or high-confidence imperatives, so the clean-content baseline remains 0 findings.
 
-```text
-tests/test_job_search_secure.py
-```
-
-Test targets:
+3. Correlation and evidence tests in `tests/test_job_search_secure.py` cover:
 
 - `agent_session_id` format: `digest-YYYYMMDDTHHMMSS-xxxxxxxx`
 - `context.source_field` is present and normalized.
 - ASI06 prompt-injection evidence preserves `pattern`, `matched_text`, and `snippet`.
 - Findings remain queryable by `agent_session_id`.
+- ASI01 goal-redirect classification fires on corroborated content and stays silent on clean content and uncorroborated low-confidence imperatives.
+- Search source-status audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR`.
+
+Phase 2 plan and spec documents live under `docs/plans/`.
