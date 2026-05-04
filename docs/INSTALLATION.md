@@ -26,9 +26,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.0
+Ran 14 tests in 0.0
 
 OK
 ```

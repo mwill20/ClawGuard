@@ -158,9 +158,9 @@ Expected output begins:
 ```text
 # ClawGuard
 
-Guardrail-first AI agent security monitoring framework.
+![ClawGuard banner](docs/ClawGuard_Logo.png)
 
-ClawGuard detects OWASP Agentic Top 10 risks against AI agents by watching a real OpenClaw deployment, not simulated traces.
+Guardrail-first AI agent security monitoring framework for OpenClaw job-search telemetry.
 ```
 
 ### 🧪 Exercise 2: Confirm the codebase is testable
@@ -175,9 +175,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.077s
+Ran 14 tests in 0.077s
 
 OK
 ```

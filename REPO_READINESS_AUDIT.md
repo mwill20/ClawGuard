@@ -1,10 +1,10 @@
 # Repository Readiness Audit
 
-Audit mode: Documentation Fix
+Audit mode: Readiness Gap Closure
 
 Audit date: 2026-05-03
 
-Scope: ClawGuard repository documentation, examples, security posture, reproducibility notes, and reviewer readiness. Functional source code was not changed for this audit pass.
+Scope: ClawGuard repository documentation, examples, CI, synthetic evaluation fixtures, telemetry sample validation, security posture, reproducibility notes, and reviewer readiness.
 
 ## Summary
 
@@ -15,7 +15,7 @@ Scope: ClawGuard repository documentation, examples, security posture, reproduci
 | Usage examples | PASS | High | README, `docs/USAGE.md`, and `examples/` show sample detector input/output. |
 | Architecture documentation | PASS | High | `docs/ARCHITECTURE.md` documents system overview, data flow, trust boundaries, and decisions. |
 | Dependencies and environment | PASS | High | README, `docs/INSTALLATION.md`, `.env.example`, and `requirements.txt` document local and deployment requirements. |
-| Evaluation and results | PARTIAL | High | Unit tests and live baselines are documented; precision/recall are not yet measured. |
+| Evaluation and results | PARTIAL | High | Unit tests, CI, live baselines, synthetic ASI06 fixture metrics, and telemetry sample validation are documented; real-world precision/recall is not yet measured. |
 | Dataset documentation | PASS | Medium | `docs/DATASET.md` explains that no external dataset is required and documents sample files. |
 | Model documentation | PASS | Medium | `docs/MODEL_CARD.md` states no AI/ML model is trained, fine-tuned, or deployed in this repo. |
 | Security documentation | PASS | High | `SECURITY.md` documents assumptions, trust boundaries, abuse cases, and reporting. |
@@ -33,6 +33,9 @@ Scope: ClawGuard repository documentation, examples, security posture, reproduci
 - Importable ASI06 detector module with tests.
 - SQLite evidence model with `job_id`, `agent_session_id`, `context`, and `evidence`.
 - Lessons curriculum that teaches the current implementation.
+- GitHub Actions CI for unit tests and synthetic ASI06 fixture evaluation.
+- Synthetic labeled ASI06 fixture with exact-match and micro precision/recall/F1 smoke metrics.
+- Telemetry sample JSON with stdlib schema validation.
 - Safe `.env.example` placeholders and `.gitignore` entry for `.env`.
 - MIT license already present.
 
@@ -53,14 +56,17 @@ Scope: ClawGuard repository documentation, examples, security posture, reproduci
 - Added docs for architecture, installation, usage, evaluation, dataset, model status, deployment, monitoring, limitations, and troubleshooting.
 - Added root security, contributing, changelog, citation, and requirements files.
 - Added sample input/output examples.
+- Added CI workflow for unit tests and ASI06 labeled fixture evaluation.
+- Added synthetic ASI06 labeled fixture, evaluator script, and stable result artifact.
+- Added telemetry sample JSON, validator script, and schema validation tests.
 
 ## Reproducibility Gaps Remaining
 
-- No labeled ASI06 evaluation corpus exists yet.
-- Precision, recall, F1, and false-positive rate are not yet measured.
-- Runtime and memory characteristics are not yet measured.
+- No larger real-world labeled ASI06 evaluation corpus exists yet.
+- Precision, recall, F1, and false-positive rate are measured only on a small synthetic fixture, not a real-world benchmark.
+- Local fixture evaluator runtime is lightly measured; VPS cron runtime and memory characteristics are not yet measured.
 - VPS deployment is manual and not packaged as a reproducible release artifact.
-- CI was not added in this Documentation Fix pass.
+- Telemetry validation is sample-based and CI-enforced; the VPS hook does not yet self-validate exported artifacts.
 
 ## Security and Licensing Gaps Remaining
 
@@ -70,10 +76,10 @@ Scope: ClawGuard repository documentation, examples, security posture, reproduci
 
 ## Priority Order for Future Fixes
 
-1. Add lightweight CI to run `python -B -m unittest discover -s tests`.
-2. Add a labeled ASI06 fixture set and calculate basic detection metrics.
-3. Remove the inline ASI06 fallback after one normal daily cron confirms the detector-backed path.
-4. Add a telemetry JSON schema and validation test.
+1. Remove the inline ASI06 fallback after one normal daily cron confirms the detector-backed path.
+2. Build a larger real-world labeled ASI06 fixture set before making benchmark claims.
+3. Wire telemetry validation into exported VPS artifacts or hook post-checks.
+4. Add production cron runtime and memory telemetry.
 5. Add optional image architecture diagrams under `assets/`.
 6. Package the deployment steps so the detector package and OpenClaw script are deployed together.
 
@@ -89,7 +95,7 @@ Scope: ClawGuard repository documentation, examples, security posture, reproduci
 | Inputs and outputs documented | Done |
 | Architecture and data flow documented | Done |
 | Major design decisions and trade-offs documented | Done |
-| Evaluation method and results documented | Partial; test results documented, labeled corpus not yet available |
+| Evaluation method and results documented | Partial; unit tests, CI, synthetic fixture metrics, telemetry sample validation, and live baselines documented; real-world benchmark not yet available |
 | Limitations and known failure modes documented | Done |
 | Dataset details documented if data is used | Done |
 | Model details documented if AI/ML models are used | Done as not applicable |

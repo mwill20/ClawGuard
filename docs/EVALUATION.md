@@ -3,7 +3,7 @@
 ## Evaluation Questions
 
 1. Does the ASI06 detector identify known adversarial job-description patterns?
-2. Does the detector avoid findings for a clean sample input?
+2. Does the detector avoid findings for clean sample input?
 3. Does the OpenClaw runtime prefer the detector module when available?
 4. Are findings queryable by `agent_session_id`?
 5. Does post-compile telemetry preserve session-correlated results?
@@ -12,12 +12,15 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms detector, runtime, parser, and DB behavior | 11/11 passing |
+| Unit tests | Confirms detector, runtime, parser, evaluation, telemetry validation, and DB behavior | 14/14 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
-| Precision | Requires labeled corpus | Not yet measured |
-| Recall | Requires labeled corpus | Not yet measured |
-| Runtime performance | Useful for scaling expectations | Not yet measured |
+| Synthetic labeled fixture exact match | Verifies expected rule sets on curated fixtures | 1.0 across 8 synthetic records |
+| Synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible detector smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
+| Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
+| Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
+
+Important scope note: the labeled ASI06 fixture is small and synthetic. It is useful for regression and reviewer reproducibility, but it is not a real-world precision/recall benchmark.
 
 ## Test Procedure
 
@@ -31,12 +34,14 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.0
+Ran 14 tests in 0.0
 
 OK
 ```
+
+The exact runtime in seconds may vary.
 
 ## Sample Detector Procedure
 
@@ -45,6 +50,61 @@ python -B -c "import json; from pathlib import Path; from detections.asi06_jd_co
 ```
 
 Expected output matches [examples/sample_output.json](../examples/sample_output.json).
+
+## Labeled Fixture Evaluation
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_asi06.py --input examples/asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 8
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+The stable checked-in result artifact is [examples/asi06_labeled_eval_results.json](../examples/asi06_labeled_eval_results.json).
+
+## Continuous Integration
+
+GitHub Actions workflow: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+
+The CI workflow runs:
+
+```text
+python -m pip install -r requirements.txt
+python -B -m unittest discover -s tests
+python -B scripts/evaluate_asi06.py --input examples/asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json
+```
+
+## Telemetry Schema Validation
+
+PowerShell:
+
+```powershell
+python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json
+```
+
+Expected key result:
+
+```text
+"status": "valid"
+```
+
+The validator checks required top-level telemetry fields, `agent_session_id` format, digest summary keys, finding row shape, and count consistency between aggregate fields and `findings`.
 
 ## Live Baselines
 
@@ -66,12 +126,13 @@ Zero findings are treated as clean-content telemetry, not as a failed detector.
 | Failure Case | Current Handling | Future Improvement |
 |---|---|---|
 | Missing `detections/` package in VPS single-file deploy | Inline ASI06 fallback | Remove fallback after cron confirmation and package deploy path |
-| Ambiguous security job mentioning prompt injection defensively | Current regex may not trigger if wording is descriptive | Add semantic review for ambiguous cases |
-| No labeled corpus | Metrics not measured | Build curated fixture set |
+| Ambiguous security job mentioning prompt injection defensively | Synthetic fixture includes one clean defensive mention | Add larger real-world false-positive set and semantic review for ambiguous cases |
+| Only a small synthetic labeled fixture exists | Metrics are scoped and caveated | Build larger curated real-world fixture set |
 | Provider returns duplicate jobs | Digest may show 0 new jobs | Improve daily digest wording |
 
 ## Reproducibility Notes
 
 - Local tests require no API keys.
-- Sample input/output lives in `examples/`.
+- Sample input/output and the synthetic labeled fixture live in `examples/`.
+- CI runs the same local tests and synthetic evaluation smoke command.
 - Operational telemetry requires the deployed VPS environment and is not required for local evaluation.

@@ -6,10 +6,10 @@
 - No semantic LLM review is implemented.
 - ASI01 goal-hijack detection is scaffolded but not runtime implemented.
 - ASI02 tool-misuse detection is planned but not implemented.
-- Precision, recall, and false-positive rate are not yet measured.
-- No labeled evaluation corpus exists.
+- Precision, recall, and F1 are measured only on a small synthetic ASI06 fixture, not a real-world corpus.
+- No larger real-world labeled evaluation corpus exists.
 - The live deployment process is manual.
-- Runtime and memory performance are not yet measured.
+- Local fixture evaluator runtime is lightly measured; VPS cron runtime and memory performance are not yet measured.
 
 ## Failure Modes
 
@@ -54,7 +54,7 @@ Do not use this project as:
 
 - Remove inline ASI06 fallback after normal cron confirmation.
 - Add ASI01 runtime detector after live redirect evidence or ASI06 prompt-injection signal.
-- Add telemetry schema validation.
-- Add labeled ASI06 evaluation fixtures.
-- Add lightweight CI.
+- Wire telemetry validation into exported VPS artifacts or hook post-checks.
+- Add a larger real-world ASI06 evaluation fixture set.
+- Add production cron runtime and memory telemetry.
 - Add architecture diagram assets.

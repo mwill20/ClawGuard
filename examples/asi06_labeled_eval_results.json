@@ -1,0 +1,133 @@
+{
+  "exact_match_accuracy": 1.0,
+  "input_path": "examples/asi06_labeled_eval.json",
+  "micro": {
+    "f1": 1.0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 9
+  },
+  "notes": [
+    "Metrics are measured only on this small synthetic labeled fixture set.",
+    "These results are not a real-world precision/recall benchmark."
+  ],
+  "per_rule": {
+    "ASI06_PII_REQUEST": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 6,
+      "tp": 2
+    },
+    "ASI06_PROMPT_INJECTION": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 5,
+      "tp": 3
+    },
+    "ASI06_SKILL_STUFFING": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 6,
+      "tp": 2
+    },
+    "ASI06_URL_MISMATCH": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 6,
+      "tp": 2
+    }
+  },
+  "record_count": 8,
+  "records": [
+    {
+      "expected_rule_ids": [],
+      "job_id": "eval-clean-001",
+      "predicted_rule_ids": []
+    },
+    {
+      "expected_rule_ids": [],
+      "job_id": "eval-clean-002",
+      "predicted_rule_ids": []
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_PROMPT_INJECTION"
+      ],
+      "job_id": "eval-prompt-001",
+      "predicted_rule_ids": [
+        "ASI06_PROMPT_INJECTION"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_PROMPT_INJECTION"
+      ],
+      "job_id": "eval-prompt-002",
+      "predicted_rule_ids": [
+        "ASI06_PROMPT_INJECTION"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_PII_REQUEST"
+      ],
+      "job_id": "eval-pii-001",
+      "predicted_rule_ids": [
+        "ASI06_PII_REQUEST"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_URL_MISMATCH"
+      ],
+      "job_id": "eval-url-001",
+      "predicted_rule_ids": [
+        "ASI06_URL_MISMATCH"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_SKILL_STUFFING"
+      ],
+      "job_id": "eval-skills-001",
+      "predicted_rule_ids": [
+        "ASI06_SKILL_STUFFING"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI06_PII_REQUEST",
+        "ASI06_PROMPT_INJECTION",
+        "ASI06_SKILL_STUFFING",
+        "ASI06_URL_MISMATCH"
+      ],
+      "job_id": "eval-combo-001",
+      "predicted_rule_ids": [
+        "ASI06_PII_REQUEST",
+        "ASI06_PROMPT_INJECTION",
+        "ASI06_SKILL_STUFFING",
+        "ASI06_URL_MISMATCH"
+      ]
+    }
+  ],
+  "rule_ids": [
+    "ASI06_SKILL_STUFFING",
+    "ASI06_URL_MISMATCH",
+    "ASI06_PROMPT_INJECTION",
+    "ASI06_PII_REQUEST"
+  ]
+}

@@ -67,7 +67,7 @@ Use `.env.example` for safe placeholders only.
 
 - ASI06 detection is deterministic and does not yet include semantic LLM review.
 - ASI01 goal-hijack detection is scaffolded but not runtime implemented.
-- Telemetry JSON schema validation is not yet implemented.
+- Telemetry sample schema validation is implemented; exported VPS artifacts are not yet self-validated by the hook.
 - The current VPS deployment flow is manual and should be treated as prototype operations.
 
 ## Reporting a Vulnerability

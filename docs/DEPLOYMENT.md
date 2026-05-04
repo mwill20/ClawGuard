@@ -101,4 +101,4 @@ Potential bottlenecks:
 - Provider rate limits.
 - SQLite write concurrency.
 - Manual deployment process.
-- Lack of telemetry schema validation.
+- Telemetry validation exists locally and in CI, but the VPS hook does not yet self-validate exported artifacts.

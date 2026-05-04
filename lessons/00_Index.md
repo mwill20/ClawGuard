@@ -2,7 +2,7 @@
 
 Assumptions and scope:
 
-- Line references are current as of commit `11d0189`.
+- Line references are current for the Phase 1 lesson pass and should be rechecked after code movement.
 - Lessons live in the existing lowercase `lessons/` directory.
 - VPS commands target the current OpenClaw host `root@31.97.139.139` and container `openclaw-utxu-openclaw-1`.
 - The inline ASI06 fallback is still intentionally retained until one normal daily cron run confirms the detector-backed path.
@@ -39,6 +39,9 @@ OpenClaw source search
 - ASI06 detector module with runtime integration and inline fallback.
 - Post-compile telemetry JSON/Markdown artifacts.
 - Local regression tests for parser behavior, session IDs, detector behavior, and DB queryability.
+- GitHub Actions CI for unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation.
+- Small synthetic labeled ASI06 fixture metrics under `examples/`.
+- Telemetry sample JSON validation under `examples/`.
 
 ## Recommended (not implemented here)
 
@@ -46,7 +49,7 @@ OpenClaw source search
 - Prompt sanitization or quarantine before LLM-based summarization.
 - Semantic guardrails using deterministic classifiers or LLM-as-judge for ASI01 behavior.
 - Signed deployment bundles for `job_search_secure.py` plus `detections/`.
-- Automated CI that runs the full lesson command set.
+- GitHub Actions CI already runs unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation. Recommended future expansion: run the full lesson command set and validate exported VPS telemetry artifacts.
 
 ## Hands-On Starting Point
 
@@ -60,9 +63,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.077s
+Ran 14 tests in 0.077s
 
 OK
 ```
@@ -77,9 +80,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.077s
+Ran 14 tests in 0.077s
 
 OK
 ```

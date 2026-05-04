@@ -35,12 +35,16 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 
 - Detector tests: `tests/test_asi06_detector.py`
 - Runtime tests: `tests/test_job_search_secure.py`
+- Evaluation tests: `tests/test_asi06_evaluation.py`
+- Telemetry validation tests: `tests/test_telemetry_validation.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
-- Full suite: 11 tests passing.
+- Synthetic labeled fixture: `examples/asi06_labeled_eval.json`
+- Telemetry sample: `examples/telemetry_sample.json`
+- Full suite: 14 tests passing.
 
 ### Recommended (not implemented here)
 
-- CI workflow that runs tests on every push.
+- CI expansion that also runs lesson commands and validates exported VPS telemetry artifacts.
 - Mutation testing for regex rules.
 - Golden telemetry fixture tests.
 - Property tests for malformed provider records.
@@ -64,13 +68,15 @@ Project implements:
 - `test_safe_apply_domains_do_not_trigger_url_mismatch`: trusted ATS domains avoid false positives.
 - `test_finding_can_serialize_to_db_ready_record`: detector output can become SQLite rows.
 - `test_runtime_prefers_clawguard_asi06_detector_when_available`: runtime uses detector before fallback.
+- `test_labeled_fixture_metrics_are_reproducible`: synthetic ASI06 fixture metrics stay stable.
+- `test_sample_telemetry_matches_schema`: sample post-compile telemetry follows the expected JSON shape.
 - DB tests for `agent_session_id` queryability.
 
 Recommended (not implemented here):
 
 - A test that runs the post-compile hook against a fixture database.
 - A test that asserts fallback removal after confirmed cron.
-- A test that validates `telemetry_latest.json` schema.
+- A test that validates exported VPS `telemetry_latest.json`, not just the local sample.
 
 ## 3. Code Walkthrough Section
 
@@ -156,9 +162,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.077s
+Ran 14 tests in 0.077s
 
 OK
 ```
@@ -230,6 +236,44 @@ ModuleNotFoundError: No module named 'tests.test_missing_module'
 
 Why: this confirms `unittest` is running real modules from the repo, not hiding missing tests.
 
+### Exercise 6: Run the synthetic ASI06 fixture evaluation
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected output includes:
+
+```text
+"record_count": 8
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+Why: this proves the detector still matches the expected rule labels for the curated synthetic fixture set. It is a smoke metric, not a real-world benchmark.
+
+### Exercise 7: Validate the telemetry sample
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json
+```
+
+Expected output includes:
+
+```text
+"status": "valid"
+```
+
+Why: this protects the post-compile telemetry contract before downstream ClawGuard tooling starts reading it.
+
 ## 5. Interview Preparation Section
 
 **Q: What does the runtime preference test prove?**
@@ -242,7 +286,7 @@ Why: this confirms `unittest` is running real modules from the repo, not hiding 
 
 **Q: What test would you add next?**
 
-**A:** A post-compile telemetry fixture test that creates a temporary digest and findings DB, runs hook logic, and validates `telemetry_latest.json` schema. That would close the gap between runtime detection and exported telemetry.
+**A:** A post-compile telemetry fixture test that creates a temporary digest and findings DB, runs hook logic, and validates the exported `telemetry_latest.json` artifact. The current validator protects the JSON shape; the next step is proving the shell hook produces it from fixture inputs.
 
 ## 6. Key Takeaways Section
 
@@ -250,7 +294,7 @@ Why: this confirms `unittest` is running real modules from the repo, not hiding 
 - Runtime tests prove OpenClaw chooses the detector path.
 - DB tests prove findings remain queryable by session.
 - The lesson dataset gives a safe prompt-injection defense lab.
-- Current test gaps are known and tied to future telemetry hardening.
+- Current test gaps are known and tied to future VPS hook hardening.
 
 ## 7. Summary Reference Card
 
@@ -259,8 +303,12 @@ Why: this confirms `unittest` is running real modules from the repo, not hiding 
 | Full test command | `python -B -m unittest discover -s tests` |
 | Detector tests | `tests/test_asi06_detector.py` |
 | Runtime tests | `tests/test_job_search_secure.py` |
+| Evaluation tests | `tests/test_asi06_evaluation.py` |
+| Telemetry validation tests | `tests/test_telemetry_validation.py` |
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
-| Current total | 11 tests |
+| Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
+| Telemetry sample | `examples/telemetry_sample.json` |
+| Current total | 14 tests |
 | Core proof | Detector path preferred over fallback |
 
 ## 8. Next Steps

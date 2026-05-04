@@ -75,6 +75,56 @@ Run OpenClaw runtime tests only:
 python -B -m unittest tests.test_job_search_secure
 ```
 
+## ASI06 Labeled Fixture Evaluation
+
+Run the small synthetic labeled fixture evaluation:
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_asi06.py --input examples/asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 8
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+This is a synthetic smoke evaluation, not a real-world precision/recall benchmark.
+
+## Telemetry Schema Validation
+
+Validate the sample post-compile telemetry shape:
+
+PowerShell:
+
+```powershell
+python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json
+```
+
+Bash:
+
+```bash
+python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json
+```
+
+Expected key result:
+
+```text
+"status": "valid"
+```
+
 ## VPS Telemetry Commands
 
 These commands require SSH access to the current VPS.
@@ -96,6 +146,8 @@ Export latest telemetry into a local curated folder:
 | Workflow | Command |
 |---|---|
 | Validate local repo | `python -B -m unittest discover -s tests` |
+| Run ASI06 fixture metrics | `python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
+| Validate telemetry sample | `python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json` |
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |
 | Check deployment telemetry | `.\scripts\check_latest_telemetry.ps1` |

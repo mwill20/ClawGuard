@@ -18,6 +18,7 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
 - Ready-to-run unit tests and ASI06 sample input/output examples.
+- GitHub Actions CI for unit tests and synthetic ASI06 fixture evaluation.
 - Teaching curriculum under `lessons/`.
 
 ## Intended Audience
@@ -98,6 +99,8 @@ ClawGuard/
   REPO_READINESS_AUDIT.md
   requirements.txt
   .env.example
+  .github/workflows/
+    ci.yml
   docs/
     ARCHITECTURE.md
     ClawGuard_Logo.png
@@ -113,6 +116,9 @@ ClawGuard/
   examples/
     sample_input.json
     sample_output.json
+    asi06_labeled_eval.json
+    asi06_labeled_eval_results.json
+    telemetry_sample.json
   detections/
     asi01_goal_hijack/
     asi06_jd_content/
@@ -120,6 +126,8 @@ ClawGuard/
     skills/job-search-custom/
   lessons/
   scripts/
+    evaluate_asi06.py
+    validate_telemetry.py
   tests/
 ```
 
@@ -152,9 +160,9 @@ python -B -m unittest discover -s tests
 Expected result:
 
 ```text
-...........
+..............
 ----------------------------------------------------------------------
-Ran 11 tests in 0.0
+Ran 14 tests in 0.0
 
 OK
 ```
@@ -202,6 +210,36 @@ python -B -m unittest tests.test_job_search_secure
 
 ```powershell
 python -B -m unittest tests.test_asi06_detector
+```
+
+### Run the ASI06 labeled fixture evaluation
+
+```powershell
+python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 8
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+This is a small synthetic fixture evaluation for reproducible smoke metrics. It is not a real-world precision/recall benchmark.
+
+### Validate the telemetry JSON shape
+
+```powershell
+python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json
+```
+
+Expected key result:
+
+```text
+"status": "valid"
 ```
 
 ## Inputs and Outputs
@@ -286,10 +324,12 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 11/11 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 14/14 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
+| ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
+| Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
 | Live telemetry baseline | 0 findings | Baseline documents clean OpenClaw sessions, not detection failure |
-| Precision/recall | Not yet measured | No labeled evaluation corpus exists yet |
+| Real-world precision/recall | Not yet measured | Current metrics are limited to the small synthetic fixture |
 
 ## Security Considerations
 
@@ -311,7 +351,7 @@ Important current limitations:
 
 - ASI06 is deterministic and regex/rule based; semantic fallback is planned, not implemented.
 - ASI01 is scaffolded, not runtime implemented.
-- Precision and recall are not yet measured against a labeled corpus.
+- Precision and recall are measured only against a small synthetic fixture, not a real-world corpus.
 - The inline ASI06 fallback remains until one normal daily cron confirms the detector-backed path.
 
 ## Deployment

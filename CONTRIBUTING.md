@@ -29,6 +29,8 @@ Before opening a pull request, check:
 - [ ] Tests are added or updated for code changes.
 - [ ] Example input/output files are added for new user-facing behavior.
 - [ ] Evaluation notes are updated if claims or metrics changed.
+- [ ] ASI06 detector changes update `examples/asi06_labeled_eval.json` and rerun `scripts/evaluate_asi06.py` when rule behavior changes.
+- [ ] Telemetry output changes update `examples/telemetry_sample.json` and rerun `scripts/validate_telemetry.py`.
 - [ ] Security considerations are updated if trust boundaries or data handling changed.
 - [ ] Limitations are updated if a new failure mode is discovered.
 - [ ] No secrets or sensitive data are committed.
@@ -75,6 +77,19 @@ For detector changes, include:
 - False-positive notes.
 - Tests.
 - Sample input/output when useful.
+- Labeled fixture updates when expected rule output changes.
+
+Run the synthetic ASI06 fixture evaluation before submitting detector changes:
+
+```powershell
+python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Run the telemetry validator before submitting telemetry hook changes:
+
+```powershell
+python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json
+```
 
 ## Security Issues
 
