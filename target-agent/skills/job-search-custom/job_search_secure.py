@@ -38,12 +38,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urlencode, urlparse
 from urllib.request import Request, urlopen
 
-try:
-    from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
-except ModuleNotFoundError as exc:
-    if exc.name and not exc.name.startswith("detections"):
-        raise
-    ClawGuardASI06JobContentDetector = None
+from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -1658,127 +1653,8 @@ def extract_certs(text: str) -> List[str]:
 
 
 # ============================================================================
-# ASI06 JOB DESCRIPTION CONTENT DETECTIONS
+# ASI06 DETECTOR ADAPTER
 # ============================================================================
-
-INJECTION_PATTERNS = [
-    r"ignore\s+(all\s+)?previous\s+instructions",
-    r"disregard\s+(your\s+)?system\s+prompt",
-    r"score\s+this\s+(job\s+)?at\s+\d+",
-    r"mark\s+(this\s+)?(as\s+)?strong[ _-]?match",
-    r"do\s+not\s+show\s+other",
-    r"override\s+(the\s+)?scoring",
-    r"you\s+are\s+now\s+a[n]?\s+",
-    r"assistant\s*:",
-    r"system\s*:\s*you\s+are",
-    r"developer\s*:\s*you\s+are",
-]
-
-PII_REQUEST_PATTERNS = [
-    r"include\s+(your\s+)?(full\s+)?resume\s+in",
-    r"salary\s+history",
-    r"social\s+security",
-    r"\bssn\b",
-    r"bank\s+(account|routing)",
-    r"send\s+(your\s+)?(id|passport|license)",
-    r"references\s+with\s+phone",
-]
-
-SAFE_APPLY_DOMAINS = {
-    "linkedin.com",
-    "indeed.com",
-    "dice.com",
-    "monster.com",
-    "usajobs.gov",
-    "greenhouse.io",
-    "lever.co",
-    "workday.com",
-    "myworkdayjobs.com",
-    "icims.com",
-    "smartrecruiters.com",
-    "jobvite.com",
-    "ashbyhq.com",
-    "bamboohr.com",
-}
-
-
-def detect_skill_stuffing(jd_text: str, threshold: int = ASI06_SKILL_STUFFING_THRESHOLD) -> Optional[SecurityFinding]:
-    skills_found = extract_skills_advanced(jd_text)
-    if len(skills_found) <= threshold:
-        return None
-    return SecurityFinding(
-        rule_id="ASI06_SKILL_STUFFING",
-        severity=FindingSeverity.MEDIUM,
-        message=f"Job description contains {len(skills_found)} canonical skill matches; threshold is {threshold}.",
-        evidence={"skill_count": len(skills_found), "threshold": threshold, "skills": skills_found},
-    )
-
-
-def _domain_matches_company(company: str, domain: str) -> bool:
-    company_slug = re.sub(r"[^a-z0-9]", "", company.lower())
-    domain_slug = re.sub(r"[^a-z0-9]", "", domain.lower())
-    if not company_slug or company_slug in {"unknowncompany", "unknownagency"}:
-        return True
-    return company_slug in domain_slug or domain_slug in company_slug
-
-
-def detect_url_mismatch(company: str, apply_url: str) -> Optional[SecurityFinding]:
-    if not apply_url:
-        return None
-    domain = urlparse(apply_url).netloc.lower()
-    domain = domain[4:] if domain.startswith("www.") else domain
-    if not domain:
-        return None
-    if any(domain == safe or domain.endswith(f".{safe}") for safe in SAFE_APPLY_DOMAINS):
-        return None
-    if _domain_matches_company(company, domain):
-        return None
-    return SecurityFinding(
-        rule_id="ASI06_URL_MISMATCH",
-        severity=FindingSeverity.MEDIUM,
-        message=f"Apply URL domain '{domain}' does not match company '{company}'.",
-        evidence={"company": company, "domain": domain, "url": apply_url},
-    )
-
-
-def _pattern_evidence(patterns: List[str], text: str) -> List[dict]:
-    matches = []
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if not match:
-            continue
-        start = max(match.start() - 60, 0)
-        end = min(match.end() + 60, len(text))
-        matches.append({
-            "pattern": pattern,
-            "matched_text": match.group(0),
-            "snippet": re.sub(r"\s+", " ", text[start:end]).strip(),
-        })
-    return matches
-
-
-def detect_prompt_injection(jd_text: str) -> Optional[SecurityFinding]:
-    matches = _pattern_evidence(INJECTION_PATTERNS, jd_text)
-    if not matches:
-        return None
-    return SecurityFinding(
-        rule_id="ASI06_PROMPT_INJECTION",
-        severity=FindingSeverity.HIGH,
-        message="Job description contains prompt-injection language.",
-        evidence={"matches": matches},
-    )
-
-
-def detect_pii_request(jd_text: str) -> Optional[SecurityFinding]:
-    matches = _pattern_evidence(PII_REQUEST_PATTERNS, jd_text)
-    if not matches:
-        return None
-    return SecurityFinding(
-        rule_id="ASI06_PII_REQUEST",
-        severity=FindingSeverity.HIGH,
-        message="Job description requests sensitive personal data outside normal application flow.",
-        evidence={"matches": matches},
-    )
 
 
 def _security_finding_from_clawguard(finding) -> SecurityFinding:
@@ -1797,42 +1673,16 @@ def _security_finding_from_clawguard(finding) -> SecurityFinding:
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
     global ASI06_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
-    if ClawGuardASI06JobContentDetector is not None:
-        if not ASI06_DETECTOR_MODE_LOGGED:
-            logger.info("ClawGuard ASI06 detector module active")
-            ASI06_DETECTOR_MODE_LOGGED = True
-        detector = ClawGuardASI06JobContentDetector(
-            skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
-        )
-        return [
-            _security_finding_from_clawguard(finding)
-            for finding in detector.detect(job, jd_text=text)
-        ]
-
     if not ASI06_DETECTOR_MODE_LOGGED:
-        logger.warning("ClawGuard ASI06 detector module unavailable; using inline fallback")
+        logger.info("ClawGuard ASI06 detector module active")
         ASI06_DETECTOR_MODE_LOGGED = True
-
-    findings = [
-        detect_skill_stuffing(text),
-        detect_url_mismatch(job.company, job.url),
-        detect_prompt_injection(text),
-        detect_pii_request(text),
+    detector = ClawGuardASI06JobContentDetector(
+        skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
+    )
+    return [
+        _security_finding_from_clawguard(finding)
+        for finding in detector.detect(job, jd_text=text)
     ]
-    base_context = {
-        "job_id": job.job_id,
-        "job_title": job.title,
-        "company": job.company,
-        "source_platform": job.source,
-        "apply_url": job.url,
-        "source_field": "title_and_description",
-    }
-    active_findings = []
-    for finding in findings:
-        if finding:
-            finding.context = {**base_context, **finding.context}
-            active_findings.append(finding)
-    return active_findings
 
 
 # ============================================================================

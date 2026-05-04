@@ -20,7 +20,7 @@ This repository is a prototype / educational technical asset. It is not claimed 
 
 | Asset | Threat | Current Control |
 |---|---|---|
-| OpenClaw job-search runtime | Prompt injection through job descriptions | ASI06 detector-backed checks with inline fallback |
+| OpenClaw job-search runtime | Prompt injection through job descriptions | ASI06 detector-backed checks |
 | User personal information | Unsafe PII requests in job postings | `ASI06_PII_REQUEST` finding |
 | Job scoring integrity | Keyword stuffing to inflate score | `ASI06_SKILL_STUFFING` finding and score penalty path |
 | Application destination | Phishing or suspicious apply URLs | `ASI06_URL_MISMATCH` finding |

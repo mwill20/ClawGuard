@@ -27,7 +27,7 @@ The format follows a simple chronological log. This project does not currently p
 ### Added
 
 - ASI06 detector module under `detections/asi06_jd_content/detector.py`.
-- Detector-backed OpenClaw runtime integration with inline fallback.
+- Detector-backed OpenClaw runtime integration; inline ASI06 fallback removed after VPS cron confirmation.
 - Lessons curriculum under `lessons/`.
 - Post-compile telemetry hook and baseline telemetry documentation.
 

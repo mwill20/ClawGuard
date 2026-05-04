@@ -187,7 +187,7 @@ The standalone ClawGuard detector module lives at:
 detections/asi06_jd_content/detector.py
 ```
 
-The OpenClaw runtime prefers this module when the `detections/` package is available. The inline implementation remains as a compatibility fallback for single-file VPS deploys.
+The OpenClaw runtime imports this module directly. Deploy `job_search_secure.py` and the `detections/` package together.
 
 ## Application Prep Rules
 

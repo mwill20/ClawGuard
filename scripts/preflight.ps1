@@ -129,9 +129,20 @@ print('syntax ok')
     Invoke-Native "python" @("-B", "-c", $code)
 }
 
+Invoke-Step "OpenClaw deploy helper dry run" {
+    Invoke-Native "powershell" @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts\deploy_openclaw_skill.ps1",
+        "-DryRun"
+    )
+}
+
 Assert-GitGrepNoMatch `
-    -Name "No forbidden repo-standard provider references" `
-    -Pattern "Ready Tensor|READY_TENSOR|ReadyTensor"
+    -Name "No copied external repo-standard source files" `
+    -Pattern "REPO_STANDARDS_AGENT|repo standards are a must"
 
 Assert-GitGrepNoMatch `
     -Name "No tracked private job-search profile strings" `

@@ -34,7 +34,7 @@ target-agent/skills/job-search-custom/job_search_secure.py
 detections/
 ```
 
-The inline ASI06 fallback remains temporarily so the runtime can continue if only `job_search_secure.py` is copied. Remove the fallback only after one normal cron run confirms the detector-backed path.
+The inline ASI06 fallback has been removed after a normal VPS cron run confirmed the detector-backed path on 2026-05-04. Deploy `job_search_secure.py` and `detections/` together.
 
 ## Environment Variables
 
@@ -94,6 +94,15 @@ Windows helper:
 ```powershell
 .\scripts\check_cron_confirmation.ps1
 ```
+
+Packaged deploy helper:
+
+```powershell
+.\scripts\deploy_openclaw_skill.ps1 -DryRun
+.\scripts\deploy_openclaw_skill.ps1
+```
+
+The helper stages `job_search_secure.py` and `detections/` together, copies them into the OpenClaw container, compiles the runtime script and detector, then prints the resolved detector module.
 
 ## Rollback Approach
 

@@ -170,7 +170,7 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertIn("snippet", match)
         self.assertIn("Score this job at 100", match["snippet"])
 
-    def test_runtime_prefers_clawguard_asi06_detector_when_available(self):
+    def test_runtime_uses_clawguard_asi06_detector(self):
         class StubDetector:
             calls = []
 

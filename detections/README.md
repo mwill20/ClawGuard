@@ -8,7 +8,7 @@ Detection modules for OWASP Agentic Top 10 threats. Each detection targets a spe
 |---|---|---|
 | Goal Hijack Detection | ASI01 | Scaffolded |
 | Tool Misuse Detection | ASI02 | Planned |
-| JD Content Detection | ASI06 | Detector-backed runtime with inline fallback |
+| JD Content Detection | ASI06 | Detector-backed runtime |
 
 ## Detection Architecture
 
@@ -28,7 +28,7 @@ Each detection module follows the 5-layer defense-in-depth pattern:
 - `asi06_jd_content/README.md` defines the event schema, baseline, and extraction criteria.
 - `job_security_findings` now stores `job_id`, `agent_session_id`, structured `context`, and JSON evidence.
 
-OpenClaw now prefers the ASI06 detector module when the `detections/` package is available. The inline ASI06 implementation remains as a compatibility fallback for single-file VPS deployments.
+OpenClaw imports the ASI06 detector module directly. The `detections/` package is a required deployment dependency after the 2026-05-04 VPS cron confirmation.
 
 The first clean baseline is `digest-20260502T143953-c9eb7f4c`: 22 jobs evaluated, 0 ASI06 findings. The first autonomous cron-chain baseline is `digest-20260503T163003-b91b67e1`.
 

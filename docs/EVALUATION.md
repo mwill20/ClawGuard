@@ -125,7 +125,7 @@ Zero findings are treated as clean-content telemetry, not as a failed detector.
 
 | Failure Case | Current Handling | Future Improvement |
 |---|---|---|
-| Missing `detections/` package in VPS single-file deploy | Inline ASI06 fallback | Remove fallback after cron confirmation and package deploy path |
+| Missing `detections/` package in deploy | Runtime import fails fast | Package `job_search_secure.py` and `detections/` together |
 | Ambiguous security job mentioning prompt injection defensively | Synthetic fixture includes one clean defensive mention | Add larger real-world false-positive set and semantic review for ambiguous cases |
 | Only a small synthetic labeled fixture exists | Metrics are scoped and caveated | Build larger curated real-world fixture set |
 | Provider returns duplicate jobs | Digest may show 0 new jobs | Improve daily digest wording |

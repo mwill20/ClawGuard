@@ -51,6 +51,12 @@ Export latest telemetry:
 .\scripts\export_latest_telemetry.ps1
 ```
 
+Deploy the OpenClaw runtime package after code changes:
+
+```powershell
+.\scripts\deploy_openclaw_skill.ps1
+```
+
 Run the full local preflight before committing:
 
 ```powershell

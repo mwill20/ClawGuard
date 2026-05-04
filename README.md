@@ -13,7 +13,7 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 ## Key Features
 
 - Detector-backed ASI06 checks for prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches.
-- OpenClaw runtime integration with an inline fallback retained until one normal cron run confirms the detector-backed path.
+- OpenClaw runtime integration that requires the packaged ASI06 detector module.
 - SQLite persistence for jobs, scores, search runs, quota state, and `job_security_findings`.
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
@@ -50,7 +50,7 @@ Current status: prototype / educational technical asset with a live internal Ope
 
 The repo has runnable local tests and documented VPS operational telemetry, but it is not claimed to be production-ready. The current live deployment is used as a controlled telemetry source for ClawGuard Phase 1.
 
-Last updated: 2026-05-03.
+Last updated: 2026-05-04.
 
 ## Responsible Use
 
@@ -83,7 +83,7 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 |---|---|---|
 | Goal hijack detection | ASI01 | Scaffolded after three clean OpenClaw telemetry sessions |
 | Tool misuse detection | ASI02 | Planned |
-| Job-description content detection | ASI06 | Detector-backed runtime with inline fallback |
+| Job-description content detection | ASI06 | Detector-backed runtime |
 
 The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing `pattern`, `matched_text`, and `snippet`.
 
@@ -129,6 +129,7 @@ ClawGuard/
   scripts/
     check_cron_confirmation.ps1
     check_latest_telemetry.ps1
+    deploy_openclaw_skill.ps1
     evaluate_asi06.py
     export_latest_telemetry.ps1
     preflight.ps1
@@ -357,7 +358,7 @@ Important current limitations:
 - ASI06 is deterministic and regex/rule based; semantic fallback is planned, not implemented.
 - ASI01 is scaffolded, not runtime implemented.
 - Precision and recall are measured only against a small synthetic fixture, not a real-world corpus.
-- The inline ASI06 fallback remains until one normal daily cron confirms the detector-backed path.
+- The OpenClaw deployment now requires `job_search_secure.py` and the `detections/` package to deploy together.
 
 ## Deployment
 
@@ -376,6 +377,7 @@ Local helper scripts:
 .\scripts\check_cron_confirmation.ps1
 .\scripts\check_latest_telemetry.ps1
 .\scripts\export_latest_telemetry.ps1
+.\scripts\deploy_openclaw_skill.ps1 -DryRun
 ```
 
 ## Lessons

@@ -67,7 +67,7 @@ Project implements:
 - `test_detector_returns_contextual_findings_for_job_mapping`: all four ASI06 rules fire on hostile input.
 - `test_safe_apply_domains_do_not_trigger_url_mismatch`: trusted ATS domains avoid false positives.
 - `test_finding_can_serialize_to_db_ready_record`: detector output can become SQLite rows.
-- `test_runtime_prefers_clawguard_asi06_detector_when_available`: runtime uses detector before fallback.
+- `test_runtime_uses_clawguard_asi06_detector`: runtime calls the detector module.
 - `test_load_profile_supports_private_env_path`: private profile data can live outside Git via `CLAWGUARD_PROFILE_PATH`.
 - `test_labeled_fixture_metrics_are_reproducible`: synthetic ASI06 fixture metrics stay stable.
 - `test_sample_telemetry_matches_schema`: sample post-compile telemetry follows the expected JSON shape.
@@ -76,7 +76,7 @@ Project implements:
 Recommended (not implemented here):
 
 - A test that runs the post-compile hook against a fixture database.
-- A test that asserts fallback removal after confirmed cron.
+- A test that validates packaged deploy contents before copying to the VPS.
 - A test that validates exported VPS `telemetry_latest.json`, not just the local sample.
 
 ## 3. Code Walkthrough Section
@@ -117,12 +117,12 @@ def test_detector_returns_contextual_findings_for_job_mapping(self):
 
 Why: one adversarial sample triggers prompt injection, PII request, skill stuffing, and URL mismatch. This protects the detector contract.
 
-### Runtime preference test
+### Runtime detector test
 
-File: `tests/test_job_search_secure.py:136`
+File: `tests/test_job_search_secure.py:173`
 
 ```python
-def test_runtime_prefers_clawguard_asi06_detector_when_available(self):
+def test_runtime_uses_clawguard_asi06_detector(self):
     class StubDetector:
         calls = []
 ```
@@ -134,7 +134,7 @@ What it does:
 3. Asserts the stub was called.
 4. Confirms output is converted to `SecurityFinding`.
 
-Why: this test prevents future refactors from silently using inline fallback when the detector package is present.
+Why: this test prevents future refactors from bypassing the detector module.
 
 ### DB queryability test
 
@@ -277,9 +277,9 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 
 ## 5. Interview Preparation Section
 
-**Q: What does the runtime preference test prove?**
+**Q: What does the runtime detector test prove?**
 
-**A:** It proves `job_search_secure.py` calls the detector module when available. That matters because fallback code exists; without the test, a refactor could accidentally use the fallback forever.
+**A:** It proves `job_search_secure.py` calls the ClawGuard detector module and converts its output into runtime findings. That matters because the detector module is now the single ASI06 implementation.
 
 **Q: Why include a red-team lesson dataset when tests already have hostile samples?**
 
@@ -310,7 +310,7 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 | Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
 | Current total | 15 tests |
-| Core proof | Detector path preferred over fallback |
+| Core proof | Detector path used by OpenClaw runtime |
 
 ## 8. Next Steps
 

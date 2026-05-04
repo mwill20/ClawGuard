@@ -42,7 +42,7 @@ Check provider logs before treating this as a failure:
 .\scripts\check_latest_telemetry.ps1
 ```
 
-## Detector mode appears to fall back inline
+## Detector module import fails
 
 Expected detector-backed signal:
 
@@ -50,13 +50,13 @@ Expected detector-backed signal:
 ClawGuard ASI06 detector module active
 ```
 
-If fallback appears:
+If the runtime cannot import the detector module, startup fails with an import error similar to:
 
 ```text
-ClawGuard ASI06 detector module unavailable; using inline fallback
+ModuleNotFoundError: No module named 'detections'
 ```
 
-Check that `detections/` was copied next to `job_search_secure.py` in the OpenClaw skill directory.
+Check that `detections/` was copied with `job_search_secure.py` and that commands are running from the repository root or packaged OpenClaw skill directory.
 
 ## `.env` appears locally
 

@@ -1,0 +1,110 @@
+param(
+    [string]$Remote = "root@31.97.139.139",
+    [string]$Container = "openclaw-utxu-openclaw-1",
+    [string]$SkillDir = "/usr/local/lib/node_modules/openclaw/skills/job-search-custom",
+    [string]$RemoteStageBase = "/tmp/clawguard-openclaw-deploy",
+    [string]$TempDir = (Join-Path $env:TEMP "clawguard-openclaw-deploy"),
+    [switch]$DryRun
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$JobScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\job_search_secure.py"
+$DetectionsDir = Join-Path $RepoRoot "detections"
+$RemoteStage = "$RemoteStageBase-$PID"
+if (-not $RemoteStage.StartsWith("/tmp/clawguard-openclaw-deploy-")) {
+    throw "RemoteStage must stay under /tmp/clawguard-openclaw-deploy-*"
+}
+
+function ConvertTo-ShellLiteral {
+    param([string]$Value)
+    return "'" + ($Value -replace "'", "'\''") + "'"
+}
+
+function Invoke-Native {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments
+    )
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$FilePath failed with exit code $LASTEXITCODE"
+    }
+}
+
+if (-not (Test-Path -LiteralPath $JobScript)) {
+    throw "Missing runtime script: $JobScript"
+}
+if (-not (Test-Path -LiteralPath $DetectionsDir)) {
+    throw "Missing detections package: $DetectionsDir"
+}
+
+$quotedStage = ConvertTo-ShellLiteral $RemoteStage
+$quotedSkillDir = ConvertTo-ShellLiteral $SkillDir
+$quotedContainer = ConvertTo-ShellLiteral $Container
+$jobContainerPath = "${Container}:${SkillDir}/job_search_secure.py"
+$detectionsContainerPath = "${Container}:${SkillDir}/detections"
+
+$remoteScript = @"
+set -e
+trap "rm -rf $quotedStage" EXIT
+echo "Deploying OpenClaw skill package into $SkillDir"
+docker cp "$RemoteStage/job_search_secure.py" "$jobContainerPath"
+docker exec $quotedContainer mkdir -p "$SkillDir/detections"
+docker cp "$RemoteStage/detections/." "$detectionsContainerPath"
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py detections/asi06_jd_content/detector.py
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; print('detector_module=' + m.ClawGuardASI06JobContentDetector.__module__)"
+echo "Deploy complete."
+"@
+
+if ($DryRun) {
+    Write-Host "Remote: $Remote"
+    Write-Host "Container: $Container"
+    Write-Host "SkillDir: $SkillDir"
+    Write-Host "JobScript: $JobScript"
+    Write-Host "DetectionsDir: $DetectionsDir"
+    Write-Host "RemoteStage: $RemoteStage"
+    Write-Host "Remote transport: scp temp script, then ssh -o BatchMode=yes $Remote bash /tmp/<script>"
+    Write-Host ""
+    Write-Host "Remote script:"
+    Write-Host $remoteScript
+    Write-Host ""
+    Write-Host "Dry run complete."
+    exit 0
+}
+
+Write-Host "Deploying OpenClaw skill package to $Remote..."
+Write-Host "  runtime: $JobScript"
+Write-Host "  detections: $DetectionsDir"
+Write-Host ""
+
+Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, "mkdir -p $quotedStage")
+Invoke-Native "scp" @($JobScript, "${Remote}:$RemoteStage/job_search_secure.py")
+Invoke-Native "scp" @("-r", $DetectionsDir, "${Remote}:$RemoteStage/detections")
+
+New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
+$localRemoteScript = Join-Path $TempDir "deploy_openclaw_skill_$PID.sh"
+$remoteScriptPath = "/tmp/deploy_openclaw_skill_$PID.sh"
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText(
+    $localRemoteScript,
+    (($remoteScript -replace "`r`n", "`n") + "`n"),
+    $utf8NoBom
+)
+
+try {
+    Invoke-Native "scp" @($localRemoteScript, "${Remote}:$remoteScriptPath")
+    $remoteRunCommand = "bash $remoteScriptPath; rc=`$?; rm -f $remoteScriptPath; exit `$rc"
+    Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, $remoteRunCommand)
+}
+finally {
+    if (Test-Path -LiteralPath $localRemoteScript) {
+        Remove-Item -LiteralPath $localRemoteScript -Force
+    }
+}
+
+Write-Host ""
+Write-Host "OpenClaw skill package deployed and syntax-checked."

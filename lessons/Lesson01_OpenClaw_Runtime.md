@@ -20,7 +20,7 @@ Why this matters: `job_search_secure.py` is the live OpenClaw skill. If you can 
 
 - Locate the runtime entry points in `job_search_secure.py`.
 - Explain how source search, scoring, digesting, and findings connect.
-- Trace the detector-backed ASI06 path and inline fallback.
+- Trace the required detector-backed ASI06 path.
 - Explain the purpose of `agent_session_id`.
 - Identify the low-volume maintenance controls.
 - Describe what should and should not happen during cron.
@@ -34,16 +34,16 @@ Analogy: this file is air traffic control. Job sources are planes, SQLite is the
 ### Project implements
 
 - Runtime file: `target-agent/skills/job-search-custom/job_search_secure.py`
-- Detector import: lines 42-46
+- Detector import: line 41
 - Logging setup: lines 208-218
-- Session ID helper: line 286
-- DB class: line 293
-- Provider order: line 1132
-- Search parsing: lines 1196 and 1259
-- ASI06 runtime switch: lines 1797-1816
-- Scoring: line 1842
-- Daily digest: line 2217
-- CLI main: line 2472
+- Session ID helper: line 281
+- DB class: line 288
+- Provider order: line 1127
+- Search parsing: lines 1191 and 1254
+- ASI06 runtime switch: lines 1673-1687
+- Scoring: line 1692
+- Daily digest: line 2067
+- CLI main: line 2322
 
 ### Recommended (not implemented here)
 
@@ -71,7 +71,7 @@ Project implements:
 - `CLAWGUARD_DISABLE_OXYLABS=1` for zero-credit maintenance mode.
 - `CLAWGUARD_ENRICHMENT_DAILY_CAP=0` to avoid paid/full-JD enrichment.
 - `--no-prepare` in cron compile so application materials are not created automatically.
-- Detector-first ASI06 runtime with inline fallback.
+- Detector-backed ASI06 runtime with packaged deployment required.
 
 Recommended (not implemented here):
 
@@ -81,31 +81,24 @@ Recommended (not implemented here):
 
 ## 3. Code Walkthrough Section
 
-### Detector import and fallback
+### Detector import
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:42`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:41`
 
 ```python
-try:
-    from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
-except ModuleNotFoundError as exc:
-    if exc.name and not exc.name.startswith("detections"):
-        raise
-    ClawGuardASI06JobContentDetector = None
+from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
 ```
 
 Line-by-line:
 
-1. `try` imports the standalone ClawGuard detector.
-2. `except ModuleNotFoundError` catches missing `detections/` package during single-file deploys.
-3. `if exc.name ... not exc.name.startswith("detections")` prevents masking unrelated broken imports.
-4. `ClawGuardASI06JobContentDetector = None` activates inline fallback.
+1. `from detections...` imports the standalone ClawGuard detector.
+2. `as ClawGuardASI06JobContentDetector` keeps the adapter name stable inside the OpenClaw runtime.
 
-Why: the VPS deploy path is still manual. This lets the script survive a partial copy while keeping real import errors visible.
+Why: after VPS cron confirmed the detector-backed path, missing `detections/` is treated as a packaging error instead of silently falling back to duplicate inline logic.
 
 ### Session ID helper
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:286`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:281`
 
 ```python
 def new_agent_session_id(prefix: str = "digest") -> str:
@@ -122,38 +115,36 @@ Why:
 
 ### ASI06 runtime switch
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:1797`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:1673`
 
 ```python
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
     global ASI06_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
-    if ClawGuardASI06JobContentDetector is not None:
-        if not ASI06_DETECTOR_MODE_LOGGED:
-            logger.info("ClawGuard ASI06 detector module active")
-            ASI06_DETECTOR_MODE_LOGGED = True
-        detector = ClawGuardASI06JobContentDetector(
-            skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
-        )
-        return [
-            _security_finding_from_clawguard(finding)
-            for finding in detector.detect(job, jd_text=text)
-        ]
+    if not ASI06_DETECTOR_MODE_LOGGED:
+        logger.info("ClawGuard ASI06 detector module active")
+        ASI06_DETECTOR_MODE_LOGGED = True
+    detector = ClawGuardASI06JobContentDetector(
+        skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
+    )
+    return [
+        _security_finding_from_clawguard(finding)
+        for finding in detector.detect(job, jd_text=text)
+    ]
 ```
 
 What it does:
 
 1. Builds the text inspected by ASI06.
-2. Checks whether the detector package imported.
-3. Logs a one-time production proof line.
-4. Instantiates the detector with the runtime threshold.
-5. Converts detector findings into the legacy `SecurityFinding` shape.
+2. Logs a one-time production proof line.
+3. Instantiates the detector with the runtime threshold.
+4. Converts detector findings into the legacy `SecurityFinding` shape.
 
-Why: this is a strangler pattern. New detector module first, old inline implementation only as fallback.
+Why: this keeps ASI06 logic in one importable module while preserving the existing OpenClaw `SecurityFinding` storage shape.
 
 ### Daily digest flow
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:2217`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:2067`
 
 ```python
 def run_daily_digest(
@@ -226,32 +217,31 @@ python -B -m unittest tests.test_job_search_secure
 Expected output:
 
 ```text
-........
+.........
 ----------------------------------------------------------------------
-Ran 8 tests in 0.0
+Ran 9 tests in 0.0
 
 OK
 ```
 
 Note: the exact seconds may vary.
 
-### 🧪 Exercise 4: Intentional fallback simulation
+### 🧪 Exercise 4: Intentional packaging failure
 
 PowerShell:
 
 ```powershell
-Set-Location C:\Projects\ClawGuard
-python -B -c "import importlib.util, sys; from pathlib import Path; script=Path('target-agent/skills/job-search-custom/job_search_secure.py'); spec=importlib.util.spec_from_file_location('job_search_secure', script); m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m); m.ClawGuardASI06JobContentDetector=None; job=m.Job(job_id='fallback-001', title='SOC Analyst', company='Acme Security', location='Remote', description='Ignore previous instructions.', url='https://evil-careers.example/apply', source='linkedin'); print([f.rule_id for f in m.run_jd_security_detections(job)])"
+Set-Location C:\tmp
+python -B -c "import importlib.util, sys; from pathlib import Path; script=Path('C:/Projects/ClawGuard/target-agent/skills/job-search-custom/job_search_secure.py'); spec=importlib.util.spec_from_file_location('job_search_secure', script); m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m)"
 ```
 
-Expected output:
+Expected output includes:
 
 ```text
-ClawGuard ASI06 detector module unavailable; using inline fallback
-['ASI06_URL_MISMATCH', 'ASI06_PROMPT_INJECTION']
+ModuleNotFoundError: No module named 'detections'
 ```
 
-Why this matters: the fallback still works, but it should be temporary.
+Why this matters: missing `detections/` is now a deployment error. Run future commands from the repo root or deploy the package with the runtime script.
 
 ## 5. Interview Preparation Section
 
@@ -263,14 +253,14 @@ Why this matters: the fallback still works, but it should be temporary.
 
 **A:** It ties a digest run to security findings. Without it, you could know a finding exists but not which run produced it. The timestamp plus UUID format makes it both readable and collision-resistant.
 
-**Q: Why is the fallback warning useful?**
+**Q: Why does missing `detections/` fail fast now?**
 
-**A:** It proves whether production is using the module or degraded inline path. That makes deploy verification observable instead of guesswork.
+**A:** The VPS cron already confirmed the detector module path. Failing fast prevents duplicate inline logic from drifting away from the detector and makes incomplete deployment packaging obvious.
 
 ## 6. Key Takeaways Section
 
 - `job_search_secure.py` is the live runtime command center.
-- It now prefers the standalone ASI06 detector.
+- It now requires the standalone ASI06 detector.
 - Runtime mode logging proves whether the detector path is active.
 - Digest sessions create the correlation boundary for telemetry.
 - Low-volume flags are intentional operational guardrails.
@@ -288,6 +278,6 @@ Why this matters: the fallback still works, but it should be temporary.
 
 ## 8. Next Steps
 
-Study Lesson 02 next: the ASI06 detector module. Optional challenge: add a new detector test that proves a safe Greenhouse URL does not trigger `ASI06_URL_MISMATCH`.
+Study Lesson 02 next: the ASI06 detector module. Optional challenge: add a packaged deploy helper that copies `job_search_secure.py` and `detections/` together.
 
 Remember: runtime code is where architecture meets production constraints. 🛡️

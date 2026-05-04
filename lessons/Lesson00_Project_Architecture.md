@@ -23,7 +23,7 @@ Why this matters: ClawGuard is not just a detector library. It is an operational
 - Distinguish implemented detector behavior from future guardrail plans.
 - Trace how a job posting becomes a scored job and optional security finding.
 - Describe why zero findings are still useful telemetry.
-- Explain why the inline ASI06 fallback still exists.
+- Explain why the ASI06 detector module is now a required deployment dependency.
 
 ### Plain-English explanation
 
@@ -59,7 +59,7 @@ Without this architecture, the project would be a set of disconnected scripts. W
 | ASI01 | Goal hijacking and instruction override; scaffolded, not runtime implemented. |
 | `agent_session_id` | Correlation ID like `digest-20260503T163003-b91b67e1`. |
 | Clean baseline | A run with zero findings that proves the pipeline can run without noise. |
-| Inline fallback | Old ASI06 code kept inside `job_search_secure.py` until the detector-backed VPS path is confirmed by cron. |
+| Detector-only ASI06 runtime | `job_search_secure.py` imports `detections/asi06_jd_content/detector.py` directly after VPS cron confirmation. |
 
 ### Larger architecture
 
@@ -80,7 +80,7 @@ Job source APIs
 Project implements:
 
 - Low-volume daily runs so OpenClaw acts as telemetry generator, not application machine.
-- Detector-backed ASI06 path with inline fallback for manual VPS deploy safety.
+- Detector-backed ASI06 path as the required runtime dependency.
 - Manual telemetry export instead of auto-pushing from the VPS.
 
 Recommended (not implemented here):
@@ -140,7 +140,7 @@ Why it is designed this way: real detection work needs repeatable inputs and evi
 |---|---|
 | Treating 0 findings as failure | Reading clean baselines as noise-control evidence. |
 | Claiming ASI01 runtime exists | Saying ASI01 is scaffolded and semantic-first, not implemented. |
-| Removing inline fallback too early | Waiting for one normal cron run through the detector-backed path. |
+| Deploying only one runtime file | Deploying `job_search_secure.py` and `detections/` together. |
 
 ## 4. Hands-On Exercises Section
 
@@ -194,9 +194,9 @@ git log --oneline -5
 Expected output begins:
 
 ```text
-11d0189 Log ASI06 detector runtime mode
-5a9405a Wire OpenClaw to ASI06 detector
-95025fb Implement ASI06 detector module
+6bc0055 Fix cron confirmation SSH transport
+eaff230 Add local automation helpers
+75fab8f Sanitize tracked job-search profile samples
 ```
 
 ### 🧪 Exercise 4: Intentional failure check
@@ -226,9 +226,9 @@ Why this matters: the ASI06 runtime catches missing `detections` package imports
 
 **A:** Synthetic data is useful for tests, but real job-board output reveals provider behavior, duplicate rates, zero-result paths, cron behavior, and telemetry gaps. The project still uses synthetic red-team data in tests, but the architecture is grounded in live runs. That demonstrates production thinking.
 
-**Q: Why keep the ASI06 inline fallback after adding `detector.py`?**
+**Q: Why remove the ASI06 inline fallback after adding `detector.py`?**
 
-**A:** The VPS deployment can still copy one script manually. If the `detections/` package is missing, the script should continue recording ASI06 checks instead of breaking. The fallback is temporary and should be removed after one normal cron confirms the detector-backed path. This shows safe cutover discipline.
+**A:** The fallback was useful during cutover, but after a normal VPS cron confirmed the detector-backed path, keeping duplicate detection logic creates drift risk. Now a missing `detections/` package fails fast, which makes packaging errors visible and keeps the module boundary clean.
 
 ## 6. Key Takeaways Section
 

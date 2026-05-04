@@ -1,6 +1,6 @@
 # ASI06 JD Content Detection
 
-Status: Detector module implemented; OpenClaw runtime prefers detector with inline fallback
+Status: Detector module implemented; OpenClaw runtime requires detector
 
 This module will house ClawGuard detection rules for adversarial or unsafe job-description content observed through the OpenClaw `job-search-custom` pipeline.
 
@@ -16,7 +16,7 @@ OpenClaw runtime integration lives in:
 target-agent/skills/job-search-custom/job_search_secure.py
 ```
 
-The OpenClaw runtime imports this detector when the `detections/` package is present. The previous inline implementation remains as a compatibility fallback for single-file VPS deploys.
+The OpenClaw runtime imports this detector directly. The previous inline implementation was removed after VPS cron confirmed the detector-backed path on 2026-05-04.
 
 ## Planned Rules
 
@@ -77,4 +77,4 @@ Each finding includes `rule_id`, `severity`, `message`, `evidence`, and `context
 
 ## Next Step
 
-Ship the `detections/` package with the next VPS deployment, verify detector-backed ASI06 findings, then remove the inline fallback. Three clean sessions have landed, so ASI01 is now scaffolded separately while ASI06 has the first importable detection engine module.
+Package `job_search_secure.py` and `detections/` together for the next VPS deployment. Three clean sessions have landed, so ASI01 is now scaffolded separately while ASI06 has the first importable detection engine module.

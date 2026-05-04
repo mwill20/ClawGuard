@@ -144,7 +144,7 @@ if ($sshExit -ne 0) {
 
 $detectorConfirmed = $outputText -match "__CLAWGUARD_DETECTOR_OK=1"
 if (-not $detectorConfirmed) {
-    throw "Detector module confirmation line was not found. Keep the inline fallback and inspect the cron logs."
+    throw "Detector module confirmation line was not found. Inspect cron logs and redeploy job_search_secure.py with the detections package."
 }
 
 if (-not $SkipTelemetryValidation) {

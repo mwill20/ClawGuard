@@ -222,6 +222,6 @@ Why: this keeps interview language honest.
 
 ## 8. Next Steps
 
-Next module to study after fallback removal: ASI01 `detector.py`. Optional advanced topic: design a policy schema that defines allowed OpenClaw actions during maintenance mode.
+Next module to study: ASI01 `detector.py`. Optional advanced topic: design a policy schema that defines allowed OpenClaw actions during maintenance mode.
 
 Remember: the best detector roadmap says what is implemented and what is not. 🛡️

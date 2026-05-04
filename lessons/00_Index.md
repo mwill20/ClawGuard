@@ -5,7 +5,7 @@ Assumptions and scope:
 - Line references are current for the Phase 1 lesson pass and should be rechecked after code movement.
 - Lessons live in the existing lowercase `lessons/` directory.
 - VPS commands target the current OpenClaw host `root@31.97.139.139` and container `openclaw-utxu-openclaw-1`.
-- The inline ASI06 fallback is still intentionally retained until one normal daily cron run confirms the detector-backed path.
+- ASI06 now uses the detector module as the required runtime path after VPS cron confirmation on 2026-05-04.
 
 ## Required Curriculum
 
@@ -17,7 +17,7 @@ Assumptions and scope:
 | 03 | [The Evidence Ledger - SQLite Findings](Lesson03_SQLite_Telemetry_Ledger.md) | `JobDatabase` and `job_security_findings` | Required |
 | 04 | [The Black Box Recorder - Cron and Telemetry Hook](Lesson04_Cron_And_Post_Compile_Telemetry.md) | `staggered_cron.sh`, `clawguard_post_compile.sh`, helper scripts | Required |
 | 05 | [The Proving Ground - Tests and Defense Lab](Lesson05_Testing_And_Defense_Lab.md) | `tests/` plus red-team sample data | Required |
-| 06 | [The Next Detector - ASI01 Scaffold](Lesson06_ASI01_Goal_Hijack_Scaffold.md) | `detections/asi01_goal_hijack/ASI01-001.md` | Optional until ASI06 fallback removal |
+| 06 | [The Next Detector - ASI01 Scaffold](Lesson06_ASI01_Goal_Hijack_Scaffold.md) | `detections/asi01_goal_hijack/ASI01-001.md` | Optional roadmap |
 
 ## Phase Map
 
@@ -36,7 +36,7 @@ OpenClaw source search
 - Daily low-volume OpenClaw maintenance searches for LinkedIn, CyberSecJobs, and USAJobs.
 - Zero-credit provider posture with Brave Search and native USAJobs API.
 - SQLite persistence for jobs, search runs, quota, and `job_security_findings`.
-- ASI06 detector module with runtime integration and inline fallback.
+- ASI06 detector module as the required runtime integration.
 - Post-compile telemetry JSON/Markdown artifacts.
 - Local regression tests for parser behavior, session IDs, detector behavior, and DB queryability.
 - GitHub Actions CI for unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation.

@@ -147,6 +147,13 @@ Confirm the daily cron used the detector-backed ASI06 path:
 .\scripts\check_cron_confirmation.ps1
 ```
 
+Deploy the OpenClaw runtime and detector package together:
+
+```powershell
+.\scripts\deploy_openclaw_skill.ps1 -DryRun
+.\scripts\deploy_openclaw_skill.ps1
+```
+
 Export latest telemetry into a local curated folder:
 
 ```powershell
@@ -163,6 +170,7 @@ Export latest telemetry into a local curated folder:
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |
 | Confirm detector-backed cron | `.\scripts\check_cron_confirmation.ps1` |
+| Deploy OpenClaw package | `.\scripts\deploy_openclaw_skill.ps1` |
 | Check deployment telemetry | `.\scripts\check_latest_telemetry.ps1` |
 
 ## Error Examples

@@ -15,7 +15,7 @@
 
 | Failure Mode | Current Impact | Current Mitigation |
 |---|---|---|
-| `detections/` package missing during VPS deploy | Runtime uses inline ASI06 fallback | Temporary fallback and runtime log signal |
+| `detections/` package missing during VPS deploy | Runtime import fails fast | Package `job_search_secure.py` and `detections/` together |
 | Provider returns duplicates | Digest may show 0 new jobs | Baseline docs distinguish duplicate results from pipeline failure |
 | Provider returns 0 jobs | Digest may be empty | Source-level logs preserve provider behavior |
 | Prompt injection phrased subtly | Regex may miss it | Future semantic review planned |
@@ -47,12 +47,12 @@ Do not use this project as:
 | Deterministic ASI06 rules | Simple, explainable, testable | Misses subtle semantic attacks |
 | SQLite persistence | Easy local inspection | Limited scale/concurrency |
 | Manual telemetry export | Avoids VPS auto-push risk | Requires operator discipline |
-| Inline fallback | Safer manual deploy cutover | Temporary duplicate logic |
+| Detector-only ASI06 runtime | Removes duplicate logic after confirmation | Requires packaged deploy of `job_search_secure.py` and `detections/` |
 | Low-volume cron | Lower cost/noise | Slower data accumulation |
 
 ## Future Work
 
-- Remove inline ASI06 fallback after normal cron confirmation.
+- Package `job_search_secure.py` and `detections/` as one deployment unit.
 - Add ASI01 runtime detector after live redirect evidence or ASI06 prompt-injection signal.
 - Wire telemetry validation into exported VPS artifacts or hook post-checks.
 - Add a larger real-world ASI06 evaluation fixture set.
