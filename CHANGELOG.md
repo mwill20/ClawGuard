@@ -14,6 +14,7 @@ The format follows a simple chronological log. This project does not currently p
 - GitHub Actions CI for unit tests and synthetic ASI06 fixture evaluation.
 - Synthetic ASI06 labeled fixture, evaluator script, and stable metrics artifact.
 - Telemetry sample JSON and schema validator.
+- Local preflight and cron-confirmation PowerShell helpers.
 
 ### Current Phase
 

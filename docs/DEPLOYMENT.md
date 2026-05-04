@@ -89,6 +89,12 @@ Post-compile check:
 cat /data/clawguard/telemetry/telemetry_latest.md
 ```
 
+Windows helper:
+
+```powershell
+.\scripts\check_cron_confirmation.ps1
+```
+
 ## Rollback Approach
 
 Current rollback is manual:

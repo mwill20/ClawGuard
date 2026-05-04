@@ -75,6 +75,12 @@ Run OpenClaw runtime tests only:
 python -B -m unittest tests.test_job_search_secure
 ```
 
+Run the full local preflight:
+
+```powershell
+.\scripts\preflight.ps1
+```
+
 ## ASI06 Labeled Fixture Evaluation
 
 Run the small synthetic labeled fixture evaluation:
@@ -135,6 +141,12 @@ Inspect latest telemetry without exporting:
 .\scripts\check_latest_telemetry.ps1
 ```
 
+Confirm the daily cron used the detector-backed ASI06 path:
+
+```powershell
+.\scripts\check_cron_confirmation.ps1
+```
+
 Export latest telemetry into a local curated folder:
 
 ```powershell
@@ -145,11 +157,12 @@ Export latest telemetry into a local curated folder:
 
 | Workflow | Command |
 |---|---|
-| Validate local repo | `python -B -m unittest discover -s tests` |
+| Validate local repo | `.\scripts\preflight.ps1` |
 | Run ASI06 fixture metrics | `python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
 | Validate telemetry sample | `python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json` |
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |
+| Confirm detector-backed cron | `.\scripts\check_cron_confirmation.ps1` |
 | Check deployment telemetry | `.\scripts\check_latest_telemetry.ps1` |
 
 ## Error Examples

@@ -39,10 +39,22 @@ Inspect latest telemetry:
 .\scripts\check_latest_telemetry.ps1
 ```
 
+Confirm the daily cron used the detector-backed ASI06 path:
+
+```powershell
+.\scripts\check_cron_confirmation.ps1
+```
+
 Export latest telemetry:
 
 ```powershell
 .\scripts\export_latest_telemetry.ps1
+```
+
+Run the full local preflight before committing:
+
+```powershell
+.\scripts\preflight.ps1
 ```
 
 ## Maintenance Schedule
@@ -61,7 +73,7 @@ Current daily schedule:
 Manual checks:
 
 ```powershell
-python -B -m unittest discover -s tests
+.\scripts\preflight.ps1
 .\scripts\check_latest_telemetry.ps1
 ```
 

@@ -18,7 +18,8 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
 - Ready-to-run unit tests and ASI06 sample input/output examples.
-- GitHub Actions CI for unit tests and synthetic ASI06 fixture evaluation.
+- GitHub Actions CI for unit tests, synthetic ASI06 fixture evaluation, and telemetry validation.
+- Local preflight and cron-confirmation helper scripts for repeatable operator checks.
 - Teaching curriculum under `lessons/`.
 
 ## Intended Audience
@@ -126,7 +127,11 @@ ClawGuard/
     skills/job-search-custom/
   lessons/
   scripts/
+    check_cron_confirmation.ps1
+    check_latest_telemetry.ps1
     evaluate_asi06.py
+    export_latest_telemetry.ps1
+    preflight.ps1
     validate_telemetry.py
   tests/
 ```
@@ -367,6 +372,8 @@ See [docs/MONITORING.md](docs/MONITORING.md).
 Local helper scripts:
 
 ```powershell
+.\scripts\preflight.ps1
+.\scripts\check_cron_confirmation.ps1
 .\scripts\check_latest_telemetry.ps1
 .\scripts\export_latest_telemetry.ps1
 ```
