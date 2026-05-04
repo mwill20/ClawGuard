@@ -31,7 +31,7 @@ function Invoke-Native {
     }
 }
 
-$remoteCommand = @"
+$remoteScript = @"
 set -u
 LOG_DIR=$(ConvertTo-ShellLiteral $LogDir)
 TELEMETRY_DIR=$(ConvertTo-ShellLiteral $TelemetryDir)
@@ -84,8 +84,9 @@ fi
 
 if ($DryRun) {
     Write-Host "Remote target: $Remote"
-    Write-Host "Remote command:"
-    Write-Host $remoteCommand
+    Write-Host "Remote transport: scp temp script, then ssh -o BatchMode=yes $Remote bash /tmp/<script>"
+    Write-Host "Remote script:"
+    Write-Host $remoteScript
     Write-Host ""
     Write-Host "Dry run complete."
     exit 0
@@ -94,14 +95,54 @@ if ($DryRun) {
 Write-Host "Checking OpenClaw cron confirmation on $Remote for $Date..."
 Write-Host ""
 
-$output = & ssh -o BatchMode=yes $Remote $remoteCommand 2>&1
-$sshExit = $LASTEXITCODE
-$output | ForEach-Object { Write-Host $_ }
+New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
+$localScript = Join-Path $TempDir "clawguard_cron_confirmation_$PID.sh"
+$remoteScriptPath = "/tmp/clawguard_cron_confirmation_$PID.sh"
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText(
+    $localScript,
+    (($remoteScript -replace "`r`n", "`n") + "`n"),
+    $utf8NoBom
+)
+
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    $scpOutput = & scp $localScript "${Remote}:$remoteScriptPath" 2>&1
+    $scpExit = $LASTEXITCODE
+    if ($scpExit -ne 0) {
+        $scpOutput | ForEach-Object { Write-Host $_.ToString() }
+        throw "scp failed with exit code $scpExit"
+    }
+
+    $remoteRunCommand = "bash $remoteScriptPath; rc=`$?; rm -f $remoteScriptPath; exit `$rc"
+    $output = & ssh -o BatchMode=yes $Remote $remoteRunCommand 2>&1
+    $sshExit = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+    if (Test-Path -LiteralPath $localScript) {
+        Remove-Item -LiteralPath $localScript -Force
+    }
+}
+
+$outputText = @()
+$output | ForEach-Object {
+    if ($_ -is [System.Management.Automation.ErrorRecord]) {
+        $line = $_.Exception.Message
+    }
+    else {
+        $line = $_.ToString()
+    }
+    $line = $line -replace "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", "[redacted-email]"
+    $outputText += $line
+    Write-Host $line
+}
 if ($sshExit -ne 0) {
     throw "ssh check failed with exit code $sshExit"
 }
 
-$detectorConfirmed = $output -match "__CLAWGUARD_DETECTOR_OK=1"
+$detectorConfirmed = $outputText -match "__CLAWGUARD_DETECTOR_OK=1"
 if (-not $detectorConfirmed) {
     throw "Detector module confirmation line was not found. Keep the inline fallback and inspect the cron logs."
 }
