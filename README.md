@@ -83,6 +83,7 @@ ClawGuard/
 - `target-agent/skills/job-search-custom/clawguard_post_compile.sh` - post-compile telemetry hook.
 - `detections/asi06_jd_content/detector.py` - first importable ClawGuard detection engine module.
 - `detections/asi06_jd_content/ASI06-001.md` - first ClawGuard detection rule spec.
+- `lessons/00_Index.md` - guided curriculum for the current Phase 1 architecture and implementation.
 - `lessons/clawguard-telemetry-baseline-001.md` - first clean telemetry baseline.
 - `scripts/export_latest_telemetry.ps1` - manual export path for VPS telemetry samples.
 

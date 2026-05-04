@@ -313,6 +313,7 @@ VPS:
 - ASI06 detector module added under `detections/asi06_jd_content/detector.py` and wired into `job_search_secure.py` with an inline fallback.
 - ASI01 semantic-first rule scaffold added under `detections/` after three clean telemetry sessions.
 - Baseline telemetry docs added under `lessons/`.
+- Lesson curriculum added under `lessons/00_Index.md` with component lessons and ASI06 defense lab data.
 - Post-compile telemetry hook added, deployed, and directly verified.
 - First autonomous post-hook cron chain verified with `digest-20260503T163003-b91b67e1`.
 - Manual telemetry export helper added.

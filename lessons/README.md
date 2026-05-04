@@ -6,6 +6,15 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 
 | Artifact | Status | Purpose |
 |---|---|---|
+| `00_Index.md` | Complete | Curriculum index for the current ClawGuard/OpenClaw Phase 1 implementation |
+| `Lesson00_Project_Architecture.md` | Complete | Big-picture architecture and phase map |
+| `Lesson01_OpenClaw_Runtime.md` | Complete | OpenClaw runtime and `job_search_secure.py` walkthrough |
+| `Lesson02_ASI06_Detector.md` | Complete | ASI06 detector module deep dive |
+| `Lesson03_SQLite_Telemetry_Ledger.md` | Complete | SQLite findings and evidence persistence |
+| `Lesson04_Cron_And_Post_Compile_Telemetry.md` | Complete | VPS cron, post-compile hook, and telemetry latest files |
+| `Lesson05_Testing_And_Defense_Lab.md` | Complete | Regression tests and ASI06 red-team lab |
+| `Lesson06_ASI01_Goal_Hijack_Scaffold.md` | Complete | ASI01 scaffold and semantic-first design decision |
+| `assets/asi06_red_team_jobs.json` | Complete | Local clean/adversarial sample jobs for lesson exercises |
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
 | `clawguard-telemetry-baseline-002.md` | Complete | First autonomous full cron-chain telemetry baseline |
 | `clawguard-telemetry-baseline-002-template.md` | Template | Capture the first autonomous full cron-chain telemetry run |
@@ -17,6 +26,20 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | 1 | What Job Site Bot Detection Teaches Us About AI Agent Security Monitoring | Draft |
 | 2 | Skill Supply Chain Security: Why We Write Our Own OpenClaw Skills | Draft |
 | 3 | Zero Findings Are Still Telemetry | Candidate article from baseline 001 |
+
+## Curriculum Start
+
+Start here:
+
+```text
+lessons/00_Index.md
+```
+
+The lesson sequence covers current implemented project phases:
+
+```text
+Architecture -> OpenClaw runtime -> ASI06 detector -> SQLite evidence -> cron telemetry -> tests/lab -> ASI01 scaffold
+```
 
 ## Telemetry Artifacts
 
