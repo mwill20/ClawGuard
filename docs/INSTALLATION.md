@@ -26,9 +26,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-..............
+...............
 ----------------------------------------------------------------------
-Ran 14 tests in 0.0
+Ran 15 tests in 0.0
 
 OK
 ```
@@ -46,9 +46,11 @@ The deployed OpenClaw search pipeline uses variables documented in [.env.example
 - `USAJOBS_USER_AGENT`
 - `CLAWGUARD_DISABLE_OXYLABS`
 - `CLAWGUARD_DATA_DIR`
+- `CLAWGUARD_PROFILE_PATH`
 - `CLAWGUARD_ENRICHMENT_DAILY_CAP`
 
 Do not commit real `.env` files.
+Do not commit real resume/profile files; use `CLAWGUARD_PROFILE_PATH` for private deployment-only profile data.
 
 ## No Third-Party Local Dependencies
 

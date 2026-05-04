@@ -195,6 +195,8 @@ Materials are generated using local resume/profile data only:
 
 - No fabrication.
 - No embellishment.
+- Tracked resume/profile files are fictional samples only.
+- Private deployments should use `CLAWGUARD_PROFILE_PATH` for real profile data outside Git.
 - Resume and contact data are never sent to job boards by this skill.
 - Generated materials include human review markers.
 - Confirmation code is required before a submission can be marked approved.

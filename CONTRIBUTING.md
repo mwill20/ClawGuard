@@ -17,6 +17,7 @@ Good contributions include:
 Do not add:
 
 - Secrets, API keys, private logs, personal data, or real customer data.
+- Real resumes or real job-search profiles with private contact details.
 - Unsupported production-readiness claims.
 - Unmeasured metrics presented as results.
 - Large generated artifacts unless they are intentionally required.
@@ -34,6 +35,7 @@ Before opening a pull request, check:
 - [ ] Security considerations are updated if trust boundaries or data handling changed.
 - [ ] Limitations are updated if a new failure mode is discovered.
 - [ ] No secrets or sensitive data are committed.
+- [ ] Tracked resume/profile files remain fictional samples.
 - [ ] `python -B -m unittest discover -s tests` passes locally.
 
 ## Documentation Standards

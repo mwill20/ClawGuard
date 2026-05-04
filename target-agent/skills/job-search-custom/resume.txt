@@ -1,38 +1,47 @@
-MICHAEL WILLIAMS
-Seattle, WA | 206.474.0889 | mwill.itmission@gmail.com | GitHub | Portfolio | LinkedIn
+SAMPLE CANDIDATE
+Seattle, WA | 555-0100 | sample.candidate@example.com | GitHub | Portfolio | LinkedIn
+
+NOTE
+This is a fictional sample resume for local OpenClaw matching and tailoring tests. Replace it with a private resume only in an ignored local deployment path. Do not commit real contact details or private employment history.
+
 PROFESSIONAL SUMMARY
-Cybersecurity analyst and builder supporting 60+ enterprise customers across 1,000+ endpoints in global MSSP environments. I specialize in solving operational pain points, improving investigations, and translating technical issues into clear customer guidance. My strongest example is PurpleLens, a SOC investigation automation tool I helped move into workflow, contributing to a 50% MTTR reduction. I bring security operations depth, API-based troubleshooting, customer communication, and hands-on automation experience that fits customer-facing security engineering roles.
+Cybersecurity analyst and AI security builder supporting enterprise security operations in managed and internal SOC environments. Experienced in alert triage, incident response, customer communication, API troubleshooting, detection engineering, and guardrail-focused automation. Strong fit for security operations, detection engineering, customer-facing security engineering, and AI security roles.
+
 CORE STRENGTHS
-Customer Success Engineering: Customer onboarding, technical issue resolution, stakeholder communication, remediation guidance, environment tuning, documentation, QBR support, SLA-driven operations
+Customer Success Engineering: customer onboarding, technical issue resolution, stakeholder communication, remediation guidance, environment tuning, documentation, QBR support, SLA-driven operations
 Security Operations: EDR, SIEM, SOAR, incident triage, incident response, threat hunting, endpoint forensics, vulnerability remediation, alert tuning, cross-region operations
 Builder Mindset: Python, REST APIs, Postman, LLM integration, schema validation, guardrail design, Git/GitHub, Docker, automation workflows
+
 SELECTED PROJECTS
-PurpleLens | SOC Investigation Automation — Built an API-driven pipeline that pulls telemetry, extracts IOCs, and generates structured analyst context to reduce manual investigation prep. Contributed to a 50% MTTR reduction across 60+ enterprise clients through workflow integration with Swimlane SOAR.
-AI DevSecOps Platform | Secure Code Analysis with Guardrails — Built a secure code analysis platform using deterministic controls and LLM-assisted reasoning to detect unsafe patterns in generated code. Validated guardrails across 57 adversarial test cases.
+Security Automation Lab | SOC Investigation Automation - Built an API-driven workflow that pulls telemetry, extracts IOCs, and generates structured analyst context to reduce manual investigation prep. Demonstrated a 50% MTTR reduction in a controlled lab workflow.
+AI DevSecOps Guardrail Platform | Secure Code Analysis with Guardrails - Built a secure code analysis prototype using deterministic controls and LLM-assisted reasoning to detect unsafe generated-code patterns. Validated guardrails across 57 adversarial test cases.
+
 PROFESSIONAL EXPERIENCE
-Cybersecurity Analyst II | 11:11 Systems | Feb 2024 – Present
-Manage endpoint security operations across 3,000+ systems in US, APAC, and EU regions, triaging 300+ events weekly while supporting 60+ enterprise customers in an MSSP environment.
-Helped operationalize PurpleLens POC within workflow and Swimlane SOAR, contributing to a 50% reduction in MTTR by reducing manual investigation prep.
-Build and validate integrations across EDR, SIEM, Threat Intell feeds using Postman and API testing to verify authentication, response structure, and production readiness.
-Investigate 30+ incidents response investigations per month and translate findings into clear, actionable reports and guidance for customers.
+Cybersecurity Analyst II | Example MSSP | Feb 2024 - Present
+Manage endpoint security operations across 3,000+ systems in US, APAC, and EU regions, triaging 300+ events weekly while supporting 60+ enterprise customers in a managed-security environment.
+Helped operationalize a SOC automation proof of concept, contributing to a 50% reduction in MTTR by reducing manual investigation prep.
+Build and validate integrations across EDR, SIEM, and threat-intelligence feeds using Postman and API testing to verify authentication, response structure, and production readiness.
+Investigate 30+ incident-response cases per month and translate findings into clear, actionable reports and guidance for customers.
 Serve as a frontline customer partner for 25+ requests per week involving EDR exceptions, telemetry, configuration, and remediation coordination.
-Customer Success Engineering, onboard customer environments, troubleshoot telemetry and reporting, QBRs, tune detections, and support sensitive response actions including evidence preservation and containment coordination.
-Director of Cybersecurity | Cyber Defense & Intelligence Center | Aug 2023 – Sept 2024 
-Built a production SOC architecture standing up tooling across BitDefender, Wazuh, Splunk, TheHive, Action1, and Software Defined Perimeter.
-Led a 30+ member team spanning SOC, security engineering, incident response, and GRC support.
+
+Security Engineering Lead | Cyber Defense Lab | Aug 2023 - Sept 2024
+Built a production-style SOC architecture using representative tools across EDR, SIEM, case management, vulnerability management, and secure access.
+Led a 30+ member training team spanning SOC, security engineering, incident response, and GRC support.
 Created playbooks and procedures that improved repeatability and execution.
-Successfully migrated from Google to Microsoft suite. 
-First Responder (Technology Operations) | Co-Lead | Feb 2020 – Feb 2021
-Supported rapid IT operations for a COVID-19 response environment requiring secure access, reliability, and fast user enablement, Microsoft suite.
-Handled endpoint setup, provisioning, authentication controls, patching, and collaboration tooling for distributed teams working with sensitive HIPPA and PII data.
+
+Technology Operations Lead | Community Response Program | Feb 2020 - Feb 2021
+Supported rapid IT operations for a response environment requiring secure access, reliability, and fast user enablement.
+Handled endpoint setup, provisioning, authentication controls, patching, and collaboration tooling for distributed teams working with sensitive data.
 Created documentation and procedures that improved continuity and reduced user confusion.
+
 EDUCATION
-Postgraduate, AI & ML Engineering — University of Texas at Austin (McCombs) | 2025
-Applied Cybersecurity  — SANS Technology Institute | 2024
-B.S., Cybersecurity & Information Assurance — Western Governors University | 2023
+Postgraduate Certificate, AI & ML Engineering - Example Technical University | 2025
+Applied Cybersecurity Program - Example Security Institute | 2024
+B.S., Cybersecurity & Information Assurance - Example Online University | 2023
+
 CERTIFICATIONS
 Cybersecurity: GSEC | GCIH | GCIA | Security+ | CySA+ | PenTest+ | CASP+ | SecurityX | SSCP | CCNA | ITIL | AZ-500 (In Progress)
+AI/ML Engineering: CAISS | Agentic AI | LLM Engineering & Deployment | MLSecOps | MCP | AI Security
 
-AI/ML Engineering: CAISS | Agentic AI, LLM Engineering & Deployment | ProtectAI: MLSecOps | Hugging Face: Agents, MCP | Modern Security: CAIS | Practical DevSecOps: CAISP (in progress)
 SELECT TECHNOLOGIES
-FortiEDR | FortiSIEM | Swimlane SOAR | Trend Micro XDR | Microsoft Sentinel, Defender | Splunk | Wazuh | Python | REST APIs | Postman | Docker | Git/GitHub | SQLite | AWS | Azure | GCP
+FortiEDR | FortiSIEM | Swimlane SOAR | Trend Micro XDR | Microsoft Sentinel | Microsoft Defender | Splunk | Wazuh | Python | REST APIs | Postman | Docker | Git/GitHub | SQLite | AWS | Azure | GCP

@@ -175,9 +175,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-..............
+...............
 ----------------------------------------------------------------------
-Ran 14 tests in 0.077s
+Ran 15 tests in 0.077s
 
 OK
 ```

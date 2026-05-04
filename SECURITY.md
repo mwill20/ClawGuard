@@ -58,10 +58,12 @@ Do not commit:
 - email app passwords
 - SSH keys
 - real resumes with private contact data unless intentionally public
+- real `job_search_profile.json` files with private contact data
 - private VPS logs
 - customer or employer data
 
 Use `.env.example` for safe placeholders only.
+Use `CLAWGUARD_PROFILE_PATH` for private deployed profile data outside the repository.
 
 ## Known Security Limitations
 

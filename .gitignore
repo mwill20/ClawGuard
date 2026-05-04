@@ -4,6 +4,8 @@
 auth-profiles.json
 **/credentials/
 **/secrets/
+target-agent/skills/job-search-custom/resume.local.txt
+target-agent/skills/job-search-custom/job_search_profile.local.json
 
 # OpenClaw data
 openclaw.json

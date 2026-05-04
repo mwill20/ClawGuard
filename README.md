@@ -160,9 +160,9 @@ python -B -m unittest discover -s tests
 Expected result:
 
 ```text
-..............
+...............
 ----------------------------------------------------------------------
-Ran 14 tests in 0.0
+Ran 15 tests in 0.0
 
 OK
 ```
@@ -324,7 +324,7 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 14/14 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 15/15 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |

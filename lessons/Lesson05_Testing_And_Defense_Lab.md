@@ -40,7 +40,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixture: `examples/asi06_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 14 tests passing.
+- Full suite: 15 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -68,6 +68,7 @@ Project implements:
 - `test_safe_apply_domains_do_not_trigger_url_mismatch`: trusted ATS domains avoid false positives.
 - `test_finding_can_serialize_to_db_ready_record`: detector output can become SQLite rows.
 - `test_runtime_prefers_clawguard_asi06_detector_when_available`: runtime uses detector before fallback.
+- `test_load_profile_supports_private_env_path`: private profile data can live outside Git via `CLAWGUARD_PROFILE_PATH`.
 - `test_labeled_fixture_metrics_are_reproducible`: synthetic ASI06 fixture metrics stay stable.
 - `test_sample_telemetry_matches_schema`: sample post-compile telemetry follows the expected JSON shape.
 - DB tests for `agent_session_id` queryability.
@@ -162,9 +163,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-..............
+...............
 ----------------------------------------------------------------------
-Ran 14 tests in 0.077s
+Ran 15 tests in 0.077s
 
 OK
 ```
@@ -308,7 +309,7 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 14 tests |
+| Current total | 15 tests |
 | Core proof | Detector path preferred over fallback |
 
 ## 8. Next Steps

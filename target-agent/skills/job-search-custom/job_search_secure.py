@@ -93,7 +93,7 @@ TAILORING_RULES_DEFAULT = SKILL_DIR / "tailoring_rules.json"
 # Email configuration (Gmail SMTP with TLS)
 EMAIL_FROM = os.getenv("CLAWGUARD_EMAIL_FROM", "")
 EMAIL_PASSWORD = os.getenv("CLAWGUARD_EMAIL_PASSWORD", "")
-EMAIL_TO = os.getenv("CLAWGUARD_EMAIL_TO", "mwill.itmission@gmail.com")
+EMAIL_TO = os.getenv("CLAWGUARD_EMAIL_TO", "")
 EMAIL_SMTP_HOST = os.getenv("CLAWGUARD_SMTP_HOST", "smtp.gmail.com")
 EMAIL_SMTP_PORT = int(os.getenv("CLAWGUARD_SMTP_PORT", "587"))
 
@@ -748,43 +748,43 @@ class TailoringEngine:
         "bullet_templates": [
             {
                 "template": "Manage endpoint security operations across {endpoints} systems in {regions}, triaging {events} events weekly while supporting {customers} enterprise customers.",
-                "source": "Cybersecurity Analyst II | 11:11 Systems",
+                "source": "Cybersecurity Analyst II | Example MSSP",
                 "keywords": ["edr", "endpoint", "siem", "soc", "security operations", "triage"],
                 "variables": {"endpoints": "3,000+", "regions": "US, APAC, and EU", "events": "300+", "customers": "60+"},
             },
             {
                 "template": "Contributed to {reduction} MTTR reduction by operationalizing {tool} within {platform}, reducing manual investigation prep across {customers} enterprise clients.",
-                "source": "PurpleLens | SOC Investigation Automation",
+                "source": "Security Automation Lab | SOC Investigation Automation",
                 "keywords": ["soar", "automation", "incident response", "mttr", "soc", "investigation"],
-                "variables": {"reduction": "50%", "tool": "PurpleLens SOC automation", "platform": "Swimlane SOAR", "customers": "60+"},
+                "variables": {"reduction": "50%", "tool": "SOC automation workflow", "platform": "SOAR platform", "customers": "60+"},
             },
             {
                 "template": "Build and validate integrations across EDR, SIEM, and Threat Intel feeds using Postman and API testing to verify authentication, response structure, and production readiness.",
-                "source": "Cybersecurity Analyst II | 11:11 Systems",
+                "source": "Cybersecurity Analyst II | Example MSSP",
                 "keywords": ["api", "rest", "integration", "postman", "siem", "edr", "threat intel"],
                 "variables": {},
             },
             {
                 "template": "Investigate {incidents} incident response investigations per month, translating findings into clear, actionable reports and guidance for customers.",
-                "source": "Cybersecurity Analyst II | 11:11 Systems",
+                "source": "Cybersecurity Analyst II | Example MSSP",
                 "keywords": ["incident response", "ir", "forensics", "investigation", "reporting"],
                 "variables": {"incidents": "30+"},
             },
             {
                 "template": "Customer success engineering: onboard environments, troubleshoot telemetry, tune detections, and coordinate containment including evidence preservation.",
-                "source": "Cybersecurity Analyst II | 11:11 Systems",
+                "source": "Cybersecurity Analyst II | Example MSSP",
                 "keywords": ["customer success", "onboarding", "customer facing", "telemetry", "containment"],
                 "variables": {},
             },
             {
                 "template": "Built production SOC architecture standing up tooling across BitDefender, Wazuh, Splunk, TheHive, Action1, and Software Defined Perimeter.",
-                "source": "Director of Cybersecurity | CDIC",
+                "source": "Security Engineering Lead | Cyber Defense Lab",
                 "keywords": ["soc", "architecture", "splunk", "wazuh", "security engineering", "detection engineering"],
                 "variables": {},
             },
             {
                 "template": "Led a {team_size} member team spanning SOC, security engineering, incident response, and GRC support.",
-                "source": "Director of Cybersecurity | CDIC",
+                "source": "Security Engineering Lead | Cyber Defense Lab",
                 "keywords": ["leadership", "team lead", "management", "soc", "security engineering"],
                 "variables": {"team_size": "30+"},
             },
@@ -795,7 +795,7 @@ class TailoringEngine:
                 "variables": {"tests": "57"},
             },
             {
-                "template": "Postgraduate credential in AI/ML Engineering from UT Austin (McCombs), with applied experience in agentic AI, LLM deployment, and MLSecOps.",
+                "template": "Postgraduate credential in AI/ML Engineering from Example Technical University, with applied experience in agentic AI, LLM deployment, and MLSecOps.",
                 "source": "Education",
                 "keywords": ["ai", "ml", "machine learning", "llm", "ai security", "data science"],
                 "variables": {},
@@ -836,8 +836,8 @@ class TailoringEngine:
         if not bullets:
             # Fallback: generic top bullets from resume
             bullets = [
-                "Cybersecurity Analyst II supporting 60+ enterprise customers across 3,000+ endpoints in global MSSP operations.",
-                "Contributed to 50% MTTR reduction through PurpleLens SOC automation integrated with Swimlane SOAR.",
+                "Cybersecurity Analyst II supporting 60+ enterprise customers across 3,000+ endpoints in managed-security operations.",
+                "Contributed to 50% MTTR reduction through a SOC automation workflow integrated with a SOAR platform.",
             ]
 
         bullets.append(f"[HUMAN: Add 1-2 bullets specific to this company's tech stack and culture]")
@@ -854,13 +854,13 @@ class TailoringEngine:
 
         letter = f"""Dear Hiring Manager at {job.company},
 
-I am writing to express my interest in the {job.title} position. With hands-on experience in {skills_str} supporting 60+ enterprise customers as a Cybersecurity Analyst II at 11:11 Systems, I am confident I can contribute effectively to your team.
+I am writing to express my interest in the {job.title} position. With hands-on experience in {skills_str} supporting 60+ enterprise customers as a Cybersecurity Analyst II in a managed-security environment, I am confident I can contribute effectively to your team.
 
 {experience_paragraph}
 
 [HUMAN: Why specifically {job.company}? Research their mission, culture, tech stack, and recent news. This paragraph should be entirely your own words.]
 
-I hold multiple industry certifications including GSEC, GCIH, GCIA, Security+, CySA+, and SSCP, along with a postgraduate credential in AI/ML Engineering from UT Austin (McCombs).
+I hold multiple industry certifications including GSEC, GCIH, GCIA, Security+, CySA+, and SSCP, along with a postgraduate credential in AI/ML Engineering from Example Technical University.
 
 I would welcome the opportunity to discuss how my experience aligns with your team's needs. Thank you for your consideration.
 
@@ -1548,7 +1548,7 @@ def search_oxylabs(query: str, locations: List[str], max_results: int = 10) -> L
 
 def load_profile(profile_path: Optional[str] = None) -> Profile:
     if profile_path is None:
-        profile_path = str(SKILL_DIR / "job_search_profile.json")
+        profile_path = os.getenv("CLAWGUARD_PROFILE_PATH") or str(SKILL_DIR / "job_search_profile.json")
     with open(profile_path, "r") as f:
         data = json.load(f)
     resume_path = data.get("resume_path") or str(SKILL_DIR / "resume.txt")
@@ -1944,7 +1944,7 @@ def prepare_application(job: Job, profile: Profile,
         "years_experience": "3+ years in cybersecurity operations (SOC, IR, endpoint security)",
         "why_this_company": f"[HUMAN: Why {job.company}? Research their mission, tech stack, team]",
         "why_this_role": f"[HUMAN: Why {job.title}? How it aligns with your career goals]",
-        "biggest_achievement": "Helped operationalize PurpleLens SOC automation tool, contributing to 50% MTTR reduction across 60+ enterprise clients.",
+        "biggest_achievement": "Helped operationalize a SOC automation workflow, contributing to 50% MTTR reduction across 60+ enterprise clients in a controlled environment.",
         "salary_expectations": f"[HUMAN: Research {job.company}'s range. Listed: {job.salary_range or 'Not listed'}]",
         "work_authorization": "Authorized to work in the US",
         "availability": "[HUMAN: Your start date availability]",
@@ -2035,13 +2035,13 @@ def prepare_application(job: Job, profile: Profile,
     resume_content += """## Certifications
 
 GSEC | GCIH | GCIA | Security+ | CySA+ | PenTest+ | CASP+ | SecurityX | SSCP | CCNA | ITIL
-AI/ML: CAISS | Agentic AI | LLM Engineering | ProtectAI: MLSecOps
+AI/ML: CAISS | Agentic AI | LLM Engineering | MLSecOps
 
 ## Education
 
-- Postgraduate, AI & ML Engineering — University of Texas at Austin (McCombs) | 2025
-- Applied Cybersecurity — SANS Technology Institute | 2024
-- B.S., Cybersecurity & Information Assurance — Western Governors University | 2023
+- Postgraduate, AI & ML Engineering - Example Technical University | 2025
+- Applied Cybersecurity - Example Security Institute | 2024
+- B.S., Cybersecurity & Information Assurance - Example Online University | 2023
 """
     with open(job_dir / "resume_tailored.md", "w") as f:
         f.write(resume_content)
@@ -2126,8 +2126,8 @@ def submit_manual(job_id: str, confirmation_code: str,
 
 def send_email_digest(subject: str, body_html: str, body_text: str):
     """Send digest email via Gmail SMTP with TLS. Gracefully fails if not configured."""
-    if not EMAIL_FROM or not EMAIL_PASSWORD:
-        logger.info("Email not configured (CLAWGUARD_EMAIL_FROM/PASSWORD not set), skipping")
+    if not EMAIL_FROM or not EMAIL_PASSWORD or not EMAIL_TO:
+        logger.info("Email not configured (CLAWGUARD_EMAIL_FROM/PASSWORD/TO not set), skipping")
         return False
 
     try:

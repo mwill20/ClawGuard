@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -100,6 +101,42 @@ class JobSearchSecureTests(unittest.TestCase):
             job_search_secure.USAJOBS_AUTH_KEY = old_usajobs_key
             job_search_secure.USAJOBS_USER_AGENT = old_usajobs_agent
             job_search_secure.CLAWGUARD_DISABLE_OXYLABS = old_disable
+
+    def test_load_profile_supports_private_env_path(self):
+        old_profile_path = os.environ.get("CLAWGUARD_PROFILE_PATH")
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tmp = Path(tmpdir)
+                resume_path = tmp / "resume.local.txt"
+                profile_path = tmp / "job_search_profile.local.json"
+                resume_path.write_text("Private SOC resume with SIEM and EDR experience.", encoding="utf-8")
+                profile_path.write_text(
+                    json.dumps(
+                        {
+                            "full_name": "Private Candidate",
+                            "email": "private@example.com",
+                            "phone": "+1-555-0100",
+                            "resume_path": str(resume_path),
+                            "target_roles": ["SOC Analyst"],
+                            "target_locations": ["Remote"],
+                            "preferences": {},
+                            "key_skills": ["SIEM", "EDR"],
+                            "certifications": ["Security+"],
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                os.environ["CLAWGUARD_PROFILE_PATH"] = str(profile_path)
+
+                profile = job_search_secure.load_profile()
+        finally:
+            if old_profile_path is None:
+                os.environ.pop("CLAWGUARD_PROFILE_PATH", None)
+            else:
+                os.environ["CLAWGUARD_PROFILE_PATH"] = old_profile_path
+
+        self.assertEqual(profile.full_name, "Private Candidate")
+        self.assertIn("SIEM", profile.resume_text)
 
     def test_asi06_detection_rules_cover_job_description_injection(self):
         jd = """

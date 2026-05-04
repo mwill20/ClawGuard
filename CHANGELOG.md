@@ -33,6 +33,6 @@ The format follows a simple chronological log. This project does not currently p
 ### Verified
 
 - Local unit tests: `python -B -m unittest discover -s tests`.
-- Current expected result: 14 tests passing.
+- Current expected result: 15 tests passing.
 - Synthetic ASI06 fixture result: 8 records, exact match 1.0, micro precision/recall/F1 1.0 on synthetic fixtures only.
 - Telemetry sample schema validation: passing.

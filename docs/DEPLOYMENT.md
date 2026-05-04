@@ -53,10 +53,17 @@ Important maintenance controls:
 - `CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE`
 - `CLAWGUARD_DIGEST_TOP_MATCH_LIMIT`
 
+Private profile controls:
+
+- `CLAWGUARD_PROFILE_PATH`
+
+The repository ships with fictional sample profile and resume files. Deployed environments should point `CLAWGUARD_PROFILE_PATH` to a private profile JSON outside Git. That private profile may reference a private `resume_path`.
+
 ## Secrets Handling
 
 - Do not commit `.env`.
 - Do not commit API keys or email app passwords.
+- Do not commit a real resume or real job-search profile with private contact details.
 - Use `.env.example` placeholders only.
 - Review logs before exporting curated telemetry.
 
