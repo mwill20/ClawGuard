@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "ClawGuard"
+message: "If you use this project for research, education, or technical review, please cite the repository."
+type: software
+authors:
+  - family-names: "Williams"
+    given-names: "Michael"
+year: 2026
+license: MIT
+repository-code: "https://github.com/mwill20/ClawGuard"
+abstract: "Guardrail-first AI agent security monitoring framework for OpenClaw job-search telemetry."

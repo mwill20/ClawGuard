@@ -1,0 +1,15 @@
+[
+  {
+    "job_id": "clean-example-001",
+    "rule_ids": []
+  },
+  {
+    "job_id": "attack-example-001",
+    "rule_ids": [
+      "ASI06_SKILL_STUFFING",
+      "ASI06_URL_MISMATCH",
+      "ASI06_PROMPT_INJECTION",
+      "ASI06_PII_REQUEST"
+    ]
+  }
+]

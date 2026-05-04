@@ -1,4 +1,4 @@
-# Secrets — NEVER commit these
+# Secrets - NEVER commit these
 .env
 *.key
 auth-profiles.json
@@ -11,6 +11,7 @@ openclaw.json.bak*
 
 # Python
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
 *.so

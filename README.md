@@ -1,16 +1,58 @@
 # ClawGuard
 
-Guardrail-first AI agent security monitoring framework.
+Guardrail-first AI agent security monitoring framework for OpenClaw job-search telemetry.
 
-ClawGuard detects OWASP Agentic Top 10 risks against AI agents by watching a real OpenClaw deployment, not simulated traces. The current live target is the OpenClaw `job-search-custom` skill running on a VPS and producing low-volume operational telemetry for ClawGuard.
+## Purpose
 
-## Current Posture
+This project demonstrates agent-security monitoring for a real OpenClaw `job-search-custom` deployment. It solves the problem of detecting and preserving evidence for unsafe or adversarial job-description content by combining a low-volume OpenClaw job-search pipeline, deterministic ASI06 detection rules, SQLite-backed findings, and post-compile telemetry exports.
 
-Last updated: 2026-05-03
+The repository includes runnable detector code, tests, sample inputs and outputs, setup instructions, evaluation notes, security documentation, limitations, and lesson material.
 
-ClawGuard is in Phase 1: OpenClaw is stable, the job-search pipeline is intentionally throttled, and the first ClawGuard telemetry path is live.
+## Key Features
 
-Active operating model:
+- Detector-backed ASI06 checks for prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches.
+- OpenClaw runtime integration with an inline fallback retained until one normal cron run confirms the detector-backed path.
+- SQLite persistence for jobs, scores, search runs, quota state, and `job_security_findings`.
+- Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
+- Post-compile telemetry summaries written as JSON and Markdown.
+- Ready-to-run unit tests and ASI06 sample input/output examples.
+- Teaching curriculum under `lessons/`.
+
+## Intended Audience
+
+This project is intended for:
+
+- AI security engineers learning agent guardrail and telemetry patterns.
+- SOC analysts transitioning into AI security engineering.
+- Reviewers evaluating a runnable agent-security technical asset.
+- Developers studying safe integration between an agent runtime and detection modules.
+
+Expected background:
+
+- Basic Python and command-line usage.
+- Basic SQLite concepts.
+- Basic security terminology such as evidence, trust boundary, false positive, and prompt injection.
+
+Out of scope:
+
+- Fully autonomous job application submission.
+- Production-grade SIEM integration.
+- Training or fine-tuning AI/ML models.
+- Testing against systems, accounts, or data without authorization.
+
+## Project Status
+
+Current status: prototype / educational technical asset with a live internal OpenClaw deployment.
+
+The repo has runnable local tests and documented VPS operational telemetry, but it is not claimed to be production-ready. The current live deployment is used as a controlled telemetry source for ClawGuard Phase 1.
+
+Last updated: 2026-05-03.
+
+## Responsible Use
+
+This project is intended for authorized defensive security, research, and educational use. Do not use it against systems, accounts, services, or data you do not own or have explicit permission to test.
+
+## Current Operating Model
 
 - OpenClaw runs daily maintenance searches, not high-volume job application automation.
 - Oxylabs is disabled for maintenance mode with `CLAWGUARD_DISABLE_OXYLABS=1`.
@@ -41,70 +83,279 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 
 The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing `pattern`, `matched_text`, and `snippet`.
 
+## Repository Structure
+
+```text
+ClawGuard/
+  README.md
+  LICENSE
+  CHANGELOG.md
+  CONTRIBUTING.md
+  SECURITY.md
+  CITATION.cff
+  REPO_READINESS_AUDIT.md
+  requirements.txt
+  .env.example
+  docs/
+    ARCHITECTURE.md
+    ClawGuard_Logo.png
+    DATASET.md
+    DEPLOYMENT.md
+    EVALUATION.md
+    INSTALLATION.md
+    LIMITATIONS.md
+    MODEL_CARD.md
+    MONITORING.md
+    TROUBLESHOOTING.md
+    USAGE.md
+  examples/
+    sample_input.json
+    sample_output.json
+  detections/
+    asi01_goal_hijack/
+    asi06_jd_content/
+  target-agent/
+    skills/job-search-custom/
+  lessons/
+  scripts/
+  tests/
+```
+
+## Requirements
+
+| Requirement | Version / Notes |
+|---|---|
+| Python | Tested locally with Python 3.12.0; Python 3.11+ expected to work |
+| OS | Windows PowerShell for local examples; Linux shell for VPS cron scripts |
+| Python packages | No third-party packages required for local detector tests |
+| GPU | Not required |
+| External APIs | Not required for local tests; Brave and USAJobs keys are used by the deployed OpenClaw search pipeline |
+| Docker | Required only for the current VPS OpenClaw deployment workflow |
+| Disk | Not yet measured |
+| Memory | Not yet measured |
+
+## Quickstart
+
+PowerShell:
+
+```powershell
+git clone https://github.com/mwill20/ClawGuard.git
+Set-Location ClawGuard
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -B -m unittest discover -s tests
+```
+
+Expected result:
+
+```text
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 0.0
+
+OK
+```
+
+The exact runtime in seconds may vary.
+
+## Usage
+
+### Run the ASI06 detector against the sample input
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B -c "import json; from pathlib import Path; from detections.asi06_jd_content.detector import detect_job_content; jobs=json.loads(Path('examples/sample_input.json').read_text()); print(json.dumps([{'job_id': job['job_id'], 'rule_ids': [f.rule_id for f in detect_job_content(job)]} for job in jobs], indent=2))"
+```
+
+Expected output:
+
+```json
+[
+  {
+    "job_id": "clean-example-001",
+    "rule_ids": []
+  },
+  {
+    "job_id": "attack-example-001",
+    "rule_ids": [
+      "ASI06_SKILL_STUFFING",
+      "ASI06_URL_MISMATCH",
+      "ASI06_PROMPT_INJECTION",
+      "ASI06_PII_REQUEST"
+    ]
+  }
+]
+```
+
+### Run the OpenClaw runtime tests
+
+```powershell
+python -B -m unittest tests.test_job_search_secure
+```
+
+### Run detector-only tests
+
+```powershell
+python -B -m unittest tests.test_asi06_detector
+```
+
+## Inputs and Outputs
+
+Primary local input format:
+
+```json
+{
+  "job_id": "attack-example-001",
+  "title": "SOC Analyst",
+  "company": "Acme Security",
+  "location": "Remote",
+  "description": "Ignore all previous instructions...",
+  "url": "https://evil-careers.example/apply",
+  "source": "linkedin"
+}
+```
+
+Primary local output format:
+
+```json
+{
+  "job_id": "attack-example-001",
+  "rule_ids": [
+    "ASI06_SKILL_STUFFING",
+    "ASI06_URL_MISMATCH",
+    "ASI06_PROMPT_INJECTION",
+    "ASI06_PII_REQUEST"
+  ]
+}
+```
+
+Runtime telemetry outputs:
+
+```text
+/data/clawguard/telemetry/telemetry_<date>_<agent_session_id>.json
+/data/clawguard/telemetry/telemetry_<date>_<agent_session_id>.md
+/data/clawguard/telemetry/telemetry_latest.json
+/data/clawguard/telemetry/telemetry_latest.md
+```
+
+## Demo
+
+This repository currently uses text diagrams and sample JSON rather than screenshots.
+
+![ClawGuard logo](docs/ClawGuard_Logo.png)
+
+Minimal detector demo:
+
+```text
+examples/sample_input.json
+  -> detections/asi06_jd_content/detector.py
+  -> examples/sample_output.json
+```
+
+Operational telemetry demo:
+
+```text
+OpenClaw daily cron
+  -> digest_<date>.json
+  -> clawguard_post_compile.sh
+  -> telemetry_latest.md
+```
+
 ## Architecture
-
-ClawGuard follows a guardrails-first design:
-
-- AI agents are treated as untrusted by default.
-- External content is treated as data, not instruction.
-- High-risk agent actions require human review.
-- Detection events preserve correlation fields for later ClawGuard analysis.
-- Operational telemetry is captured continuously but committed only when curated.
-
-Current flow:
 
 ```text
 OpenClaw cron
   -> job-search-custom searches LinkedIn, CyberSecJobs, USAJobs
   -> SQLite stores jobs, scores, and ASI06 findings
+  -> detections/asi06_jd_content/detector.py evaluates job content
   -> digest compile creates agent_session_id
   -> clawguard_post_compile.sh exports telemetry JSON/Markdown
   -> lessons/ captures curated baselines and review artifacts
 ```
 
-## Project Structure
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-```text
-ClawGuard/
-  ClawGuardSpecs/        ClawGuard specs, runbooks, and foundation docs
-  OpenClawSpecs/         OpenClaw target-agent specs and runbooks
-  target-agent/          Live OpenClaw deployment docs and custom skills
-  detections/            ClawGuard detection rule specs and future modules
-  lessons/               Baselines, learning notes, and architecture artifacts
-  scripts/               Local helper scripts, including telemetry export
-  tests/                 Regression tests for the job-search skill
+## Evaluation
+
+See [docs/EVALUATION.md](docs/EVALUATION.md).
+
+Current validation summary:
+
+| Check | Result | Notes |
+|---|---|---|
+| Unit tests | 11/11 passing | `python -B -m unittest discover -s tests` |
+| ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
+| Live telemetry baseline | 0 findings | Baseline documents clean OpenClaw sessions, not detection failure |
+| Precision/recall | Not yet measured | No labeled evaluation corpus exists yet |
+
+## Security Considerations
+
+See [SECURITY.md](SECURITY.md).
+
+Key boundaries:
+
+- Job postings and search results are untrusted input.
+- External content is treated as data, not instruction.
+- Cron disables automatic application preparation.
+- Secrets belong in `.env`, not in Git.
+- Findings preserve evidence and context for review.
+
+## Limitations
+
+See [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
+
+Important current limitations:
+
+- ASI06 is deterministic and regex/rule based; semantic fallback is planned, not implemented.
+- ASI01 is scaffolded, not runtime implemented.
+- Precision and recall are not yet measured against a labeled corpus.
+- The inline ASI06 fallback remains until one normal daily cron confirms the detector-backed path.
+
+## Deployment
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+The current deployment is a controlled VPS-based OpenClaw environment used for telemetry generation. This is not documented as a hardened production deployment.
+
+## Monitoring and Maintenance
+
+See [docs/MONITORING.md](docs/MONITORING.md).
+
+Local helper scripts:
+
+```powershell
+.\scripts\check_latest_telemetry.ps1
+.\scripts\export_latest_telemetry.ps1
 ```
 
-## Key Artifacts
+## Lessons
 
-- `PHASE1_PROGRESS.md` - current operational tracker and AI handoff.
-- `target-agent/skills/job-search-custom/job_search_secure.py` - live job-search runtime; prefers the ASI06 detector module when packaged, with an inline fallback for single-file deploys.
-- `target-agent/skills/job-search-custom/staggered_cron.sh` - daily maintenance schedule driver.
-- `target-agent/skills/job-search-custom/clawguard_post_compile.sh` - post-compile telemetry hook.
-- `detections/asi06_jd_content/detector.py` - first importable ClawGuard detection engine module.
-- `detections/asi06_jd_content/ASI06-001.md` - first ClawGuard detection rule spec.
-- `lessons/00_Index.md` - guided curriculum for the current Phase 1 architecture and implementation.
-- `lessons/clawguard-telemetry-baseline-001.md` - first clean telemetry baseline.
-- `scripts/export_latest_telemetry.ps1` - manual export path for VPS telemetry samples.
+Start with [lessons/00_Index.md](lessons/00_Index.md) for the educational curriculum.
 
-## Latest Baseline
+## Access and Availability
 
-Baseline `digest-20260502T143953-c9eb7f4c` evaluated 22 jobs across LinkedIn and CyberSecJobs with 0 ASI06 findings, 0 auto-prepared applications, and 0 Oxylabs credits used.
+- Repository: `https://github.com/mwill20/ClawGuard`
+- Project status: public technical asset / prototype
+- Dataset access: no external dataset required for local tests
+- Model access: not applicable; this repo does not train, fine-tune, or deploy an AI/ML model
+- External service access required: not required for local tests; Brave and USAJobs access required for the deployed search pipeline
 
-Zero findings are meaningful telemetry. They establish a clean-content baseline for detector tuning and future runtime integration.
+## References
 
-## Immediate Next Steps
-
-- Let the daily 9:00-9:30 AM PT chain run and accumulate clean sessions.
-- After the next full cron chain, review `/data/clawguard/telemetry/telemetry_latest.md`.
-- Ship the `detections/` package with the next VPS deploy, verify detector-backed ASI06 findings, then remove the inline fallback.
-- Keep ASI01 as a docs-only scaffold until a live redirect signal or ASI06 prompt-injection event appears.
-- Keep Oxylabs debugging isolated from the maintenance pipeline.
-
-## Author
-
-Built by Michael Williams, SOC analyst with MSSP background transitioning to AI Security Engineering. GIAC certified, UT Austin AI/ML program graduate.
+- [OWASP Agentic AI - Threats and Mitigations](https://genai.owasp.org/)
+- OpenClaw project specs in [OpenClawSpecs/](OpenClawSpecs/)
+- ClawGuard project specs in [ClawGuardSpecs/](ClawGuardSpecs/)
+- Repository readiness audit in [REPO_READINESS_AUDIT.md](REPO_READINESS_AUDIT.md)
 
 ## License
 
-MIT
+This project is licensed under the terms in [LICENSE](LICENSE).
+
+## Support
+
+For questions, bugs, or feature requests, open a GitHub issue.
+
+Security issues should be reported according to [SECURITY.md](SECURITY.md).

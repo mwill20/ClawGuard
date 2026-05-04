@@ -33,6 +33,6 @@ B.S., Cybersecurity & Information Assurance — Western Governors University | 2
 CERTIFICATIONS
 Cybersecurity: GSEC | GCIH | GCIA | Security+ | CySA+ | PenTest+ | CASP+ | SecurityX | SSCP | CCNA | ITIL | AZ-500 (In Progress)
 
-AI/ML Engineering: CAISS | Ready Tensor: Agentic AI, LLM Engineering & Deployment | ProtectAI: MLSecOps | Hugging Face: Agents, MCP | Modern Security: CAIS | Practical DevSecOps: CAISP (in progress)
+AI/ML Engineering: CAISS | Agentic AI, LLM Engineering & Deployment | ProtectAI: MLSecOps | Hugging Face: Agents, MCP | Modern Security: CAIS | Practical DevSecOps: CAISP (in progress)
 SELECT TECHNOLOGIES
 FortiEDR | FortiSIEM | Swimlane SOAR | Trend Micro XDR | Microsoft Sentinel, Defender | Splunk | Wazuh | Python | REST APIs | Postman | Docker | Git/GitHub | SQLite | AWS | Azure | GCP

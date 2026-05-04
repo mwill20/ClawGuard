@@ -2035,7 +2035,7 @@ def prepare_application(job: Job, profile: Profile,
     resume_content += """## Certifications
 
 GSEC | GCIH | GCIA | Security+ | CySA+ | PenTest+ | CASP+ | SecurityX | SSCP | CCNA | ITIL
-AI/ML: CAISS | Ready Tensor: Agentic AI, LLM Engineering | ProtectAI: MLSecOps
+AI/ML: CAISS | Agentic AI | LLM Engineering | ProtectAI: MLSecOps
 
 ## Education
 
