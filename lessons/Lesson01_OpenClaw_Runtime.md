@@ -34,16 +34,18 @@ Analogy: this file is air traffic control. Job sources are planes, SQLite is the
 ### Project implements
 
 - Runtime file: `target-agent/skills/job-search-custom/job_search_secure.py`
-- Detector import: line 41
-- Logging setup: lines 208-218
-- Session ID helper: line 281
-- DB class: line 288
-- Provider order: line 1127
-- Search parsing: lines 1191 and 1254
-- ASI06 runtime switch: lines 1673-1687
-- Scoring: line 1692
-- Daily digest: line 2067
-- CLI main: line 2322
+- ASI06 detector import: line 41
+- ASI01 detector import: line 42
+- Logging setup: lines 204-218
+- Session ID helper: line 283
+- DB class: line 290
+- Provider order: line 1130
+- Search parsing: lines 1194 and 1257
+- `search_site` with source-status semantics: lines 1364-1441
+- Combined ASI06 + ASI01 detector switch: lines 1692-1714
+- Scoring: line 1717
+- Daily digest with `compile_only` log clarity: lines ~2090-2160
+- CLI main: line ~2349
 
 ### Recommended (not implemented here)
 
@@ -81,20 +83,21 @@ Recommended (not implemented here):
 
 ## 3. Code Walkthrough Section
 
-### Detector import
+### Detector imports
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:41`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:41-42`
 
 ```python
 from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
+from detections.asi01_goal_hijack.detector import ASI01GoalHijackDetector as ClawGuardASI01GoalHijackDetector
 ```
 
 Line-by-line:
 
-1. `from detections...` imports the standalone ClawGuard detector.
-2. `as ClawGuardASI06JobContentDetector` keeps the adapter name stable inside the OpenClaw runtime.
+1. `from detections...` imports the standalone ClawGuard detectors.
+2. `as Claw...` keeps the adapter names stable inside the OpenClaw runtime.
 
-Why: after VPS cron confirmed the detector-backed path, missing `detections/` is treated as a packaging error instead of silently falling back to duplicate inline logic.
+Why: after VPS cron confirmed the detector-backed path, missing `detections/` is treated as a packaging error. Both detectors are required at import time — the runtime cannot start without them.
 
 ### Session ID helper
 
@@ -113,34 +116,74 @@ Why:
 - UUID suffix prevents same-second collisions.
 - Prefix lets future session types reuse the helper.
 
-### ASI06 runtime switch
+### Combined ASI06 + ASI01 detector switch
 
-File: `target-agent/skills/job-search-custom/job_search_secure.py:1673`
+File: `target-agent/skills/job-search-custom/job_search_secure.py:1692`
 
 ```python
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
-    global ASI06_DETECTOR_MODE_LOGGED
+    global ASI06_DETECTOR_MODE_LOGGED, ASI01_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
     if not ASI06_DETECTOR_MODE_LOGGED:
         logger.info("ClawGuard ASI06 detector module active")
         ASI06_DETECTOR_MODE_LOGGED = True
-    detector = ClawGuardASI06JobContentDetector(
+    asi06_detector = ClawGuardASI06JobContentDetector(
         skill_stuffing_threshold=ASI06_SKILL_STUFFING_THRESHOLD
     )
-    return [
-        _security_finding_from_clawguard(finding)
-        for finding in detector.detect(job, jd_text=text)
-    ]
+    asi06_raw = list(asi06_detector.detect(job, jd_text=text))
+    asi06_findings = [_security_finding_from_clawguard(f) for f in asi06_raw]
+
+    if not ASI01_DETECTOR_MODE_LOGGED:
+        logger.info("ClawGuard ASI01 detector module active")
+        ASI01_DETECTOR_MODE_LOGGED = True
+    asi01_detector = ClawGuardASI01GoalHijackDetector()
+    asi01_raw = asi01_detector.detect(job, jd_text=text, asi06_findings=asi06_raw)
+    asi01_findings = [_security_finding_from_clawguard(f) for f in asi01_raw]
+
+    return asi06_findings + asi01_findings
 ```
 
 What it does:
 
-1. Builds the text inspected by ASI06.
-2. Logs a one-time production proof line.
-3. Instantiates the detector with the runtime threshold.
-4. Converts detector findings into the legacy `SecurityFinding` shape.
+1. Runs ASI06 first against the inspected text.
+2. Logs a one-time activation line per detector for cron-confirmation visibility.
+3. Passes the raw ASI06 findings into ASI01 as the corroboration upstream.
+4. Returns combined findings as the legacy `SecurityFinding` shape.
 
-Why: this keeps ASI06 logic in one importable module while preserving the existing OpenClaw `SecurityFinding` storage shape.
+Why: ordering matters. ASI06 owns content patterns; ASI01 reads ASI06's output as upstream signal to classify *goal impact*. The combined return keeps the persistence layer (`record_security_findings`) indifferent to which rule produced each finding. See [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) for ASI01 design rationale.
+
+### Source-status semantics in `search_site`
+
+File: `target-agent/skills/job-search-custom/job_search_secure.py:1404-1429`
+
+```python
+new_count = _persist_search_results(db, run_id, site_key, query, location, jobs, credits)
+already_known = max(0, len(jobs) - new_count)
+if not jobs:
+    source_status = "EMPTY"
+    status_note = "no candidates returned"
+elif new_count == 0:
+    source_status = "ALL_KNOWN"
+    status_note = f"{already_known} already-known candidates"
+else:
+    source_status = "OK_NEW"
+    status_note = f"{new_count} new, {already_known} already known"
+audit_log("SEARCH_COMPLETED", method=method, site=site_key, results=len(jobs),
+          new=new_count, already_known=already_known,
+          source_status=source_status, cost=credits)
+logger.info(
+    f"Found {len(jobs)} jobs on {config['name']} via {method} "
+    f"[{source_status}: {status_note}]"
+)
+```
+
+What it does:
+
+1. Computes the already-known count as `len(jobs) - new_count` (results returned minus newly inserted).
+2. Picks one of four source statuses: `OK_NEW`, `ALL_KNOWN`, `EMPTY`, or (in the failure path on line 1437) `ERROR`.
+3. Embeds the status into both the audit log JSON and the human-readable INFO line.
+
+Why: before Phase 1 close, "source returned 10 already-known jobs" looked identical to "source returned nothing" in logs and audit events. Reviewers couldn't tell whether a quiet day meant the source was healthy (returning known content) or broken (returning nothing). The four-state status fixes that without a DB schema migration — the audit log JSON now carries the distinction. See [Lesson 07](Lesson07_Source_Compass_And_Phase2_Map.md) for the full rationale and Phase 2 follow-ups.
 
 ### Daily digest flow
 
@@ -173,19 +216,20 @@ Edge case: a post-daily manual compile can return 0 jobs because the daily windo
 
 ## 4. Hands-On Exercises Section
 
-### 🧪 Exercise 1: Verify the runtime imports
+### 🧪 Exercise 1: Verify both detector imports
 
 PowerShell:
 
 ```powershell
 Set-Location C:\Projects\ClawGuard
-python -B -c "import importlib.util, sys; from pathlib import Path; script=Path('target-agent/skills/job-search-custom/job_search_secure.py'); spec=importlib.util.spec_from_file_location('job_search_secure', script); m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m); print(m.ClawGuardASI06JobContentDetector.__module__ if m.ClawGuardASI06JobContentDetector else 'fallback')"
+python -B -c "import importlib.util, sys; from pathlib import Path; script=Path('target-agent/skills/job-search-custom/job_search_secure.py'); spec=importlib.util.spec_from_file_location('job_search_secure', script); m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m); print('asi06:', m.ClawGuardASI06JobContentDetector.__module__); print('asi01:', m.ClawGuardASI01GoalHijackDetector.__module__)"
 ```
 
 Expected output:
 
 ```text
-detections.asi06_jd_content.detector
+asi06: detections.asi06_jd_content.detector
+asi01: detections.asi01_goal_hijack.detector
 ```
 
 ### 🧪 Exercise 2: Generate a session ID
@@ -217,14 +261,14 @@ python -B -m unittest tests.test_job_search_secure
 Expected output:
 
 ```text
-.........
+...............
 ----------------------------------------------------------------------
-Ran 9 tests in 0.0
+Ran 15 tests in 0.1s
 
 OK
 ```
 
-Note: the exact seconds may vary.
+Note: the exact seconds may vary. The 15 tests cover ASI06 detection, ASI01 goal-redirect classification, source-status audit, and DB queryability.
 
 ### 🧪 Exercise 4: Intentional packaging failure
 
@@ -270,14 +314,17 @@ Why this matters: missing `detections/` is now a deployment error. Run future co
 | Item | Details |
 |---|---|
 | Entry point | `python3 job_search_secure.py digest` |
-| Detector switch | `run_jd_security_detections()` |
+| Detector switch | `run_jd_security_detections()` (ASI06 + ASI01 combined) |
 | Session helper | `new_agent_session_id()` |
 | Provider logic | `_provider_order()` |
+| Source-status audit field | `OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR` |
 | Parser tests | `test_brave_parser_extracts_title_company_when_present`, `test_usajobs_parser_maps_api_shape_to_job` |
-| Runtime proof log | `ClawGuard ASI06 detector module active` |
+| Runtime proof logs | `ClawGuard ASI06 detector module active`, `ClawGuard ASI01 detector module active` |
 
 ## 8. Next Steps
 
-Study Lesson 02 next: the ASI06 detector module. Optional challenge: add a packaged deploy helper that copies `job_search_secure.py` and `detections/` together.
+Study [Lesson 02](Lesson02_ASI06_Detector.md) next: the ASI06 detector module. After that, [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) covers the ASI01 corroborated classifier and [Lesson 07](Lesson07_Source_Compass_And_Phase2_Map.md) covers the source-status semantics.
+
+Optional challenge: add a CLI flag `--source-status-min` that filters the digest to only show jobs from sources that returned `OK_NEW` (skipping `ALL_KNOWN` quiet days when manually compiling).
 
 Remember: runtime code is where architecture meets production constraints. 🛡️

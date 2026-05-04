@@ -81,11 +81,15 @@ Project implements:
 - JSON-serializable evidence.
 - Safe apply-domain allowlist.
 
+Project also implements (Phase 1 close):
+
+- ASI01 corroboration consumer: ASI06 findings are passed into the ASI01 detector as upstream signal. See [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md).
+
 Recommended (not implemented here):
 
 - Layer 4 semantic fallback for ambiguous wording.
 - Separate severity policy file.
-- Detector registry for ASI01, ASI02, ASI06 modules.
+- Detector registry for ASI02 (specced in [docs/plans/PHASE2_ASI02_SPEC.md](../docs/plans/PHASE2_ASI02_SPEC.md)) and future modules.
 
 ## 3. Code Walkthrough Section
 
@@ -313,6 +317,8 @@ Why this is interesting: the detector lets job inputs be flexible, but finding o
 
 ## 8. Next Steps
 
-Study Lesson 03 next: the SQLite evidence ledger. Optional challenge: add a confidence field to `DetectionFinding` and update tests.
+Study [Lesson 03](Lesson03_SQLite_Telemetry_Ledger.md) next: the SQLite evidence ledger that persists what ASI06 (and now ASI01) detect. Then [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) shows how ASI01 builds on top of ASI06's findings as upstream signal.
+
+Optional challenge: add a `confidence` float field to `DetectionFinding` (0.0–1.0) and update both the ASI06 detector and the ASI01 corroboration gate to weight matches by confidence rather than the binary high/low-confidence category split.
 
 Remember: a detector is only useful if its evidence survives the run. 🛡️

@@ -34,13 +34,13 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 ### Project implements
 
 - Detector tests: `tests/test_asi06_detector.py`
-- Runtime tests: `tests/test_job_search_secure.py`
+- Runtime tests: `tests/test_job_search_secure.py` (15 tests covering ASI06, ASI01, source-status, DB queryability)
 - Evaluation tests: `tests/test_asi06_evaluation.py`
 - Telemetry validation tests: `tests/test_telemetry_validation.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixture: `examples/asi06_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 15 tests passing.
+- Full suite: 21 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -67,7 +67,13 @@ Project implements:
 - `test_detector_returns_contextual_findings_for_job_mapping`: all four ASI06 rules fire on hostile input.
 - `test_safe_apply_domains_do_not_trigger_url_mismatch`: trusted ATS domains avoid false positives.
 - `test_finding_can_serialize_to_db_ready_record`: detector output can become SQLite rows.
-- `test_runtime_uses_clawguard_asi06_detector`: runtime calls the detector module.
+- `test_runtime_uses_clawguard_asi06_detector`: runtime calls the ASI06 detector module.
+- `test_asi01_fires_on_corroborated_goal_redirect`: ASI01 fires when ASI06 corroborates.
+- `test_asi01_silent_on_clean_content`: ASI01 stays silent on clean security-role JDs.
+- `test_asi01_silent_on_uncorroborated_score_redirect`: low-confidence imperatives don't fire alone.
+- `test_asi01_fires_uncorroborated_when_role_replace_imperative`: high-confidence imperatives fire alone.
+- `test_asi01_findings_persist_with_session_id`: ASI01 findings persist with `agent_session_id` and `related_asi06_rule_id`.
+- `test_search_site_emits_source_status_audit_event`: source-status audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`.
 - `test_load_profile_supports_private_env_path`: private profile data can live outside Git via `CLAWGUARD_PROFILE_PATH`.
 - `test_labeled_fixture_metrics_are_reproducible`: synthetic ASI06 fixture metrics stay stable.
 - `test_sample_telemetry_matches_schema`: sample post-compile telemetry follows the expected JSON shape.
@@ -163,9 +169,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.077s
+Ran 21 tests in 0.14s
 
 OK
 ```
@@ -309,11 +315,13 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 15 tests |
-| Core proof | Detector path used by OpenClaw runtime |
+| Current total | 21 tests (15 in `test_job_search_secure.py`, 6 across detector / evaluation / telemetry) |
+| Core proof | Detector paths (ASI06 + ASI01) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps
 
-Study Lesson 06 next: ASI01 scaffold and why it is semantic-first. Optional challenge: add a new red-team sample that discusses prompt injection defensively and confirm it returns no findings.
+Study [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) next: the implemented ASI01 v1 detector and its corroborated-classifier design. After that, [Lesson 07](Lesson07_Source_Compass_And_Phase2_Map.md) covers source-status semantics and points to the Phase 2 plans.
+
+Optional challenge: add a new red-team sample where the JD discusses prompt-injection defensively and verify both ASI06 and ASI01 stay silent. This protects against future false-positive regressions.
 
 Remember: tests are how you turn "I think it works" into evidence. 🛡️

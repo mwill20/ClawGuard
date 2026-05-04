@@ -2,10 +2,12 @@
 
 Assumptions and scope:
 
-- Line references are current for the Phase 1 lesson pass and should be rechecked after code movement.
+- Phase 1 closed on 2026-05-04 with ASI01 v1 deployed and cron-confirmed.
+- Line references in lessons are accurate as of Phase 1 close. Re-check after future code movement.
 - Lessons live in the existing lowercase `lessons/` directory.
 - VPS commands target the current OpenClaw host `root@31.97.139.139` and container `openclaw-utxu-openclaw-1`.
-- ASI06 now uses the detector module as the required runtime path after VPS cron confirmation on 2026-05-04.
+- Both ASI06 and ASI01 detector modules are required runtime dependencies. Inline fallback paths have been removed.
+- Phase 2 plans live under `docs/plans/`.
 
 ## Required Curriculum
 
@@ -17,18 +19,20 @@ Assumptions and scope:
 | 03 | [The Evidence Ledger - SQLite Findings](Lesson03_SQLite_Telemetry_Ledger.md) | `JobDatabase` and `job_security_findings` | Required |
 | 04 | [The Black Box Recorder - Cron and Telemetry Hook](Lesson04_Cron_And_Post_Compile_Telemetry.md) | `staggered_cron.sh`, `clawguard_post_compile.sh`, helper scripts | Required |
 | 05 | [The Proving Ground - Tests and Defense Lab](Lesson05_Testing_And_Defense_Lab.md) | `tests/` plus red-team sample data | Required |
-| 06 | [The Next Detector - ASI01 Scaffold](Lesson06_ASI01_Goal_Hijack_Scaffold.md) | `detections/asi01_goal_hijack/ASI01-001.md` | Optional roadmap |
+| 06 | [The Investigator - ASI01 Goal Hijack Detector v1](Lesson06_ASI01_Goal_Hijack_Scaffold.md) | `detections/asi01_goal_hijack/detector.py` | Required |
+| 07 | [The Source Compass - Digest Semantics + Phase 2 Map](Lesson07_Source_Compass_And_Phase2_Map.md) | `search_site` source-status, `docs/plans/` | Required |
 
 ## Phase Map
 
 ```text
-OpenClaw source search
+OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
   -> SQLite job storage
-  -> ASI06 detector-backed job-content checks
+  -> ASI06 detector (content patterns)
+  -> ASI01 detector (goal-redirect classification on top of ASI06)
   -> score and compile digest
   -> post-compile telemetry export
   -> curated lessons and baselines
-  -> future ASI01/ASI02 detectors
+  -> Phase 2: ASI02 tool-misuse + curated telemetry workflow
 ```
 
 ## Project Implements
@@ -37,19 +41,23 @@ OpenClaw source search
 - Zero-credit provider posture with Brave Search and native USAJobs API.
 - SQLite persistence for jobs, search runs, quota, and `job_security_findings`.
 - ASI06 detector module as the required runtime integration.
+- ASI01 v1 goal-hijack detector as a corroborated classifier on top of ASI06.
+- Source-status semantics in search audit log (`OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`) and digest summary fields (`newly_inserted_in_run`, `compile_only`).
 - Post-compile telemetry JSON/Markdown artifacts.
-- Local regression tests for parser behavior, session IDs, detector behavior, and DB queryability.
+- Local regression tests covering parsers, session IDs, ASI06 + ASI01 detector behavior, source-status audit, and DB queryability.
 - GitHub Actions CI for unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation.
 - Small synthetic labeled ASI06 fixture metrics under `examples/`.
 - Telemetry sample JSON validation under `examples/`.
+- Phase 2 plan documents under `docs/plans/` covering ASI02 module and telemetry workflow.
 
 ## Recommended (not implemented here)
 
 - Schema validation for every telemetry artifact before writing to disk.
 - Prompt sanitization or quarantine before LLM-based summarization.
-- Semantic guardrails using deterministic classifiers or LLM-as-judge for ASI01 behavior.
+- Layer-4 semantic guardrails using deterministic policy or LLM-as-judge for ambiguous goal-redirect cases.
 - Signed deployment bundles for `job_search_secure.py` plus `detections/`.
-- GitHub Actions CI already runs unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation. Recommended future expansion: run the full lesson command set and validate exported VPS telemetry artifacts.
+- `search_runs` schema migration to persist `source_status` and `already_known_count` columns (currently audit-log only).
+- Tool-call telemetry instrumentation (Phase 3 prerequisite for ASI02 Layer 3/4 detection).
 
 ## Hands-On Starting Point
 
@@ -63,9 +71,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.077s
+Ran 21 tests in 0.14s
 
 OK
 ```
@@ -80,9 +88,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.077s
+Ran 21 tests in 0.14s
 
 OK
 ```
@@ -92,4 +100,5 @@ OK
 1. Start with Lesson 00 if you need the whole system picture.
 2. Study Lessons 01-05 before discussing ClawGuard in an interview.
 3. Use Lesson 05 as your hands-on defense lab.
-4. Use Lesson 06 when you are ready to explain the ASI01 roadmap without claiming it is implemented.
+4. Use Lesson 06 to walk through the implemented ASI01 v1 corroborated-classifier design.
+5. Use Lesson 07 to understand source-status semantics and the Phase 2 roadmap.
