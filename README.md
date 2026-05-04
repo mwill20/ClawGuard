@@ -1,5 +1,7 @@
 # ClawGuard
 
+![ClawGuard banner](docs/ClawGuard_Logo.png)
+
 Guardrail-first AI agent security monitoring framework for OpenClaw job-search telemetry.
 
 ## Purpose
@@ -243,9 +245,7 @@ Runtime telemetry outputs:
 
 ## Demo
 
-This repository currently uses text diagrams and sample JSON rather than screenshots.
-
-![ClawGuard logo](docs/ClawGuard_Logo.png)
+This repository currently uses the README banner, text diagrams, and sample JSON rather than screenshots.
 
 Minimal detector demo:
 
