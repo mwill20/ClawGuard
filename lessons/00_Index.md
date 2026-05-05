@@ -71,9 +71,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.....................
+........................
 ----------------------------------------------------------------------
-Ran 21 tests in 0.14s
+Ran 24 tests in 0.14s
 
 OK
 ```
@@ -88,9 +88,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.....................
+........................
 ----------------------------------------------------------------------
-Ran 21 tests in 0.14s
+Ran 24 tests in 0.14s
 
 OK
 ```

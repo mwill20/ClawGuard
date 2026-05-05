@@ -40,7 +40,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixture: `examples/asi06_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 21 tests passing.
+- Full suite: 24 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -169,9 +169,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.....................
+........................
 ----------------------------------------------------------------------
-Ran 21 tests in 0.14s
+Ran 24 tests in 0.14s
 
 OK
 ```
@@ -315,7 +315,7 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 21 tests (15 in `test_job_search_secure.py`, 6 across detector / evaluation / telemetry) |
+| Current total | 24 tests (15 in `test_job_search_secure.py`, 9 across detector / evaluation / telemetry) |
 | Core proof | Detector paths (ASI06 + ASI01) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

@@ -13,8 +13,11 @@ from typing import Any
 
 
 SESSION_ID_RE = re.compile(r"^digest-\d{8}T\d{6}-[0-9a-f]{8}$")
+SUPPORTED_SCHEMA_VERSIONS = {"1.0", "1.1"}
+DEFAULT_LEGACY_SCHEMA_VERSION = "1.0"
 
 REQUIRED_TOP_LEVEL = {
+    "schema_version": str,
     "generated_at": str,
     "digest_path": str,
     "agent_session_id": str,
@@ -45,6 +48,13 @@ REQUIRED_FINDING_FIELDS = {
     "detected_at": str,
 }
 
+REQUIRED_ASI01_EVIDENCE_FIELDS = {
+    "attempted_goal": str,
+    "attempted_goal_categories": list,
+    "intended_goal": str,
+    "matches": list,
+}
+
 
 class TelemetryValidationError(ValueError):
     """Raised when telemetry does not match the expected ClawGuard shape."""
@@ -59,7 +69,20 @@ def _expect_type(data: dict[str, Any], field: str, expected_type: type, path: st
 
 
 def validate_telemetry(data: dict[str, Any]) -> dict[str, Any]:
-    for field, expected_type in REQUIRED_TOP_LEVEL.items():
+    schema_version = data.get("schema_version", DEFAULT_LEGACY_SCHEMA_VERSION)
+    if not isinstance(schema_version, str):
+        raise TelemetryValidationError("telemetry.schema_version expected str")
+    if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
+        raise TelemetryValidationError(
+            f"telemetry.schema_version unsupported: {schema_version}"
+        )
+
+    required_top_level = dict(REQUIRED_TOP_LEVEL)
+    if "schema_version" not in data and schema_version == DEFAULT_LEGACY_SCHEMA_VERSION:
+        # Legacy Phase 1 telemetry samples predate the explicit top-level field.
+        required_top_level.pop("schema_version")
+
+    for field, expected_type in required_top_level.items():
         _expect_type(data, field, expected_type, "telemetry")
 
     agent_session_id = data["agent_session_id"]
@@ -84,6 +107,18 @@ def validate_telemetry(data: dict[str, Any]) -> dict[str, Any]:
             raise TelemetryValidationError(
                 f"telemetry.findings[{index}].agent_session_id does not match top-level session"
             )
+        if schema_version == "1.0" and finding["rule_id"].startswith("ASI01_"):
+            raise TelemetryValidationError(
+                f"telemetry.findings[{index}] has ASI01 finding but schema_version is 1.0"
+            )
+        if schema_version == "1.1" and finding["rule_id"].startswith("ASI01_"):
+            for field, expected_type in REQUIRED_ASI01_EVIDENCE_FIELDS.items():
+                _expect_type(
+                    finding["evidence"],
+                    field,
+                    expected_type,
+                    f"telemetry.findings[{index}].evidence",
+                )
 
     expected_rule_counts = dict(sorted(Counter(finding["rule_id"] for finding in findings).items()))
     expected_severity_counts = dict(sorted(Counter(finding["severity"] for finding in findings).items()))
@@ -102,6 +137,7 @@ def validate_telemetry(data: dict[str, Any]) -> dict[str, Any]:
         "agent_session_id": agent_session_id,
         "finding_count": data["finding_count"],
         "rule_count_keys": sorted(data["rule_counts"].keys()),
+        "schema_version": schema_version,
         "status": "valid",
     }
 

@@ -29,6 +29,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+TELEMETRY_SCHEMA_VERSION = "1.1"
 
 def atomic_write(path: Path, content: str):
     tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -96,6 +97,7 @@ top_match_source_counts = Counter(
 )
 
 summary = {
+    "schema_version": TELEMETRY_SCHEMA_VERSION,
     "generated_at": datetime.now().isoformat(),
     "digest_path": str(digest_path),
     "agent_session_id": agent_session_id,
@@ -120,6 +122,7 @@ md_lines = [
     f"# ClawGuard Telemetry Summary - {digest_date}",
     "",
     f"- Generated at: `{summary['generated_at']}`",
+    f"- Schema version: `{summary['schema_version']}`",
     f"- Digest archive: `{digest_path.name}`",
     f"- Agent session: `{agent_session_id}`",
     f"- Finding count: `{len(findings)}`",

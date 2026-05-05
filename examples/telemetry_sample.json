@@ -16,5 +16,6 @@
   "findings": [],
   "generated_at": "2026-05-03T16:30:03.000000",
   "rule_counts": {},
+  "schema_version": "1.1",
   "severity_counts": {}
 }
