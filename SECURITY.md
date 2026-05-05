@@ -26,6 +26,7 @@ This repository is a prototype / educational technical asset. It is not claimed 
 | Application destination | Phishing or suspicious apply URLs | `ASI06_URL_MISMATCH` finding |
 | Telemetry evidence | Lost or uncorrelated findings | `agent_session_id`, `job_id`, `context`, and `evidence` fields |
 | Secrets | Accidental Git exposure | `.gitignore` excludes `.env`; `.env.example` uses placeholders |
+| Goal integrity | Job content attempts to redirect the agent objective | ASI01 detector v1 with ASI06 corroboration |
 
 ## Agent Safety Boundaries
 
@@ -33,7 +34,7 @@ This agent workflow is allowed to:
 
 - Search approved job sources in low-volume maintenance mode.
 - Score and store job records.
-- Record ASI06 findings for suspicious job content.
+- Record ASI06 and ASI01 findings for suspicious job content and goal redirection.
 - Compile digest and telemetry summaries.
 
 This workflow is not allowed to:
@@ -68,7 +69,7 @@ Use `CLAWGUARD_PROFILE_PATH` for private deployed profile data outside the repos
 ## Known Security Limitations
 
 - ASI06 detection is deterministic and does not yet include semantic LLM review.
-- ASI01 goal-hijack detection is scaffolded but not runtime implemented.
+- ASI01 goal-hijack detection v1 is deterministic and intentionally narrow; ambiguous cases do not yet use LLM review.
 - Telemetry sample schema validation is implemented; exported VPS artifacts are not yet self-validated by the hook.
 - The current VPS deployment flow is manual and should be treated as prototype operations.
 

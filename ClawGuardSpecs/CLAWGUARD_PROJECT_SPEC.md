@@ -1,9 +1,11 @@
 # ClawGuard Project Spec
 
 **Version:** v1.0 (MVP Planning)  
-**Status:** Architecture defined, Phase 1 detection rules in progress  
+**Status:** Historical planning snapshot; superseded by `docs/plans/PHASE2_SPEC.md`
 **Owner:** Michael Williams  
 **Date:** March 24, 2026
+
+> Historical planning note (2026-05-05): this March 2026 spec is a time capsule. Phase 1 is now closed with ASI06 and ASI01 runtime detector modules, post-compile telemetry, lessons, CI, and 21 tests. Use `docs/plans/PHASE2_SPEC.md` as the active Phase 2 source of truth.
 
 ---
 
@@ -13,17 +15,18 @@ Build the **EDR/SIEM equivalent for the agentic era**. ClawGuard detects OWASP A
 
 **Vision:** When OpenClaw agents execute actions (search jobs, send messages, modify files), ClawGuard observes every decision point and validates against guardrail rules. Violations surface immediately for human review.
 
-**Success criteria (MVP):**
-- ✅ Architecture documented (5-layer defense)
-- ✅ Attack surface mapped (8 findings from OpenClaw recon)
-- 🔲 ASI01 detection rule implemented + tested
-- 🔲 ASI02 detection rule implemented + tested
-- 🔲 ASI06 detection rule implemented + tested
-- 🔲 Observability pipeline (W&B Weave / Langfuse)
-- 🔲 Interview-ready portfolio piece
+**Historical success criteria (MVP):**
+- Architecture documented (5-layer defense)
+- Attack surface mapped (8 findings from OpenClaw recon)
+- Original ASI01 rule goal
+- Original ASI02 rule goal
+- Original ASI06 rule goal
+- Observability pipeline
+- Interview-ready portfolio piece
+
+Current status is tracked in `docs/plans/PHASE2_SPEC.md`, `PHASE1_PROGRESS.md`, and `README.md`.
 
 ---
-
 ## 📋 ELEVATOR PITCH
 
 > *"I deployed a real AI agent platform, mapped its attack surface, and built an open-source security monitoring framework that detects OWASP Agentic Top 10 violations in real agent behavior — the EDR/SIEM equivalent for the agent era."*
@@ -469,10 +472,12 @@ class ClawGuardLogger:
 - ✅ Portfolio-ready write-up
 
 ### Phase 2: Hardening (NEXT MONTH)
-- 🔲 ASI03 (Identity & Privilege Abuse) — credential theft detection
-- 🔲 ASI05 (Unexpected Code Execution) — process/container escape detection
-- 🔲 Ensemble scoring — combine multiple rule hits for higher confidence
-- 🔲 Red team exercises (adversarial job descriptions, malicious JDs)
+- Historical backlog item: ASI03 (Identity & Privilege Abuse) - credential theft detection
+- Historical backlog item: ASI05 (Unexpected Code Execution) - process/container escape detection
+- Historical backlog item: Ensemble scoring - combine multiple rule hits for higher confidence
+- Historical backlog item: Red team exercises - adversarial job descriptions, malicious JDs
+
+Current Phase 2 plan: see `docs/plans/PHASE2_SPEC.md`. ASI02 and telemetry workflow are the implementation tracks; ASI03 and ASI05 are roadmap-spec tracks until structured runtime telemetry exists.
 
 ### Phase 3: Production (Q2 2026)
 - 🔲 Deploy alongside real agent systems

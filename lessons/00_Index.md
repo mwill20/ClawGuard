@@ -7,7 +7,7 @@ Assumptions and scope:
 - Lessons live in the existing lowercase `lessons/` directory.
 - VPS commands target the current OpenClaw host `root@31.97.139.139` and container `openclaw-utxu-openclaw-1`.
 - Both ASI06 and ASI01 detector modules are required runtime dependencies. Inline fallback paths have been removed.
-- Phase 2 plans live under `docs/plans/`.
+- Phase 2 plans live under `docs/plans/`, with `PHASE2_SPEC.md` as the v3 umbrella spec.
 
 ## Required Curriculum
 
@@ -48,7 +48,7 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - GitHub Actions CI for unit tests, the synthetic ASI06 fixture evaluation, and telemetry sample validation.
 - Small synthetic labeled ASI06 fixture metrics under `examples/`.
 - Telemetry sample JSON validation under `examples/`.
-- Phase 2 plan documents under `docs/plans/` covering ASI02 module and telemetry workflow.
+- Phase 2 plan documents under `docs/plans/` covering the v3 baseline, ASI02 module, telemetry workflow, corpus/red-team discipline, and ASI03/ASI05 roadmap specs.
 
 ## Recommended (not implemented here)
 

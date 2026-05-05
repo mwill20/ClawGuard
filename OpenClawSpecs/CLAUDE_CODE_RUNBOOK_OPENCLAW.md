@@ -10,8 +10,8 @@
 
 Before you start, confirm:
 - [ ] You have access to Windows filesystem (`C:\Projects\ClawGuard\`)
-- [ ] You have SSH access to VPS (`ssh root@31.97.139.139`)
-- [ ] Oxylabs API key is in `/docker/openclaw-utxu/.env`
+- [ ] You have SSH access to VPS (`ssh root@<configured-vps-ip>`)
+- [ ] Oxylabs API key is in `/docker/<configured-openclaw-stack>/.env`
 - [ ] `job-search-custom` files are in Claude outputs folder
 - [ ] GitHub repo is created and SSH keys configured
 
@@ -221,7 +221,7 @@ Ready to deploy to VPS and test via Telegram.
 **Instruction:** Connect to the server.
 
 ```bash
-ssh root@31.97.139.139
+ssh root@<configured-vps-ip>
 ```
 
 **Expected output:** SSH prompt (may ask to accept host key first time)
@@ -235,28 +235,28 @@ docker ps | grep openclaw
 
 **Expected output:**
 ```
-openclaw-utxu-openclaw-1   ghcr.io/hostinger/hvps-openclaw:latest   ...   Up ...
+<configured-openclaw-container>   ghcr.io/hostinger/hvps-openclaw:latest   ...   Up ...
 ```
 
 **If not running:**
 ```bash
-docker start openclaw-utxu-openclaw-1
-docker logs openclaw-utxu-openclaw-1 --tail 20
+docker start <configured-openclaw-container>
+docker logs <configured-openclaw-container> --tail 20
 ```
 
 ### Step D3: Check Extensions Directory Permissions
 **Instruction:** Ensure we can write to extensions folder.
 
 ```bash
-ls -la /docker/openclaw-utxu/data/.openclaw/extensions/
+ls -la /docker/<configured-openclaw-stack>/data/.openclaw/extensions/
 ```
 
 **Expected output:** Directory exists, writable by root
 
 **If doesn't exist, create it:**
 ```bash
-mkdir -p /docker/openclaw-utxu/data/.openclaw/extensions/
-chmod 755 /docker/openclaw-utxu/data/.openclaw/extensions/
+mkdir -p /docker/<configured-openclaw-stack>/data/.openclaw/extensions/
+chmod 755 /docker/<configured-openclaw-stack>/data/.openclaw/extensions/
 ```
 
 ### Step D4: Copy Skill Files from Local to VPS
@@ -267,8 +267,8 @@ chmod 755 /docker/openclaw-utxu/data/.openclaw/extensions/
 # On Windows (new PowerShell window, NOT SSH session)
 $skillDir = "C:\Projects\ClawGuard\target-agent\skills\job-search-custom"
 $vpsUser = "root"
-$vpsIp = "31.97.139.139"
-$vpsPath = "/docker/openclaw-utxu/data/.openclaw/extensions/"
+$vpsIp = "<configured-vps-ip>"
+$vpsPath = "/docker/<configured-openclaw-stack>/data/.openclaw/extensions/"
 
 scp -r "$skillDir" "${vpsUser}@${vpsIp}:${vpsPath}"
 ```
@@ -278,7 +278,7 @@ scp -r "$skillDir" "${vpsUser}@${vpsIp}:${vpsPath}"
 From the SSH session:
 ```bash
 # Back on VPS SSH
-cat > /docker/openclaw-utxu/data/.openclaw/extensions/SKILL.md << 'EOF'
+cat > /docker/<configured-openclaw-stack>/data/.openclaw/extensions/SKILL.md << 'EOF'
 # Paste SKILL.md content here
 EOF
 
@@ -287,7 +287,7 @@ EOF
 
 **Verify transfer:**
 ```bash
-ls -la /docker/openclaw-utxu/data/.openclaw/extensions/job-search-custom/
+ls -la /docker/<configured-openclaw-stack>/data/.openclaw/extensions/job-search-custom/
 ```
 
 **Expected output:** SKILL.md, AUDIT.md, job_search_secure.py listed
@@ -296,7 +296,7 @@ ls -la /docker/openclaw-utxu/data/.openclaw/extensions/job-search-custom/
 **Instruction:** Verify environment variable exists.
 
 ```bash
-grep OXYLABS_AISTUDIO_API_KEY /docker/openclaw-utxu/.env
+grep OXYLABS_AISTUDIO_API_KEY /docker/<configured-openclaw-stack>/.env
 ```
 
 **Expected output:** `OXYLABS_AISTUDIO_API_KEY=sk-xxxx...` (key should be present, not empty)
@@ -304,7 +304,7 @@ grep OXYLABS_AISTUDIO_API_KEY /docker/openclaw-utxu/.env
 **If missing, add it:**
 ```bash
 # Edit .env file
-nano /docker/openclaw-utxu/.env
+nano /docker/<configured-openclaw-stack>/.env
 
 # Find the OXYLABS line and add your key:
 # OXYLABS_AISTUDIO_API_KEY=your_key_here
@@ -316,13 +316,13 @@ nano /docker/openclaw-utxu/.env
 **Instruction:** Reload container so it picks up the new skill.
 
 ```bash
-docker restart openclaw-utxu-openclaw-1
+docker restart <configured-openclaw-container>
 ```
 
 **Wait for restart:**
 ```bash
 sleep 10
-docker logs openclaw-utxu-openclaw-1 --tail 20
+docker logs <configured-openclaw-container> --tail 20
 ```
 
 **Expected output:** No error messages, container reports "ready" or similar
@@ -346,7 +346,7 @@ Search for SOC Analyst jobs in Remote, max 10 results
 
 ```bash
 # On VPS, check container logs
-docker logs openclaw-utxu-openclaw-1 --tail 50 | grep -i "search\|error\|telegram"
+docker logs <configured-openclaw-container> --tail 50 | grep -i "search\|error\|telegram"
 ```
 
 **Expected patterns in logs:**
@@ -361,7 +361,7 @@ docker logs openclaw-utxu-openclaw-1 --tail 50 | grep -i "search\|error\|telegra
 | `OXYLABS_AISTUDIO_API_KEY not set` | Check `.env`, restart container |
 | `Connection refused: api.oxylabs.io` | Oxylabs API down or IP blocked |
 | `[whatsapp:default] restarting` | Ignore (WhatsApp disabled, just noise) |
-| No Telegram response | Check allowlist: `grep "8778037036" /docker/openclaw-utxu/data/.openclaw/openclaw.json` |
+| No Telegram response | Check allowlist: `grep "<telegram-user-id>" /docker/<configured-openclaw-stack>/data/.openclaw/openclaw.json` |
 
 ### Step E3: Document Test Results
 **Instruction:** On Windows, create test log.
@@ -456,7 +456,7 @@ git push origin feat/job-search-custom-deployment
 
 ```bash
 # On VPS
-docker exec -it openclaw-utxu-openclaw-1 cat /docker/openclaw-utxu/data/.openclaw/workspace/job_search_audit.log
+docker exec -it <configured-openclaw-container> cat /docker/<configured-openclaw-stack>/data/.openclaw/workspace/job_search_audit.log
 ```
 
 **Expected output:** JSON entries with timestamp, event type, method, results
@@ -472,7 +472,7 @@ docker exec -it openclaw-utxu-openclaw-1 cat /docker/openclaw-utxu/data/.opencla
 
 ```bash
 # On VPS
-docker exec -it openclaw-utxu-openclaw-1 cat /docker/openclaw-utxu/data/.openclaw/workspace/opportunities_log.json
+docker exec -it <configured-openclaw-container> cat /docker/<configured-openclaw-stack>/data/.openclaw/workspace/opportunities_log.json
 ```
 
 **Expected output:** JSON array of job opportunities with status tracking
@@ -482,7 +482,7 @@ docker exec -it openclaw-utxu-openclaw-1 cat /docker/openclaw-utxu/data/.opencla
 
 ```bash
 # On VPS, check recent outbound connections
-docker exec -it openclaw-utxu-openclaw-1 netstat -tnp 2>/dev/null | grep ESTABLISHED | grep -i python
+docker exec -it <configured-openclaw-container> netstat -tnp 2>/dev/null | grep ESTABLISHED | grep -i python
 ```
 
 **Expected hosts:**

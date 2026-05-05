@@ -12,7 +12,7 @@
 Deploy and operate a real AI agent platform on a dedicated VPS, generate authentic telemetry, and feed it into ClawGuard's detection engine. OpenClaw is the **target**, not the deliverable — its value is the data it produces for security monitoring.
 
 **Success criteria:**
-- ✅ Deployment live (31.97.139.139)
+- ✅ Deployment live (<configured-vps-ip>)
 - ✅ Telegram integration working
 - 🔲 Custom job-search-custom skill installed and tested
 - 🔲 Agent producing real execution traces
@@ -25,10 +25,10 @@ Deploy and operate a real AI agent platform on a dedicated VPS, generate authent
 ### Deployment Status
 | Component | Status | Details |
 |-----------|--------|---------|
-| **VPS** | ✅ LIVE | Hostinger KVM 2, Ubuntu 24.04, 31.97.139.139 |
+| **VPS** | ✅ LIVE | Hostinger KVM 2, Ubuntu 24.04, <configured-vps-ip> |
 | **OpenClaw** | ✅ RUNNING | v2026.3.12, Docker container, Traefik reverse proxy |
 | **LLM Backend** | ✅ CONFIGURED | google/gemini-2.5-flash (cost-optimized) |
-| **Telegram Bot** | ✅ PAIRED | @clawgaurd_agent_bot, user ID 8778037036 |
+| **Telegram Bot** | ✅ PAIRED | @clawgaurd_agent_bot, user ID <telegram-user-id> |
 | **Oxylabs API** | ✅ LIVE | 1000 credits, key in .env, verified working |
 | **Credentials** | ✅ ROTATED | All exposed keys regenerated |
 | **Messaging** | ✅ HARDENED | Telegram allowlist only, other plugins disabled |
@@ -36,16 +36,16 @@ Deploy and operate a real AI agent platform on a dedicated VPS, generate authent
 ### Architecture
 ```
 ┌─────────────────────────────────────────┐
-│ VPS (31.97.139.139)                     │
+│ VPS (<configured-vps-ip>)                     │
 ├─────────────────────────────────────────┤
-│ Docker Container: openclaw-utxu         │
+│ Docker Container: <configured-openclaw-stack>         │
 │ ├─ OpenClaw Gateway (port 42822)        │
 │ ├─ Config: /data/.openclaw/             │
 │ ├─ Workspace: /data/.openclaw/workspace/│
-│ └─ Logs: /docker/openclaw-utxu/         │
+│ └─ Logs: /docker/<configured-openclaw-stack>/         │
 ├─────────────────────────────────────────┤
 │ Traefik Reverse Proxy (TLS)             │
-│ └─ Domain: openclaw-utxu.srv1523277...  │
+│ └─ Domain: <configured-openclaw-stack>.<configured-hostname>...  │
 ├─────────────────────────────────────────┤
 │ Telegram Bot Interface                  │
 │ └─ DM Policy: allowlist (user 8778...)  │
@@ -54,7 +54,7 @@ Deploy and operate a real AI agent platform on a dedicated VPS, generate authent
 
 ### File System (On Host)
 ```
-/docker/openclaw-utxu/
+/docker/<configured-openclaw-stack>/
 ├── .env                              # Secrets (Oxylabs key, bot token, etc.)
 ├── docker-compose.yml                # Container config
 └── data/
@@ -74,26 +74,26 @@ Deploy and operate a real AI agent platform on a dedicated VPS, generate authent
 ### Useful Commands
 ```bash
 # SSH in
-ssh root@31.97.139.139
+ssh root@<configured-vps-ip>
 
 # Check container status
 docker ps | grep openclaw
 
 # View logs (last 30 lines)
-docker logs openclaw-utxu-openclaw-1 --tail 30 -f
+docker logs <configured-openclaw-container> --tail 30 -f
 
 # Restart after config changes
-docker restart openclaw-utxu-openclaw-1
+docker restart <configured-openclaw-container>
 
 # Edit main config
-nano /docker/openclaw-utxu/data/.openclaw/openclaw.json
+nano /docker/<configured-openclaw-stack>/data/.openclaw/openclaw.json
 
 # Set model via CLI
-docker exec -it openclaw-utxu-openclaw-1 openclaw config set agents.defaults.model "google/gemini-2.5-flash"
+docker exec -it <configured-openclaw-container> openclaw config set agents.defaults.model "google/gemini-2.5-flash"
 
 # Agent management
-docker exec -it openclaw-utxu-openclaw-1 openclaw agents list
-docker exec -it openclaw-utxu-openclaw-1 openclaw agents add main
+docker exec -it <configured-openclaw-container> openclaw agents list
+docker exec -it <configured-openclaw-container> openclaw agents add main
 ```
 
 ---
@@ -110,8 +110,8 @@ docker exec -it openclaw-utxu-openclaw-1 openclaw agents add main
 | `job-search-custom/job_search_secure.py` | ✅ READY | Claude | Implementation (demo mode, ready for Oxylabs integration) |
 | Move files to repo | 🔲 PENDING | You | Copy into `target-agent/skills/job-search-custom/` |
 | Push to GitHub | 🔲 PENDING | You | `git add/commit/push` |
-| SSH install skill | 🔲 PENDING | You | Copy to `/docker/openclaw-utxu/data/.openclaw/extensions/job-search-custom/` |
-| Docker restart | 🔲 PENDING | You | `docker restart openclaw-utxu-openclaw-1` |
+| SSH install skill | 🔲 PENDING | You | Copy to `/docker/<configured-openclaw-stack>/data/.openclaw/extensions/job-search-custom/` |
+| Docker restart | 🔲 PENDING | You | `docker restart <configured-openclaw-container>` |
 | Telegram test | 🔲 PENDING | You | Send: "Search for SOC Analyst jobs in Remote" |
 | Document test results | 🔲 PENDING | You | Log output in `target-agent/docs/skill-test-log.md` |
 
@@ -246,8 +246,8 @@ git push origin feat/job-search-custom-deployment
 ## 📊 MONITORING & OBSERVABILITY
 
 ### Logs to Collect
-- **Container logs:** `docker logs openclaw-utxu-openclaw-1`
-- **Audit log:** `/docker/openclaw-utxu/data/.openclaw/logs/` (restricted perms, SSH only)
+- **Container logs:** `docker logs <configured-openclaw-container>`
+- **Audit log:** `/docker/<configured-openclaw-stack>/data/.openclaw/logs/` (restricted perms, SSH only)
 - **Skill logs:** `job_search_audit.log` (generated by job-search-custom)
 - **Opportunity tracker:** `opportunities_log.json` (generated by job-search-custom)
 
@@ -284,11 +284,11 @@ git push origin feat/job-search-custom-deployment
    ```
 5. **SSH to VPS** and install:
    ```bash
-   ssh root@31.97.139.139
+   ssh root@<configured-vps-ip>
    # Copy skill to OpenClaw
-   cp -r /path/to/job-search-custom /docker/openclaw-utxu/data/.openclaw/extensions/
+   cp -r /path/to/job-search-custom /docker/<configured-openclaw-stack>/data/.openclaw/extensions/
    # Restart OpenClaw
-   docker restart openclaw-utxu-openclaw-1
+   docker restart <configured-openclaw-container>
    ```
 6. **Test via Telegram:** Send message `Search for SOC Analyst jobs in Remote`
 7. **Document results** in `target-agent/docs/skill-test-log.md`

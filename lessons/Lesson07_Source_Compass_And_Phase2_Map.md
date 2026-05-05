@@ -36,6 +36,7 @@ Analogy: the source-status field is like the dashboard light on a car. Before, y
 - Digest summary fields: `newly_inserted_in_run`, `compile_only` (line ~2253)
 - Compile-mode log clarity: lines ~2143-2154
 - Test: `test_search_site_emits_source_status_audit_event` in [test_job_search_secure.py](../tests/test_job_search_secure.py)
+- Phase 2 umbrella spec: [docs/plans/PHASE2_SPEC.md](../docs/plans/PHASE2_SPEC.md)
 - Phase 2 index: [docs/plans/PHASE2_INDEX.md](../docs/plans/PHASE2_INDEX.md)
 - ASI02 spec: [docs/plans/PHASE2_ASI02_SPEC.md](../docs/plans/PHASE2_ASI02_SPEC.md)
 - Telemetry workflow plan: [docs/plans/PHASE2_TELEMETRY_WORKFLOW.md](../docs/plans/PHASE2_TELEMETRY_WORKFLOW.md)
@@ -217,6 +218,7 @@ Expected output:
 ```text
 PHASE2_ASI02_SPEC.md
 PHASE2_INDEX.md
+PHASE2_SPEC.md
 PHASE2_TELEMETRY_WORKFLOW.md
 ```
 
@@ -298,7 +300,7 @@ Why: this confirms the state machine behaves correctly without needing live prov
 - Source searches now report one of four states: `OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`.
 - The audit log JSON is the canonical record; DB schema is unchanged for now.
 - Digest summary adds `newly_inserted_in_run` and `compile_only` for unambiguous counts.
-- Phase 2 plans live under `docs/plans/` — ASI02 detection module and curated telemetry workflow.
+- Phase 2 plans live under `docs/plans/` - v3 umbrella spec, ASI02 detection module, curated telemetry workflow, corpus/red-team discipline, and ASI03/ASI05 roadmap specs.
 - "Log first, schema later" keeps Phase 1 closure cheap while preserving the option to migrate.
 
 ## 7. Summary Reference Card
@@ -311,14 +313,14 @@ Why: this confirms the state machine behaves correctly without needing live prov
 | Digest summary additions | `newly_inserted_in_run`, `compile_only` |
 | Test | `test_search_site_emits_source_status_audit_event` |
 | Phase 2 index | `docs/plans/PHASE2_INDEX.md` |
-| Phase 2 docs | `PHASE2_ASI02_SPEC.md`, `PHASE2_TELEMETRY_WORKFLOW.md` |
+| Phase 2 docs | `PHASE2_SPEC.md`, `PHASE2_ASI02_SPEC.md`, `PHASE2_TELEMETRY_WORKFLOW.md` |
 | Source-status code | `job_search_secure.py:1411-1437` |
 
 ## 8. Next Steps
 
 You've reached the end of the Phase 1 lesson curriculum. To go further:
 
-1. Read [docs/plans/PHASE2_INDEX.md](../docs/plans/PHASE2_INDEX.md) and skim the two plan documents.
+1. Read [docs/plans/PHASE2_SPEC.md](../docs/plans/PHASE2_SPEC.md) and [docs/plans/PHASE2_INDEX.md](../docs/plans/PHASE2_INDEX.md).
 2. Pick the Phase 2 doc that aligns with your interest (detection or operations).
 3. Build a synthetic ASI02 fixture and the v1 detector class — the spec in `PHASE2_ASI02_SPEC.md` is detailed enough to start from.
 
