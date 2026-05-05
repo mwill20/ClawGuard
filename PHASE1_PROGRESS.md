@@ -18,7 +18,7 @@ Current posture:
 - Brave Search and USAJobs native API are verified.
 - JD enrichment is disabled.
 - Application auto-prep is disabled in cron.
-- ASI06 checks run through the ClawGuard detector module; `detections/` is now a required deployment dependency.
+- ASI06 and ASI01 checks run through ClawGuard detector modules; `detections/` is now a required deployment dependency.
 - `job_security_findings` schema contains correlation and context fields.
 - Post-compile telemetry hook writes JSON and Markdown summaries.
 - Repo telemetry samples are exported manually, not auto-pushed from the VPS.
@@ -210,10 +210,10 @@ Detector-backed ASI06 detections:
 
 Deployment status:
 
-- Detector-backed ASI06 path was confirmed by normal VPS cron on 2026-05-04.
+- ASI06 module execution was confirmed by normal VPS cron on 2026-05-04; ASI01 module packaging was confirmed during the Phase 1 redeploy.
 - Inline ASI06 fallback has been removed locally; future deployments must ship `job_search_secure.py` and `detections/` together.
 
-Three clean sessions have now landed, so ASI01 is scaffolded as documentation. Runtime ASI01 logic still waits for a live redirect signal or ASI06 prompt-injection event.
+Three clean sessions unlocked the ASI01 design work, and ASI01 runtime detector v1 is now implemented as a corroborated classifier on top of ASI06 prompt-injection evidence.
 
 ## Quick Commands
 
@@ -312,7 +312,7 @@ VPS:
 - `job_security_findings` schema expanded with `job_id`, `agent_session_id`, and `context`.
 - ASI06 prompt-injection evidence hardened with `pattern`, `matched_text`, and `snippet`.
 - ASI06 detector module added under `detections/asi06_jd_content/detector.py`, confirmed by VPS cron, and made the required runtime path.
-- ASI01 semantic-first rule scaffold added under `detections/` after three clean telemetry sessions.
+- ASI01 semantic-first detector v1 added under `detections/asi01_goal_hijack/detector.py` after three clean telemetry sessions.
 - Baseline telemetry docs added under `lessons/`.
 - Lesson curriculum added under `lessons/00_Index.md` with component lessons and ASI06 defense lab data.
 - Post-compile telemetry hook added, deployed, and directly verified.

@@ -4,15 +4,16 @@
 
 1. Does the ASI06 detector identify known adversarial job-description patterns?
 2. Does the detector avoid findings for clean sample input?
-3. Does the OpenClaw runtime prefer the detector module when available?
-4. Are findings queryable by `agent_session_id`?
-5. Does post-compile telemetry preserve session-correlated results?
+3. Does ASI01 fire on corroborated goal-redirect content and stay silent on clean content?
+4. Does the OpenClaw runtime require the detector modules when available?
+5. Are findings queryable by `agent_session_id`?
+6. Does post-compile telemetry preserve session-correlated results?
 
 ## Current Metrics
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms detector, runtime, parser, evaluation, telemetry validation, profile privacy override, and DB behavior | 15/15 passing |
+| Unit tests | Confirms detector, runtime, parser, evaluation, telemetry validation, profile privacy override, and DB behavior | 21/21 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | Synthetic labeled fixture exact match | Verifies expected rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -34,9 +35,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.0
+Ran 21 tests in 0.0
 
 OK
 ```
@@ -115,7 +116,7 @@ Documented baselines:
 
 Known baseline result:
 
-- 0 ASI06 findings across clean sessions.
+- 0 ASI06 and 0 ASI01 findings across clean sessions.
 - 0 auto-prepared application packages.
 - 0 Oxylabs credits used.
 

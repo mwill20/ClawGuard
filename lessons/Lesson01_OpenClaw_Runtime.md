@@ -20,7 +20,7 @@ Why this matters: `job_search_secure.py` is the live OpenClaw skill. If you can 
 
 - Locate the runtime entry points in `job_search_secure.py`.
 - Explain how source search, scoring, digesting, and findings connect.
-- Trace the required detector-backed ASI06 path.
+- Trace the required detector-backed ASI06 and ASI01 paths.
 - Explain the purpose of `agent_session_id`.
 - Identify the low-volume maintenance controls.
 - Describe what should and should not happen during cron.

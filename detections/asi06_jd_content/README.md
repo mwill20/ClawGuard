@@ -77,4 +77,4 @@ Each finding includes `rule_id`, `severity`, `message`, `evidence`, and `context
 
 ## Next Step
 
-Package `job_search_secure.py` and `detections/` together for the next VPS deployment. Three clean sessions have landed, so ASI01 is now scaffolded separately while ASI06 has the first importable detection engine module.
+Package `job_search_secure.py` and `detections/` together for every VPS deployment. ASI01 is now implemented as a separate detector module that consumes ASI06 prompt-injection findings as upstream signal, so changes to ASI06 evidence shape can affect ASI01 behavior.

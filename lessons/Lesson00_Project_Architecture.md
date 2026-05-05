@@ -27,7 +27,7 @@ Why this matters: ClawGuard is not just a detector library. It is an operational
 
 ### Plain-English explanation
 
-ClawGuard watches a real job-search agent and asks: "Did untrusted job content try to manipulate the agent?" Today, the system focuses on ASI06 job-description content risks while preserving enough telemetry to build ASI01 and ASI02 later.
+ClawGuard watches a real job-search agent and asks: "Did untrusted job content try to manipulate the agent?" Today, the system runs ASI06 job-description content checks and ASI01 goal-redirect classification while preserving enough telemetry to build ASI02 and richer semantic guardrails later.
 
 Real-world analogy: ClawGuard is the control room for a security camera system. OpenClaw is the camera pointed at real activity. The detector decides what looks suspicious. The telemetry hook stores the footage summary so you can review it later.
 
@@ -37,9 +37,9 @@ Without this architecture, the project would be a set of disconnected scripts. W
 
 ### Project implements
 
-- `README.md` lines 7-24 describe the current Phase 1 posture and daily schedule.
-- `README.md` lines 36-42 map ASI01, ASI02, and ASI06 states.
-- `PHASE1_PROGRESS.md` lines 18-23 track operational status and schema posture.
+- `README.md` lines 7-24 describe the current Phase 1 purpose and key features.
+- `README.md` lines 78-88 map ASI01, ASI02, and ASI06 states.
+- `PHASE1_PROGRESS.md` lines 16-24 track operational status and schema posture.
 
 ### Recommended (not implemented here)
 
@@ -56,10 +56,10 @@ Without this architecture, the project would be a set of disconnected scripts. W
 | OpenClaw | The running agent target that searches jobs and produces telemetry. |
 | ClawGuard | The guardrail and detection layer built around OpenClaw behavior. |
 | ASI06 | OWASP Agentic risk category used here for malicious job-description content ingestion. |
-| ASI01 | Goal hijacking and instruction override; scaffolded, not runtime implemented. |
+| ASI01 | Goal hijacking and instruction override; detector-backed runtime v1. |
 | `agent_session_id` | Correlation ID like `digest-20260503T163003-b91b67e1`. |
 | Clean baseline | A run with zero findings that proves the pipeline can run without noise. |
-| Detector-only ASI06 runtime | `job_search_secure.py` imports `detections/asi06_jd_content/detector.py` directly after VPS cron confirmation. |
+| Detector-backed runtime | `job_search_secure.py` imports ASI06 and ASI01 detector modules directly after VPS deployment confirmation. |
 
 ### Larger architecture
 
@@ -68,6 +68,7 @@ Job source APIs
   -> job_search_secure.py
   -> SQLite jobs.db
   -> detections/asi06_jd_content/detector.py
+  -> detections/asi01_goal_hijack/detector.py
   -> job_security_findings
   -> digest_YYYY-MM-DD.json
   -> clawguard_post_compile.sh
@@ -80,14 +81,14 @@ Job source APIs
 Project implements:
 
 - Low-volume daily runs so OpenClaw acts as telemetry generator, not application machine.
-- Detector-backed ASI06 path as the required runtime dependency.
+- Detector-backed ASI06 and ASI01 paths as required runtime dependencies.
 - Manual telemetry export instead of auto-pushing from the VPS.
 
 Recommended (not implemented here):
 
 - Schema/policy checks for every digest and telemetry artifact.
 - Prompt sanitization/quarantine before any future LLM semantic analysis.
-- Semantic guardrails for ASI01 using deterministic rules or LLM-as-judge.
+- LLM-as-judge guardrail for ambiguous ASI01 cases.
 
 ## 3. Code Walkthrough Section
 
@@ -98,6 +99,7 @@ README.md
 PHASE1_PROGRESS.md
 target-agent/skills/job-search-custom/job_search_secure.py
 detections/asi06_jd_content/detector.py
+detections/asi01_goal_hijack/detector.py
 target-agent/skills/job-search-custom/clawguard_post_compile.sh
 tests/test_job_search_secure.py
 tests/test_asi06_detector.py
@@ -117,7 +119,7 @@ Key block:
 ```text
 OpenClaw cron
   -> job-search-custom searches LinkedIn, CyberSecJobs, USAJobs
-  -> SQLite stores jobs, scores, and ASI06 findings
+  -> SQLite stores jobs, scores, and ASI06/ASI01 findings
   -> digest compile creates agent_session_id
   -> clawguard_post_compile.sh exports telemetry JSON/Markdown
   -> lessons/ captures curated baselines and review artifacts
@@ -139,7 +141,7 @@ Why it is designed this way: real detection work needs repeatable inputs and evi
 | Pitfall | Avoid it by |
 |---|---|
 | Treating 0 findings as failure | Reading clean baselines as noise-control evidence. |
-| Claiming ASI01 runtime exists | Saying ASI01 is scaffolded and semantic-first, not implemented. |
+| Treating ASI01 as a duplicate regex scanner | Explaining that ASI01 consumes ASI06 prompt-injection findings as upstream corroboration and adds goal-impact classification. |
 | Deploying only one runtime file | Deploying `job_search_secure.py` and `detections/` together. |
 
 ## 4. Hands-On Exercises Section
@@ -175,9 +177,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.077s
+Ran 21 tests in 0.14s
 
 OK
 ```
@@ -188,15 +190,13 @@ PowerShell:
 
 ```powershell
 Set-Location C:\Projects\ClawGuard
-git log --oneline -5
+git log --oneline --grep "Close Phase 1" -1
 ```
 
 Expected output begins:
 
 ```text
-6bc0055 Fix cron confirmation SSH transport
-eaff230 Add local automation helpers
-75fab8f Sanitize tracked job-search profile samples
+2a4c550 Close Phase 1: ASI01 v1, source-status semantics, Phase 2 plans
 ```
 
 ### 🧪 Exercise 4: Intentional failure check
@@ -214,13 +214,13 @@ Expected output includes:
 ModuleNotFoundError: No module named 'detections.missing_detector'
 ```
 
-Why this matters: the ASI06 runtime catches missing `detections` package imports and falls back, but unrelated missing imports should fail loudly.
+Why this matters: the ASI06 and ASI01 runtimes now require packaged detector modules. Missing detector imports should fail loudly during packaging checks.
 
 ## 5. Interview Preparation Section
 
 **Q: What problem does ClawGuard solve in this repo?**
 
-**A:** It turns OpenClaw from a job-search script into a real telemetry source for AI agent security monitoring. The system watches untrusted job content, records ASI06 findings with evidence and session IDs, and exports digest-linked telemetry for later detector work. This answer shows you understand both the security goal and the operational pipeline.
+**A:** It turns OpenClaw from a job-search script into a real telemetry source for AI agent security monitoring. The system watches untrusted job content, records ASI06 and ASI01 findings with evidence and session IDs, and exports digest-linked telemetry for later detector work. This answer shows you understand both the security goal and the operational pipeline.
 
 **Q: Why use a real OpenClaw deployment instead of synthetic examples only?**
 
@@ -233,8 +233,8 @@ Why this matters: the ASI06 runtime catches missing `detections` package imports
 ## 6. Key Takeaways Section
 
 - ClawGuard Phase 1 is running against real OpenClaw telemetry.
-- ASI06 is the first implemented detector-backed risk class.
-- ASI01 is documented but intentionally not runtime implemented yet.
+- ASI06 is the content-risk detector for malicious job-description ingestion.
+- ASI01 is the goal-impact detector that consumes ASI06 prompt-injection findings as upstream signal.
 - Clean runs are useful because they establish false-positive and operational baselines.
 - The architecture favors evidence preservation over automated action.
 
@@ -243,7 +243,7 @@ Why this matters: the ASI06 runtime catches missing `detections` package imports
 | Item | Value |
 |---|---|
 | Main runtime | `target-agent/skills/job-search-custom/job_search_secure.py` |
-| Main detector | `detections/asi06_jd_content/detector.py` |
+| Main detectors | `detections/asi06_jd_content/detector.py`, `detections/asi01_goal_hijack/detector.py` |
 | Findings table | `job_security_findings` |
 | Session ID format | `digest-YYYYMMDDTHHMMSS-xxxxxxxx` |
 | Latest telemetry files | `/data/clawguard/telemetry/telemetry_latest.json`, `/data/clawguard/telemetry/telemetry_latest.md` |

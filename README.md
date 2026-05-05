@@ -13,7 +13,8 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 ## Key Features
 
 - Detector-backed ASI06 checks for prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches.
-- OpenClaw runtime integration that requires the packaged ASI06 detector module.
+- ASI01 goal-hijack detector v1 that classifies goal redirects using ASI06 prompt-injection findings as upstream corroboration.
+- OpenClaw runtime integration that requires the packaged ASI06 and ASI01 detector modules.
 - SQLite persistence for jobs, scores, search runs, quota state, and `job_security_findings`.
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
@@ -81,11 +82,11 @@ ClawGuard maps agent behavior and ingested content to OWASP Agentic Top 10 risks
 
 | Detection | OWASP Code | Current State |
 |---|---|---|
-| Goal hijack detection | ASI01 | Scaffolded after three clean OpenClaw telemetry sessions |
+| Goal hijack detection | ASI01 | Detector-backed runtime v1 |
 | Tool misuse detection | ASI02 | Planned |
 | Job-description content detection | ASI06 | Detector-backed runtime |
 
-The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing `pattern`, `matched_text`, and `snippet`.
+The active ASI06 path detects suspicious job content such as prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches. ASI01 then classifies goal-redirect attempts using ASI06 prompt-injection findings as upstream signal plus tightly scoped imperative-redirect rules. Findings are persisted to `job_security_findings` with `job_id`, `agent_session_id`, structured `context`, and evidence containing fields such as `pattern`, `matched_text`, `snippet`, `related_asi06_rule_id`, and `attempted_goal`.
 
 ## Repository Structure
 
@@ -166,9 +167,9 @@ python -B -m unittest discover -s tests
 Expected result:
 
 ```text
-...............
+.....................
 ----------------------------------------------------------------------
-Ran 15 tests in 0.0
+Ran 21 tests in 0.0
 
 OK
 ```
@@ -313,8 +314,9 @@ OpenClaw daily cron
 ```text
 OpenClaw cron
   -> job-search-custom searches LinkedIn, CyberSecJobs, USAJobs
-  -> SQLite stores jobs, scores, and ASI06 findings
+  -> SQLite stores jobs, scores, and ASI06/ASI01 findings
   -> detections/asi06_jd_content/detector.py evaluates job content
+  -> detections/asi01_goal_hijack/detector.py classifies goal redirects
   -> digest compile creates agent_session_id
   -> clawguard_post_compile.sh exports telemetry JSON/Markdown
   -> lessons/ captures curated baselines and review artifacts
@@ -330,7 +332,7 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 15/15 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 21/21 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
@@ -356,7 +358,7 @@ See [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 Important current limitations:
 
 - ASI06 is deterministic and regex/rule based; semantic fallback is planned, not implemented.
-- ASI01 is scaffolded, not runtime implemented.
+- ASI01 v1 is deterministic and corroboration-based; ambiguous semantic cases still need a future LLM-as-judge or richer policy layer.
 - Precision and recall are measured only against a small synthetic fixture, not a real-world corpus.
 - The OpenClaw deployment now requires `job_search_secure.py` and the `detections/` package to deploy together.
 

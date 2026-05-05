@@ -141,7 +141,7 @@ Inspect latest telemetry without exporting:
 .\scripts\check_latest_telemetry.ps1
 ```
 
-Confirm the daily cron used the detector-backed ASI06 path:
+Confirm the daily cron used the detector-backed ASI06 and ASI01 paths:
 
 ```powershell
 .\scripts\check_cron_confirmation.ps1

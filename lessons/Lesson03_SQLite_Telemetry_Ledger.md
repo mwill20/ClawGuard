@@ -2,7 +2,7 @@
 
 ## 🛡️ Welcome Back, Evidence Engineer
 
-Goal: understand how ClawGuard persists jobs and ASI06 findings in SQLite.
+Goal: understand how ClawGuard persists jobs and ASI06/ASI01 findings in SQLite.
 
 Time estimate: 40 minutes
 
@@ -11,7 +11,7 @@ Prerequisites:
 - Complete Lessons 01 and 02.
 - Understand basic SQL inserts, indexes, and JSON stored as text.
 
-Why this matters: a detector without durable evidence is just a console message. The SQLite layer turns ASI06 signals into queryable security telemetry.
+Why this matters: a detector without durable evidence is just a console message. The SQLite layer turns ASI06 and ASI01 signals into queryable security telemetry.
 
 ## 1. Introduction Section
 
@@ -19,7 +19,7 @@ Why this matters: a detector without durable evidence is just a console message.
 
 - Explain the role of `JobDatabase`.
 - Identify the `job_security_findings` schema.
-- Record ASI06 findings with an `agent_session_id`.
+- Record ASI06 and ASI01 findings with an `agent_session_id`.
 - Query findings by job and session.
 - Explain why `context` and `evidence` are stored separately.
 - Recognize idempotent migration behavior.
@@ -138,18 +138,19 @@ def record_security_findings(
     findings: List[SecurityFinding],
     agent_session_id: Optional[str] = None,
 ):
-    """Replace current ASI06 findings for a job with the latest evaluation."""
+    """Replace current ASI06/ASI01 findings for a job with the latest evaluation."""
     self.conn.execute(
-        "DELETE FROM job_security_findings WHERE job_id = ? AND rule_id LIKE 'ASI06_%'",
+        "DELETE FROM job_security_findings "
+        "WHERE job_id = ? AND (rule_id LIKE 'ASI06_%' OR rule_id LIKE 'ASI01_%')",
         (job_id,)
     )
 ```
 
 What it does:
 
-1. Replaces ASI06 findings for the job.
+1. Replaces ASI06 and ASI01 findings for the job.
 2. Prevents duplicate findings from repeated scoring of the same job.
-3. Keeps non-ASI06 future findings untouched.
+3. Keeps unrelated future finding families untouched.
 
 Why this matters: the detector can be re-run safely as descriptions get enriched or rescored.
 
@@ -180,7 +181,7 @@ python -B -c "import importlib.util, json, tempfile, sys; from pathlib import Pa
 Expected output:
 
 ```text
-[('ASI06_URL_MISMATCH', 'digest-20260503T163003-b91b67e1'), ('ASI06_PROMPT_INJECTION', 'digest-20260503T163003-b91b67e1'), ('ASI06_PII_REQUEST', 'digest-20260503T163003-b91b67e1')]
+[('ASI06_URL_MISMATCH', 'digest-20260503T163003-b91b67e1'), ('ASI06_PROMPT_INJECTION', 'digest-20260503T163003-b91b67e1'), ('ASI06_PII_REQUEST', 'digest-20260503T163003-b91b67e1'), ('ASI01_EXTERNAL_GOAL_REDIRECT', 'digest-20260503T163003-b91b67e1')]
 ```
 
 ### 🧪 Exercise 2: Run the DB tests
@@ -225,9 +226,9 @@ Why: a raw SQLite database has no schema until `JobDatabase` initializes it.
 
 **A:** The detector needs flexible, rule-specific evidence while SQL still needs stable columns for filtering. JSON text keeps schema simple while allowing fields like `matched_text`, `snippet`, and `source_field`.
 
-**Q: Why delete old ASI06 findings before inserting current ones?**
+**Q: Why delete old ASI06/ASI01 findings before inserting current ones?**
 
-**A:** A job can be rescored after enrichment. Replacing ASI06 findings prevents duplicate alerts while preserving the latest evidence for that job.
+**A:** A job can be rescored after enrichment. Replacing ASI06 and ASI01 findings prevents duplicate alerts while preserving the latest evidence for that job. The delete is scoped to those rule prefixes so unrelated future detector families are not accidentally erased.
 
 **Q: What makes `agent_session_id` important for ClawGuard?**
 

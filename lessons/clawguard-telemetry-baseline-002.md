@@ -62,7 +62,7 @@ Telemetry output:
 Observed findings:
 
 - 0 ASI06 findings.
-- 0 ASI01 findings; ASI01 is not implemented yet.
+- 0 ASI01 findings. Historical note: at capture time, ASI01 runtime was not implemented yet; ASI01 v1 was implemented later on 2026-05-04.
 
 This is a clean-content telemetry signal, not a failed run.
 
@@ -94,7 +94,7 @@ The narrow future improvement is to report re-seen candidates separately from ne
 
 ## Decision
 
-This run unlocks the ASI01 documentation scaffold because the project now has:
+This run unlocked the ASI01 documentation scaffold because the project had:
 
 - A clean manual maintenance baseline.
 - A clean post-compile hook validation.

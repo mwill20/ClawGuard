@@ -13,7 +13,8 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | `Lesson03_SQLite_Telemetry_Ledger.md` | Complete | SQLite findings and evidence persistence |
 | `Lesson04_Cron_And_Post_Compile_Telemetry.md` | Complete | VPS cron, post-compile hook, and telemetry latest files |
 | `Lesson05_Testing_And_Defense_Lab.md` | Complete | Regression tests and ASI06 red-team lab |
-| `Lesson06_ASI01_Goal_Hijack_Scaffold.md` | Complete | ASI01 scaffold and semantic-first design decision |
+| `Lesson06_ASI01_Goal_Hijack_Scaffold.md` | Complete | ASI01 detector v1 and semantic-first design decision |
+| `Lesson07_Source_Compass_And_Phase2_Map.md` | Complete | Source-status semantics and Phase 2 planning map |
 | `assets/asi06_red_team_jobs.json` | Complete | Local clean/adversarial sample jobs for lesson exercises |
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
 | `clawguard-telemetry-baseline-002.md` | Complete | First autonomous full cron-chain telemetry baseline |
@@ -38,7 +39,7 @@ lessons/00_Index.md
 The lesson sequence covers current implemented project phases:
 
 ```text
-Architecture -> OpenClaw runtime -> ASI06 detector -> SQLite evidence -> cron telemetry -> tests/lab -> ASI01 scaffold
+Architecture -> OpenClaw runtime -> ASI06 detector -> SQLite evidence -> cron telemetry -> tests/lab -> ASI01 detector -> source-status/Phase 2 map
 ```
 
 ## Telemetry Artifacts

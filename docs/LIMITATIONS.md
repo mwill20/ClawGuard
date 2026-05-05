@@ -4,7 +4,7 @@
 
 - ASI06 detection is deterministic and rule-based.
 - No semantic LLM review is implemented.
-- ASI01 goal-hijack detection is scaffolded but not runtime implemented.
+- ASI01 goal-hijack detection v1 is implemented, but it is deterministic and intentionally narrow.
 - ASI02 tool-misuse detection is planned but not implemented.
 - Precision, recall, and F1 are measured only on a small synthetic ASI06 fixture, not a real-world corpus.
 - No larger real-world labeled evaluation corpus exists.
@@ -47,13 +47,13 @@ Do not use this project as:
 | Deterministic ASI06 rules | Simple, explainable, testable | Misses subtle semantic attacks |
 | SQLite persistence | Easy local inspection | Limited scale/concurrency |
 | Manual telemetry export | Avoids VPS auto-push risk | Requires operator discipline |
-| Detector-only ASI06 runtime | Removes duplicate logic after confirmation | Requires packaged deploy of `job_search_secure.py` and `detections/` |
+| Detector-backed ASI06/ASI01 runtime | Removes duplicate logic after confirmation | Requires packaged deploy of `job_search_secure.py` and `detections/` |
 | Low-volume cron | Lower cost/noise | Slower data accumulation |
 
 ## Future Work
 
 - Package `job_search_secure.py` and `detections/` as one deployment unit.
-- Add ASI01 runtime detector after live redirect evidence or ASI06 prompt-injection signal.
+- Extend ASI01 with semantic review for ambiguous goal-redirect cases.
 - Wire telemetry validation into exported VPS artifacts or hook post-checks.
 - Add a larger real-world ASI06 evaluation fixture set.
 - Add production cron runtime and memory telemetry.
