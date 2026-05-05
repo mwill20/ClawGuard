@@ -55,8 +55,8 @@ echo "Deploying OpenClaw skill package into $SkillDir"
 docker cp "$RemoteStage/job_search_secure.py" "$jobContainerPath"
 docker exec $quotedContainer mkdir -p "$SkillDir/detections"
 docker cp "$RemoteStage/detections/." "$detectionsContainerPath"
-docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py detections/asi06_jd_content/detector.py detections/asi01_goal_hijack/detector.py
-docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; print('asi06_module=' + m.ClawGuardASI06JobContentDetector.__module__); print('asi01_module=' + m.ClawGuardASI01GoalHijackDetector.__module__)"
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py detections/asi06_jd_content/detector.py detections/asi01_goal_hijack/detector.py detections/asi02_tool_misuse/detector.py
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; print('asi06_module=' + m.ClawGuardASI06JobContentDetector.__module__); print('asi01_module=' + m.ClawGuardASI01GoalHijackDetector.__module__); print('asi02_module=' + m.ClawGuardASI02ToolMisuseDetector.__module__)"
 echo "Deploy complete."
 "@
 

@@ -40,6 +40,7 @@ from urllib.request import Request, urlopen
 
 from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
 from detections.asi01_goal_hijack.detector import ASI01GoalHijackDetector as ClawGuardASI01GoalHijackDetector
+from detections.asi02_tool_misuse.detector import ASI02ToolMisuseDetector as ClawGuardASI02ToolMisuseDetector
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -214,6 +215,7 @@ def setup_logging():
 logger = logging.getLogger(__name__)
 ASI06_DETECTOR_MODE_LOGGED = False
 ASI01_DETECTOR_MODE_LOGGED = False
+ASI02_DETECTOR_MODE_LOGGED = False
 
 def audit_log(event_type: str, **details):
     log_entry = {
@@ -653,10 +655,10 @@ class JobDatabase:
         findings: List[SecurityFinding],
         agent_session_id: Optional[str] = None,
     ):
-        """Replace current ASI06/ASI01 findings for a job with the latest evaluation."""
+        """Replace current ASI06/ASI01/ASI02 findings for a job with the latest evaluation."""
         self.conn.execute(
             "DELETE FROM job_security_findings "
-            "WHERE job_id = ? AND (rule_id LIKE 'ASI06_%' OR rule_id LIKE 'ASI01_%')",
+            "WHERE job_id = ? AND (rule_id LIKE 'ASI06_%' OR rule_id LIKE 'ASI01_%' OR rule_id LIKE 'ASI02_%')",
             (job_id,)
         )
         for finding in findings:
@@ -1690,7 +1692,7 @@ def _security_finding_from_clawguard(finding) -> SecurityFinding:
 
 
 def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[SecurityFinding]:
-    global ASI06_DETECTOR_MODE_LOGGED, ASI01_DETECTOR_MODE_LOGGED
+    global ASI06_DETECTOR_MODE_LOGGED, ASI01_DETECTOR_MODE_LOGGED, ASI02_DETECTOR_MODE_LOGGED
     text = jd_text if jd_text is not None else f"{job.title}\n{job.description}"
     if not ASI06_DETECTOR_MODE_LOGGED:
         logger.info("ClawGuard ASI06 detector module active")
@@ -1708,7 +1710,19 @@ def run_jd_security_detections(job: Job, jd_text: Optional[str] = None) -> List[
     asi01_raw = asi01_detector.detect(job, jd_text=text, asi06_findings=asi06_raw)
     asi01_findings = [_security_finding_from_clawguard(f) for f in asi01_raw]
 
-    return asi06_findings + asi01_findings
+    if not ASI02_DETECTOR_MODE_LOGGED:
+        logger.info("ClawGuard ASI02 detector module active")
+        ASI02_DETECTOR_MODE_LOGGED = True
+    asi02_detector = ClawGuardASI02ToolMisuseDetector()
+    asi02_raw = asi02_detector.detect(
+        job,
+        jd_text=text,
+        asi06_findings=asi06_raw,
+        asi01_findings=asi01_raw,
+    )
+    asi02_findings = [_security_finding_from_clawguard(f) for f in asi02_raw]
+
+    return asi06_findings + asi01_findings + asi02_findings
 
 
 # ============================================================================

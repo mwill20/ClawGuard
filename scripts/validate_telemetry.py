@@ -13,7 +13,7 @@ from typing import Any
 
 
 SESSION_ID_RE = re.compile(r"^digest-\d{8}T\d{6}-[0-9a-f]{8}$")
-SUPPORTED_SCHEMA_VERSIONS = {"1.0", "1.1"}
+SUPPORTED_SCHEMA_VERSIONS = {"1.0", "1.1", "1.2"}
 DEFAULT_LEGACY_SCHEMA_VERSION = "1.0"
 
 REQUIRED_TOP_LEVEL = {
@@ -52,6 +52,11 @@ REQUIRED_ASI01_EVIDENCE_FIELDS = {
     "attempted_goal": str,
     "attempted_goal_categories": list,
     "intended_goal": str,
+    "matches": list,
+}
+
+REQUIRED_ASI02_EVIDENCE_FIELDS = {
+    "attempted_operation_category": str,
     "matches": list,
 }
 
@@ -111,8 +116,20 @@ def validate_telemetry(data: dict[str, Any]) -> dict[str, Any]:
             raise TelemetryValidationError(
                 f"telemetry.findings[{index}] has ASI01 finding but schema_version is 1.0"
             )
-        if schema_version == "1.1" and finding["rule_id"].startswith("ASI01_"):
+        if schema_version in {"1.1", "1.2"} and finding["rule_id"].startswith("ASI01_"):
             for field, expected_type in REQUIRED_ASI01_EVIDENCE_FIELDS.items():
+                _expect_type(
+                    finding["evidence"],
+                    field,
+                    expected_type,
+                    f"telemetry.findings[{index}].evidence",
+                )
+        if schema_version in {"1.0", "1.1"} and finding["rule_id"].startswith("ASI02_"):
+            raise TelemetryValidationError(
+                f"telemetry.findings[{index}] has ASI02 finding but schema_version is {schema_version}"
+            )
+        if schema_version == "1.2" and finding["rule_id"].startswith("ASI02_"):
+            for field, expected_type in REQUIRED_ASI02_EVIDENCE_FIELDS.items():
                 _expect_type(
                     finding["evidence"],
                     field,

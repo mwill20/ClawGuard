@@ -29,7 +29,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-TELEMETRY_SCHEMA_VERSION = "1.1"
+TELEMETRY_SCHEMA_VERSION = "1.2"
 
 def atomic_write(path: Path, content: str):
     tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")

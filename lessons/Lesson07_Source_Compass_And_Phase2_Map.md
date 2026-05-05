@@ -293,7 +293,7 @@ Why: this confirms the state machine behaves correctly without needing live prov
 
 **Q: What's the first piece of Phase 2 that should ship?**
 
-**A:** The telemetry export workflow. ASI02 needs realistic samples to evaluate false-positive rates against, and the curated export pipeline produces those samples. Once the workflow lands, ASI02 can be developed against real adversarial content rather than synthetic fixtures alone.
+**A:** The telemetry export workflow. ASI02 v1 now has synthetic fixture coverage, but realistic curated samples are still needed to evaluate false-positive rates before broadening the rule set.
 
 ## 6. Key Takeaways Section
 
@@ -322,7 +322,7 @@ You've reached the end of the Phase 1 lesson curriculum. To go further:
 
 1. Read [docs/plans/PHASE2_SPEC.md](../docs/plans/PHASE2_SPEC.md) and [docs/plans/PHASE2_INDEX.md](../docs/plans/PHASE2_INDEX.md).
 2. Pick the Phase 2 doc that aligns with your interest (detection or operations).
-3. Build a synthetic ASI02 fixture and the v1 detector class — the spec in `PHASE2_ASI02_SPEC.md` is detailed enough to start from.
+3. Deploy ASI02, cron-confirm the module activation line, then add a hands-on ASI02 defense lab to the lessons.
 
 Optional advanced topics:
 

@@ -5,7 +5,7 @@
 - ASI06 detection is deterministic and rule-based.
 - No semantic LLM review is implemented.
 - ASI01 goal-hijack detection v1 is implemented, but it is deterministic and intentionally narrow.
-- ASI02 tool-misuse detection is planned but not implemented.
+- ASI02 v1 is content-side and pre-action only. Runtime tool-call instrumentation is still a Phase 3 prerequisite.
 - Precision, recall, and F1 are measured only on a small synthetic ASI06 fixture, not a real-world corpus.
 - No larger real-world labeled evaluation corpus exists.
 - The live deployment process is manual.

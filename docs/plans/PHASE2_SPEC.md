@@ -22,7 +22,7 @@ Phase 1 delivered:
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 35 tests cover parsers, detectors, persistence, telemetry validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
+| Testing | 48 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
@@ -45,13 +45,13 @@ Phase 2 implements content-side, pre-action ASI02 detection. Runtime tool-call i
 
 Acceptance criteria:
 
-- `detections/asi02_tool_misuse/detector.py` exists and follows the ASI06/ASI01 detector pattern.
-- `run_jd_security_detections()` executes ASI06, then ASI01, then ASI02.
-- `record_security_findings()` replaces `ASI02_%` findings along with ASI06/ASI01 families.
-- ASI02 evidence includes `pattern`, `matched_text`, `snippet`, attempted operation category, and corroboration links when ASI06/ASI01 also fired.
+- `detections/asi02_tool_misuse/detector.py` exists and follows the ASI06/ASI01 detector pattern. Done.
+- `run_jd_security_detections()` executes ASI06, then ASI01, then ASI02. Done.
+- `record_security_findings()` replaces `ASI02_%` findings along with ASI06/ASI01 families. Done.
+- ASI02 evidence includes `pattern`, `matched_text`, `snippet`, attempted operation category, and corroboration links when ASI06/ASI01 also fired. Done.
 - Clean cybersecurity job content that merely discusses shell, curl, APIs, or prompt injection does not produce HIGH findings without imperative misuse language.
-- `scripts/deploy_openclaw_skill.ps1` compiles ASI02 during dry-run and deploy.
-- `scripts/check_cron_confirmation.ps1` can report ASI02 module activation without failing before first invocation.
+- `scripts/deploy_openclaw_skill.ps1` compiles ASI02 during dry-run and deploy. Done.
+- `scripts/check_cron_confirmation.ps1` can report ASI02 module activation without failing before first invocation. Done.
 
 ## Track B - Curated Telemetry Workflow
 
@@ -75,14 +75,14 @@ Phase 1 has strong synthetic fixtures but no large real-world labeled corpus. Ph
 
 Deliverables:
 
-- `examples/asi02_labeled_eval.json` with clean, single-rule, and combo cases.
+- `examples/asi02_labeled_eval.json` with clean, single-rule, and combo cases. Done.
 - A sanitized real-world review corpus under `lessons/telemetry/` or `examples/curated/`.
 - A red-team lab that exercises ASI06, ASI01, and ASI02 together without touching live job providers.
 - A documented confusion-matrix workflow for synthetic and curated sets.
 
 Acceptance criteria:
 
-- Preflight includes ASI02 fixture evaluation.
+- Preflight includes ASI02 fixture evaluation. Done.
 - `docs/EVALUATION.md` separates synthetic fixture metrics from curated real-world review notes.
 - No live provider is polluted with synthetic attacker URLs or fake job content.
 
@@ -125,7 +125,7 @@ Rules for historical specs:
 
 Phase 2 is complete when:
 
-1. ASI02 v1 is implemented, tested, deployed, and cron-confirmable.
+1. ASI02 v1 is implemented, tested, deployable, and cron-confirmable.
 2. Telemetry schema versioning and curated export workflow are implemented.
 3. Redaction is tested before curated artifacts enter the repo.
 4. ASI02 synthetic fixture evaluation is wired into preflight.
@@ -135,8 +135,7 @@ Phase 2 is complete when:
 
 ## Immediate Next Actions
 
-1. Implement export redaction and multi-session curated pull.
-2. Implement ASI02 detector v1 and its fixture.
-3. Add ASI02 to deploy and cron-confirm scripts.
-4. Wire ASI02 fixture evaluation into preflight.
-5. Draft ASI03 and ASI05 roadmap specs after ASI02 tests are green.
+1. Deploy ASI02 to the VPS and run cron confirmation after first invocation.
+2. Draft ASI03 and ASI05 roadmap specs.
+3. Add the ASI02 defense lab to lessons.
+4. Start a sanitized curated telemetry set for reviewer learning.

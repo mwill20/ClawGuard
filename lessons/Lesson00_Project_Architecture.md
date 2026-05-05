@@ -27,7 +27,7 @@ Why this matters: ClawGuard is not just a detector library. It is an operational
 
 ### Plain-English explanation
 
-ClawGuard watches a real job-search agent and asks: "Did untrusted job content try to manipulate the agent?" Today, the system runs ASI06 job-description content checks and ASI01 goal-redirect classification while preserving enough telemetry to build ASI02 and richer semantic guardrails later.
+ClawGuard watches a real job-search agent and asks: "Did untrusted job content try to manipulate the agent?" Today, the system runs ASI06 job-description content checks, ASI01 goal-redirect classification, and ASI02 content-side tool-misuse detection while preserving enough telemetry to build richer semantic guardrails later.
 
 Real-world analogy: ClawGuard is the control room for a security camera system. OpenClaw is the camera pointed at real activity. The detector decides what looks suspicious. The telemetry hook stores the footage summary so you can review it later.
 
@@ -179,7 +179,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 35 tests in 0.18s
+Ran 48 tests in 0.22s
 
 OK
 ```

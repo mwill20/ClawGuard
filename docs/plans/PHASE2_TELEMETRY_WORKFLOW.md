@@ -1,7 +1,7 @@
 # Phase 2 - Curated Telemetry Export Workflow
 
 Last updated: 2026-05-05
-Status: In progress; schema versioning, structured session selection, redaction, and dry-run export are implemented
+Status: In progress; schema versioning through 1.2, structured session selection, redaction, and dry-run export are implemented
 Predecessor: `scripts/export_latest_telemetry.ps1`, post-compile hook
 
 ## Context

@@ -1,6 +1,6 @@
 ---
 name: job-search-custom
-description: "Persistent job-search pipeline with SQLite deduplication, low-volume maintenance search, resume scoring, application material prep, ASI06 job-content checks, and ClawGuard telemetry."
+description: "Persistent job-search pipeline with SQLite deduplication, low-volume maintenance search, resume scoring, application material prep, ASI06/ASI01/ASI02 detector checks, and ClawGuard telemetry."
 metadata:
   openclaw:
     requires:
@@ -17,7 +17,7 @@ metadata:
 
 Persistent, low-volume job-search pipeline used as the primary OpenClaw telemetry source for ClawGuard Phase 1.
 
-The skill searches selected job sources, deduplicates results in SQLite, scores jobs against local profile data, prepares application materials on demand, and records ASI06 job-content findings. Human approval is required for any submission.
+The skill searches selected job sources, deduplicates results in SQLite, scores jobs against local profile data, prepares application materials on demand, and records ASI06, ASI01, and ASI02 findings. Human approval is required for any submission.
 
 ## Current Maintenance Mode
 
@@ -159,7 +159,7 @@ CLAWGUARD_SKILL_STUFFING_THRESHOLD=15
 CLAWGUARD_SKILL_STUFFING_PENALTY=0.15
 ```
 
-## ASI06 Runtime Checks
+## ASI06/ASI01/ASI02 Runtime Checks
 
 Detector-backed rules record findings to `job_security_findings`:
 
@@ -167,6 +167,11 @@ Detector-backed rules record findings to `job_security_findings`:
 - `ASI06_PROMPT_INJECTION`
 - `ASI06_PII_REQUEST`
 - `ASI06_URL_MISMATCH`
+- `ASI01_EXTERNAL_GOAL_REDIRECT`
+- `ASI02_EGRESS_REDIRECT`
+- `ASI02_NOTIFY_REDIRECT`
+- `ASI02_SHELL_INJECTION`
+- `ASI02_FILE_PATH_REDIRECT`
 
 Findings preserve:
 
@@ -208,7 +213,7 @@ Materials are generated using local resume/profile data only:
 - Provider calls are logged.
 - Application prep is disabled in the active cron path.
 - JD enrichment is disabled in the active cron path.
-- ASI06 checks run before generated materials are trusted.
+- ASI06/ASI01/ASI02 checks run before generated materials are trusted.
 - Post-compile telemetry gives ClawGuard a session-correlated summary after successful digest compilation.
 
 ## When To Use

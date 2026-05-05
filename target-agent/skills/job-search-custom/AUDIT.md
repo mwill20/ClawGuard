@@ -22,7 +22,7 @@ The active maintenance path is deliberately conservative: no auto-submit, no aut
 | Provider cost minimized | Enforced | Oxylabs disabled in maintenance mode |
 | Provider fallback explicit | Enforced | Brave and USAJobs can be forced with `--provider` |
 | Audit and telemetry retained | Enforced | SQLite, digest archives, cron logs, and ClawGuard telemetry |
-| ASI06/ASI01 detector modules | Enforced | Findings persisted to `job_security_findings` |
+| ASI06/ASI01/ASI02 detector modules | Enforced | Findings persisted to `job_security_findings` |
 
 ## Data Flow
 
@@ -33,6 +33,7 @@ Search provider
   -> deterministic scoring against local profile
   -> ASI06 content checks
   -> ASI01 goal-redirect classification
+  -> ASI02 tool-misuse classification
   -> digest archive
   -> post-compile ClawGuard telemetry
 ```
@@ -47,7 +48,7 @@ Resume and contact details are not sent to search providers by this skill.
 | USAJobs native API | Active for USAJobs | Requires auth key and registered user-agent email |
 | Oxylabs | Supported but disabled | Prior 400 response deferred for isolated debug |
 
-## ASI06 Findings Model
+## Security Findings Model
 
 Findings are stored in `job_security_findings` with:
 
@@ -80,6 +81,7 @@ This is enough for ClawGuard correlation and detector-backed Phase 2 review work
 | Fake job asks for sensitive personal data | ASI06 PII-request detector records findings |
 | Keyword-stuffed posting inflates score | Skill-stuffing detector records finding and applies score penalty |
 | Apply URL points to suspicious destination | Apply-domain mismatch detector records finding |
+| Job content instructs unsafe tool use | ASI02 detector records unsafe egress, notification, shell, or file-write finding |
 | Provider outage or block | Fallback providers and provider-specific logs |
 | Cron generates too much activity during interviews | Daily minimal source set and 5-result cap |
 | Telemetry file read during write | `telemetry_latest.*` written atomically by post-compile hook |
@@ -97,5 +99,5 @@ That is the first clean-content ClawGuard baseline.
 ## Remaining Audit Items
 
 - Confirm the first full scheduled cron chain updates `telemetry_latest.*` after 9:30 AM PT.
-- Review any first live ASI06 or ASI01 finding before using it as curated training evidence.
+- Review any first live ASI06, ASI01, or ASI02 finding before using it as curated training evidence.
 - Keep Oxylabs debugging isolated from the maintenance pipeline.

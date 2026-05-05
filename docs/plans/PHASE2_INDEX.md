@@ -28,9 +28,9 @@ Phase 2 work is parallelizable. Recommended order:
 
 1. Approve [PHASE2_SPEC.md](PHASE2_SPEC.md) as the v3 source of truth.
 2. Land telemetry schema versioning and redaction first because those protect every later review artifact.
-3. Implement ASI02 v1 with synthetic fixture coverage similar to ASI06's `examples/asi06_labeled_eval.json`.
-4. Confirm ASI02 locally and in deployment packaging before waiting for live organic signals.
-5. Draft ASI03 and ASI05 roadmap specs after ASI02 tests are green.
+3. ASI02 v1 and synthetic fixture coverage are implemented; deploy and cron-confirm after first invocation.
+4. Draft ASI03 and ASI05 roadmap specs after ASI02 local verification.
+5. Add the ASI02 defense lab and sanitized curated telemetry set.
 
 ## Out of Scope for Phase 2 Runtime
 
