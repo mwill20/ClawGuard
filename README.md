@@ -132,8 +132,12 @@ ClawGuard/
     check_latest_telemetry.ps1
     deploy_openclaw_skill.ps1
     evaluate_asi06.py
+    export_telemetry.py
+    export_telemetry.ps1
     export_latest_telemetry.ps1
     preflight.ps1
+    select_review_sessions.py
+    telemetry_redaction.py
     validate_telemetry.py
   tests/
 ```
@@ -169,7 +173,7 @@ Expected result:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 28 tests in 0.0
+Ran 35 tests in 0.0
 
 OK
 ```
@@ -332,7 +336,7 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 28/28 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 35/35 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
@@ -378,7 +382,7 @@ Local helper scripts:
 .\scripts\preflight.ps1
 .\scripts\check_cron_confirmation.ps1
 .\scripts\check_latest_telemetry.ps1
-.\scripts\export_latest_telemetry.ps1
+.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 .\scripts\deploy_openclaw_skill.ps1 -DryRun
 ```
 

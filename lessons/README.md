@@ -59,10 +59,10 @@ telemetry_latest.json
 telemetry_latest.md
 ```
 
-Curated samples can be pulled into `lessons/telemetry/` manually:
+Curated samples can be pulled into `lessons/telemetry/` manually after redaction and schema validation:
 
 ```powershell
-.\scripts\export_latest_telemetry.ps1
+.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
 To inspect the latest VPS telemetry without exporting files:

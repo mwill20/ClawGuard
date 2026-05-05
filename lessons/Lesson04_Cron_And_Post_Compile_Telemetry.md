@@ -35,7 +35,7 @@ Analogy: this is the black box recorder. Even if nothing suspicious happens, it 
 
 - Schedule script: `target-agent/skills/job-search-custom/staggered_cron.sh`
 - Post-compile hook: `target-agent/skills/job-search-custom/clawguard_post_compile.sh`
-- Manual export: `scripts/export_latest_telemetry.ps1`
+- Manual export: `scripts/export_telemetry.ps1` (`scripts/export_latest_telemetry.ps1` remains a latest-session wrapper)
 - Read-only check: `scripts/check_latest_telemetry.ps1`
 - Atomic writes: `clawguard_post_compile.sh:33-36`
 
@@ -209,7 +209,7 @@ PowerShell:
 
 ```powershell
 Set-Location C:\Projects\ClawGuard
-.\scripts\export_latest_telemetry.ps1
+.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
 Expected output begins:
@@ -265,7 +265,7 @@ Why: this proves the script depends on the configured VPS, not local mock data.
 | VPS telemetry path | `/data/clawguard/telemetry/` |
 | Host logs path | `/docker/openclaw-utxu/data/clawguard/logs` |
 | Latest summary | `telemetry_latest.md` |
-| Export helper | `scripts/export_latest_telemetry.ps1` |
+| Export helper | `scripts/export_telemetry.ps1`; `scripts/export_latest_telemetry.ps1` wraps latest-session export |
 | Check helper | `scripts/check_latest_telemetry.ps1` |
 
 ## 8. Next Steps

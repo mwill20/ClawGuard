@@ -119,6 +119,9 @@ from pathlib import Path
 
 paths = [
     'scripts/evaluate_asi06.py',
+    'scripts/export_telemetry.py',
+    'scripts/select_review_sessions.py',
+    'scripts/telemetry_redaction.py',
     'scripts/validate_telemetry.py',
     'target-agent/skills/job-search-custom/job_search_secure.py',
 ]
@@ -140,6 +143,30 @@ Invoke-Step "OpenClaw deploy helper dry run" {
     )
 }
 
+Invoke-Step "Telemetry export helper dry run" {
+    Invoke-Native "python" @(
+        "-B",
+        "scripts\export_telemetry.py",
+        "--input-dir",
+        "examples",
+        "--output-dir",
+        "C:\tmp\clawguard-export-dryrun",
+        "--session",
+        "digest-20260503T163003-b91b67e1",
+        "--dry-run"
+    )
+    Invoke-Native "powershell" @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts\export_telemetry.ps1",
+        "-DryRun",
+        "-Sessions",
+        "digest-20260503T163003-b91b67e1"
+    )
+}
+
 Assert-GitGrepNoMatch `
     -Name "No copied external repo-standard source files" `
     -Pattern "REPO_STANDARDS_AGENT|repo standards are a must"
@@ -150,7 +177,7 @@ Assert-GitGrepNoMatch `
 
 Assert-GitGrepNoMatch `
     -Name "No stale test-count claims" `
-    -Pattern "14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
+    -Pattern "28 tests|28/28|Ran 28|24 tests|24/24|Ran 24|14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
 
 Invoke-Step "Git diff whitespace check" {
     Invoke-Native "git" @("diff", "--check")

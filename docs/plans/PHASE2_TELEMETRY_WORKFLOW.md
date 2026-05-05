@@ -1,7 +1,7 @@
 # Phase 2 - Curated Telemetry Export Workflow
 
 Last updated: 2026-05-05
-Status: In progress; schema versioning and structured session selection are implemented
+Status: In progress; schema versioning, structured session selection, redaction, and dry-run export are implemented
 Predecessor: `scripts/export_latest_telemetry.ps1`, post-compile hook
 
 ## Context
@@ -10,7 +10,7 @@ Phase 1 set up operational telemetry generation:
 
 - `clawguard_post_compile.sh` writes per-session JSON+MD telemetry to `/data/clawguard/telemetry/`.
 - `telemetry_latest.{json,md}` is updated atomically after each compile.
-- `scripts/export_latest_telemetry.ps1` lets a human pull curated samples to `lessons/telemetry/`.
+- `scripts/export_telemetry.ps1` lets a human pull curated, redacted samples to `lessons/telemetry/`.
 - The repo intentionally does **not** auto-push from the operational host.
 
 The architectural rule is:
@@ -49,13 +49,13 @@ Output is a newline-delimited list of `agent_session_id` values. The script read
 
 ### Step 2 - Curated Pull
 
-Extend `scripts/export_latest_telemetry.ps1` with a `--Sessions <list>` flag, or add `scripts/export_telemetry.ps1` with a backwards-compatible default. Given a list of session IDs, it:
+`scripts/export_telemetry.ps1` supports `-Sessions <list>` and a backwards-compatible latest default through `scripts/export_latest_telemetry.ps1`. Given a list of session IDs, it:
 
 1. SCPs the matching JSON+MD files to a local temp directory.
-2. Applies redaction.
-3. Validates each artifact against the current telemetry schema.
+2. Applies redaction through `scripts/telemetry_redaction.py`.
+3. Validates each JSON artifact against the current telemetry schema.
 4. Writes redacted artifacts to `lessons/telemetry/<YYYY-MM>/<agent_session_id>/`.
-5. Generates `lessons/telemetry/<YYYY-MM>/index.md` with session links and finding counts.
+5. Generates `lessons/telemetry/<YYYY-MM>/index.md` with session links, schema versions, finding counts, and reviewer-note placeholders.
 
 Important: this remains a human-triggered pull. The operational host does not initiate transfer.
 
@@ -103,7 +103,7 @@ Older clean-baseline sessions can be pruned via a `--Prune` flag once they are n
 ## Tests
 
 - Unit: `tests/test_telemetry_validation.py` validates schema-version branches.
-- Unit: add `tests/test_export_redaction.py` for email, phone, deployment identifier, and configured-extra redaction.
+- Unit: `tests/test_export_redaction.py` covers email, phone, deployment identifier, configured-extra redaction, nested JSON redaction, export writes, and dry-run no-write behavior.
 - Unit: `tests/test_select_review_sessions.py` covers selection by rule, count, date, and baseline status.
 - Integration: add dry-run mode that prints planned export operations without running scp/ssh.
 
@@ -111,17 +111,17 @@ Older clean-baseline sessions can be pruned via a `--Prune` flag once they are n
 
 1. Local: `python scripts\validate_telemetry.py --input examples\telemetry_sample.json` succeeds.
 2. Local: `python -B scripts\select_review_sessions.py --telemetry-dir examples --finding-count-min 1` prints matching session IDs and exits 0.
-3. Local: `.\scripts\export_telemetry.ps1 --DryRun --Sessions sample-id` prints planned actions and exits 0.
+3. Local: `.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1` prints planned actions and exits 0.
 4. End-to-end: curated pull of selected sessions produces `lessons/telemetry/2026-05/<id>/` with redacted artifacts and an updated `index.md`.
 
 ## Migration Steps
 
 1. Add `schema_version` field to post-compile hook. Done.
 2. Add `scripts/select_review_sessions.py`. Done.
-3. Extend or replace the existing PowerShell export helper with `--Sessions` and redaction.
+3. Extend or replace the existing PowerShell export helper with `--Sessions` and redaction. Done.
 4. Add per-version branches to `validate_telemetry.py`. Done.
 5. Re-export historical samples to update their structure.
-6. Document the new workflow in `lessons/README.md` and `docs/MONITORING.md`.
+6. Document the new workflow in `lessons/README.md` and `docs/MONITORING.md`. Done.
 
 Each step is independently shippable. Schema versioning is the only runtime-output change and can land first without changing the repo's telemetry export contract.
 

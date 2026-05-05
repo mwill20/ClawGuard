@@ -154,10 +154,10 @@ Deploy the OpenClaw runtime and detector package together:
 .\scripts\deploy_openclaw_skill.ps1
 ```
 
-Export latest telemetry into a local curated folder:
+Dry-run a curated telemetry export:
 
 ```powershell
-.\scripts\export_latest_telemetry.ps1
+.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
 ## Common Workflows
@@ -170,6 +170,7 @@ Export latest telemetry into a local curated folder:
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |
 | Confirm detector-backed cron | `.\scripts\check_cron_confirmation.ps1` |
+| Dry-run curated telemetry export | `.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1` |
 | Deploy OpenClaw package | `.\scripts\deploy_openclaw_skill.ps1` |
 | Check deployment telemetry | `.\scripts\check_latest_telemetry.ps1` |
 

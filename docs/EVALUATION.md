@@ -13,7 +13,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms detector, runtime, parser, evaluation, telemetry validation, review-session selection, profile privacy override, and DB behavior | 28/28 passing |
+| Unit tests | Confirms detector, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 35/35 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | Synthetic labeled fixture exact match | Verifies expected rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -37,7 +37,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 28 tests in 0.0
+Ran 35 tests in 0.0
 
 OK
 ```

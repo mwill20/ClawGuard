@@ -22,8 +22,8 @@ Phase 1 delivered:
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 28 tests cover parsers, detectors, persistence, telemetry validation, review-session selection, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
-| Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_latest_telemetry.ps1` |
+| Testing | 35 tests cover parsers, detectors, persistence, telemetry validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
+| Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
 ## Phase 2 Mission

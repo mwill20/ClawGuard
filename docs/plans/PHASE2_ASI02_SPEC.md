@@ -14,7 +14,7 @@ Current baseline:
 - `run_jd_security_detections()` already passes ASI06 findings into ASI01.
 - `record_security_findings()` currently replaces `ASI06_%` and `ASI01_%` findings.
 - Deploy dry-run compiles ASI06 and ASI01 detector modules.
-- Full local preflight currently runs 28 tests.
+- Full local preflight currently runs 35 tests.
 
 ## Tool Surface
 

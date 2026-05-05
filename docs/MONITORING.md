@@ -45,10 +45,10 @@ Confirm the daily cron used the detector-backed ASI06 and ASI01 paths:
 .\scripts\check_cron_confirmation.ps1
 ```
 
-Export latest telemetry:
+Dry-run a curated telemetry export:
 
 ```powershell
-.\scripts\export_latest_telemetry.ps1
+.\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
 Deploy the OpenClaw runtime package after code changes:
