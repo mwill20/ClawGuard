@@ -1,7 +1,7 @@
 # Phase 2 - Curated Telemetry Export Workflow
 
 Last updated: 2026-05-05
-Status: Plan; current state is the Phase 1 manual workflow described below
+Status: In progress; schema versioning and structured session selection are implemented
 Predecessor: `scripts/export_latest_telemetry.ps1`, post-compile hook
 
 ## Context
@@ -37,7 +37,7 @@ This works for one human reviewer and a handful of clean-baseline sessions. It w
 
 ### Step 1 - Structured Selection
 
-Add a small helper, preferably `scripts/select_review_sessions.py`, that scans telemetry JSON and prints sessions matching review criteria. It can run locally against pulled artifacts or on the operational host when manually invoked.
+`scripts/select_review_sessions.py` scans telemetry JSON and prints sessions matching review criteria. It can run locally against pulled artifacts or on the operational host when manually invoked.
 
 ```powershell
 python -B scripts\select_review_sessions.py --telemetry-dir C:\tmp\clawguard-telemetry --since 2026-05-01 --rule ASI01_EXTERNAL_GOAL_REDIRECT
@@ -45,7 +45,7 @@ python -B scripts\select_review_sessions.py --telemetry-dir C:\tmp\clawguard-tel
 python -B scripts\select_review_sessions.py --telemetry-dir C:\tmp\clawguard-telemetry --baseline
 ```
 
-Output is a list of `agent_session_id` values. The script must read JSON with Python's JSON parser. Do not implement this as grep, string slicing, or ad hoc shell parsing.
+Output is a newline-delimited list of `agent_session_id` values. The script reads JSON with Python's JSON parser and skips non-telemetry JSON files safely.
 
 ### Step 2 - Curated Pull
 
@@ -73,7 +73,7 @@ Local-side redaction is the Phase 2 default because it is simpler and testable. 
 
 ### Step 4 - Schema Versioning
 
-Add a top-level `schema_version` field to telemetry JSON written by the post-compile hook.
+Telemetry JSON includes a top-level `schema_version` field written by the post-compile hook.
 
 Version plan:
 
@@ -81,7 +81,7 @@ Version plan:
 - `1.1` - ASI01 evidence fields.
 - `1.2` - ASI02 evidence fields.
 
-`scripts/validate_telemetry.py` gains per-version branches. `lessons/telemetry/<month>/index.md` records each session's schema version.
+`scripts/validate_telemetry.py` validates supported schema versions. `lessons/telemetry/<month>/index.md` will record each session's schema version after the export helper is extended.
 
 ### Step 5 - Retention
 
@@ -102,24 +102,24 @@ Older clean-baseline sessions can be pruned via a `--Prune` flag once they are n
 
 ## Tests
 
-- Unit: extend `tests/test_telemetry_validation.py` to validate each schema version.
+- Unit: `tests/test_telemetry_validation.py` validates schema-version branches.
 - Unit: add `tests/test_export_redaction.py` for email, phone, deployment identifier, and configured-extra redaction.
-- Unit: add `tests/test_select_review_sessions.py` for selection by rule, count, date, and baseline status.
+- Unit: `tests/test_select_review_sessions.py` covers selection by rule, count, date, and baseline status.
 - Integration: add dry-run mode that prints planned export operations without running scp/ssh.
 
 ## Verification
 
-1. Local: `python scripts\validate_telemetry.py --input examples\telemetry_v1.1_sample.json` succeeds.
+1. Local: `python scripts\validate_telemetry.py --input examples\telemetry_sample.json` succeeds.
 2. Local: `python -B scripts\select_review_sessions.py --telemetry-dir examples --finding-count-min 1` prints matching session IDs and exits 0.
 3. Local: `.\scripts\export_telemetry.ps1 --DryRun --Sessions sample-id` prints planned actions and exits 0.
 4. End-to-end: curated pull of selected sessions produces `lessons/telemetry/2026-05/<id>/` with redacted artifacts and an updated `index.md`.
 
 ## Migration Steps
 
-1. Add `schema_version` field to post-compile hook.
-2. Add `scripts/select_review_sessions.py`.
+1. Add `schema_version` field to post-compile hook. Done.
+2. Add `scripts/select_review_sessions.py`. Done.
 3. Extend or replace the existing PowerShell export helper with `--Sessions` and redaction.
-4. Add per-version branches to `validate_telemetry.py`.
+4. Add per-version branches to `validate_telemetry.py`. Done.
 5. Re-export historical samples to update their structure.
 6. Document the new workflow in `lessons/README.md` and `docs/MONITORING.md`.
 

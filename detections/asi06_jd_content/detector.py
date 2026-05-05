@@ -1,7 +1,7 @@
 """ClawGuard ASI06 job-description content detector.
 
 This module is the standalone ClawGuard implementation of the ASI06 checks
-currently enforced inline by OpenClaw's job-search-custom skill.
+imported by OpenClaw's job-search-custom skill at runtime.
 """
 
 from __future__ import annotations

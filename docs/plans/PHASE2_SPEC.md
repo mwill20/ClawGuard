@@ -6,7 +6,7 @@ Supersedes: `ClawGuardSpecs/ClawGuard_OpenClaw_Project_Spec_v2.md` and the Phase
 
 ## Why This Spec Exists
 
-The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06 and ASI01 modules, session-correlated SQLite findings, post-compile telemetry, lessons, CI, and 21 local tests.
+The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06 and ASI01 modules, session-correlated SQLite findings, post-compile telemetry, lessons, CI, and 24 local tests.
 
 Phase 2 starts from that baseline. It should not repeat already-completed scaffold work.
 
@@ -22,7 +22,7 @@ Phase 1 delivered:
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 24 tests cover parsers, detectors, persistence, telemetry validation, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
+| Testing | 28 tests cover parsers, detectors, persistence, telemetry validation, review-session selection, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
@@ -135,8 +135,8 @@ Phase 2 is complete when:
 
 ## Immediate Next Actions
 
-1. Implement telemetry `schema_version` and validation branches.
-2. Build the curated export selector using structured JSON parsing.
-3. Implement ASI02 detector v1 and its fixture.
-4. Add ASI02 to deploy and cron-confirm scripts.
+1. Implement export redaction and multi-session curated pull.
+2. Implement ASI02 detector v1 and its fixture.
+3. Add ASI02 to deploy and cron-confirm scripts.
+4. Wire ASI02 fixture evaluation into preflight.
 5. Draft ASI03 and ASI05 roadmap specs after ASI02 tests are green.

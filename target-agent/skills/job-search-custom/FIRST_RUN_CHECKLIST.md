@@ -1,6 +1,6 @@
 # Maintenance Run Observation Checklist
 
-Last updated: 2026-05-03
+Last updated: 2026-05-05
 
 This checklist replaces the original March full-volume first-run checklist. The active pipeline is now a low-volume ClawGuard telemetry generator.
 
@@ -115,4 +115,4 @@ Telemetry file:
 Anomalies:
 ```
 
-After a clean run, no action is needed beyond letting sessions accumulate. After a finding, preserve `telemetry_latest.json`, review `pattern`, `matched_text`, and `snippet`, then decide whether the rule should stay inline or be extracted.
+After a clean run, no action is needed beyond letting sessions accumulate. After a finding, preserve `telemetry_latest.json`, review `pattern`, `matched_text`, and `snippet`, then decide whether the finding is suitable for curated Phase 2 evidence.

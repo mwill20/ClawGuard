@@ -1,13 +1,13 @@
 # Security Audit: job-search-custom
 
-Last updated: 2026-05-03
+Last updated: 2026-05-05
 
 ## Summary
 
 `job-search-custom` is a custom OpenClaw skill written to avoid the risky behavior of generic auto-apply skills. It now serves two purposes:
 
 - Low-volume job-search maintenance for the user.
-- Real OpenClaw telemetry generation for ClawGuard Phase 1.
+- Real OpenClaw telemetry generation for ClawGuard.
 
 The active maintenance path is deliberately conservative: no auto-submit, no auto-prep, no JD enrichment, and no Oxylabs credit usage.
 
@@ -22,7 +22,7 @@ The active maintenance path is deliberately conservative: no auto-submit, no aut
 | Provider cost minimized | Enforced | Oxylabs disabled in maintenance mode |
 | Provider fallback explicit | Enforced | Brave and USAJobs can be forced with `--provider` |
 | Audit and telemetry retained | Enforced | SQLite, digest archives, cron logs, and ClawGuard telemetry |
-| ASI06 inline checks | Enforced | Findings persisted to `job_security_findings` |
+| ASI06/ASI01 detector modules | Enforced | Findings persisted to `job_security_findings` |
 
 ## Data Flow
 
@@ -32,6 +32,7 @@ Search provider
   -> SQLite jobs table
   -> deterministic scoring against local profile
   -> ASI06 content checks
+  -> ASI01 goal-redirect classification
   -> digest archive
   -> post-compile ClawGuard telemetry
 ```
@@ -69,7 +70,7 @@ matched_text
 snippet
 ```
 
-This is enough for Phase 1 ClawGuard correlation and future extraction into `detections/asi06_jd_content/`.
+This is enough for ClawGuard correlation and detector-backed Phase 2 review workflows.
 
 ## Main Risks And Mitigations
 
@@ -96,5 +97,5 @@ That is the first clean-content ClawGuard baseline.
 ## Remaining Audit Items
 
 - Confirm the first full scheduled cron chain updates `telemetry_latest.*` after 9:30 AM PT.
-- Review any first live ASI06 finding before extracting runtime logic.
+- Review any first live ASI06 or ASI01 finding before using it as curated training evidence.
 - Keep Oxylabs debugging isolated from the maintenance pipeline.

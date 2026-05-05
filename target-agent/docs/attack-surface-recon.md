@@ -3,7 +3,7 @@
 Findings from initial reconnaissance of the OpenClaw deployment on Hostinger KVM 2.
 
 Original date: 2026-03-23
-Current update: 2026-05-03
+Current update: 2026-05-05
 Target: OpenClaw Docker deployment on Ubuntu 24.04
 
 ## Current Mitigations
@@ -18,7 +18,7 @@ Current controls:
 - Brave Search and USAJobs native API are the active zero-credit providers.
 - Application auto-prep is disabled in cron.
 - JD enrichment is disabled in cron.
-- ASI06 job-content checks persist findings in SQLite.
+- ASI06 job-content checks and ASI01 goal-redirect classification persist findings in SQLite.
 - Post-compile telemetry summaries are written after successful digest compilation.
 
 The findings below remain the baseline attack-surface map for the target.
@@ -103,4 +103,4 @@ ClawGuard detection opportunity: Build skill provenance verification and supply-
 
 ## Current Priority
 
-The highest-value Phase 1 detection surface is ingested job content. The ASI06 rules in `job_search_secure.py` already record prompt-injection, PII-request, skill-stuffing, and apply-domain findings. ASI01 and ASI02 scaffolds should build on the same telemetry discipline after the OpenClaw maintenance baseline has three clean sessions.
+The highest-value Phase 2 detection surface is still ingested job content, but the baseline has advanced. ASI06 and ASI01 now run as detector modules from `job_search_secure.py`; ASI02 should build on the same evidence discipline without waiting for live tool-call instrumentation.
