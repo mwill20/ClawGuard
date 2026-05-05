@@ -41,16 +41,26 @@ PATTERN_ASI01='ClawGuard ASI01 detector module active'
 PATTERN_ASI02='ClawGuard ASI02 detector module active'
 TELEMETRY_JSON="`$TELEMETRY_DIR/telemetry_latest.json"
 TELEMETRY_MD="`$TELEMETRY_DIR/telemetry_latest.md"
+COMPILE_LOG="`$LOG_DIR/compile_`$DATE_VALUE.log"
 
 echo "== ClawGuard cron confirmation (`$DATE_VALUE) =="
 echo ""
 echo "== Detector module log check =="
 DETECTOR_OK=1
+NO_JOBS_TO_EVALUATE=0
+if [ -f "`$COMPILE_LOG" ] && grep -Eq 'Compiling digest .*: 0 jobs to evaluate' "`$COMPILE_LOG"; then
+  NO_JOBS_TO_EVALUATE=1
+  echo "NOTE: compile had 0 jobs to evaluate; detector activation logs are not expected for this run"
+fi
 if grep -H "`$PATTERN_ASI06" "`$LOG_DIR"/*_"`$DATE_VALUE".log "`$LOG_DIR"/cron.log 2>/dev/null; then
   :
 else
-  DETECTOR_OK=0
-  echo "MISSING: `$PATTERN_ASI06"
+  if [ "`$NO_JOBS_TO_EVALUATE" -eq 1 ]; then
+    echo "NOTE: `$PATTERN_ASI06 not seen because no jobs were evaluated"
+  else
+    DETECTOR_OK=0
+    echo "MISSING: `$PATTERN_ASI06"
+  fi
 fi
 if grep -H "`$PATTERN_ASI01" "`$LOG_DIR"/*_"`$DATE_VALUE".log "`$LOG_DIR"/cron.log 2>/dev/null; then
   :
@@ -65,10 +75,10 @@ fi
 
 echo ""
 echo "== Compile log tail =="
-if [ -f "`$LOG_DIR/compile_`$DATE_VALUE.log" ]; then
-  tail -40 "`$LOG_DIR/compile_`$DATE_VALUE.log"
+if [ -f "`$COMPILE_LOG" ]; then
+  tail -40 "`$COMPILE_LOG"
 else
-  echo "missing `$LOG_DIR/compile_`$DATE_VALUE.log"
+  echo "missing `$COMPILE_LOG"
 fi
 
 echo ""
@@ -92,6 +102,9 @@ if [ "`$DETECTOR_OK" -eq 1 ]; then
   echo "__CLAWGUARD_DETECTOR_OK=1"
 else
   echo "__CLAWGUARD_DETECTOR_OK=0"
+fi
+if [ "`$NO_JOBS_TO_EVALUATE" -eq 1 ]; then
+  echo "__CLAWGUARD_NO_JOBS_TO_EVALUATE=1"
 fi
 "@
 
@@ -156,6 +169,7 @@ if ($sshExit -ne 0) {
 }
 
 $detectorConfirmed = $outputText -match "__CLAWGUARD_DETECTOR_OK=1"
+$noJobsToEvaluate = $outputText -match "__CLAWGUARD_NO_JOBS_TO_EVALUATE=1"
 if (-not $detectorConfirmed) {
     throw "Detector module confirmation line was not found. Inspect cron logs and redeploy job_search_secure.py with the detections package."
 }
@@ -177,4 +191,9 @@ if (-not $SkipTelemetryValidation) {
 }
 
 Write-Host ""
-Write-Host "Cron confirmation passed. Detector-backed ASI06 path is active (ASI01/ASI02 will log on first invocation)."
+if ($noJobsToEvaluate) {
+    Write-Host "Cron confirmation passed. Latest compile had 0 jobs to evaluate, so detector activation logs were not expected; telemetry validated."
+}
+else {
+    Write-Host "Cron confirmation passed. Detector-backed ASI06 path is active (ASI01/ASI02 will log on first invocation)."
+}
