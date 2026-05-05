@@ -51,6 +51,12 @@ Dry-run a curated telemetry export:
 .\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
+Validate the first curated Phase 2 clean-baseline export:
+
+```powershell
+python -B scripts\validate_telemetry.py --input lessons\telemetry\2026-05\digest-20260505T163003-d9133ff9\telemetry.json
+```
+
 Deploy the OpenClaw runtime package after code changes:
 
 ```powershell

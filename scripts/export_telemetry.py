@@ -97,6 +97,9 @@ def _redacted_payload(
     redacted = telemetry_redaction.redact_value(payload, config)
     if not isinstance(redacted, dict):
         raise ValueError("Redacted telemetry root must remain an object")
+    if "schema_version" not in redacted:
+        redacted = dict(redacted)
+        redacted["schema_version"] = validate_telemetry.DEFAULT_LEGACY_SCHEMA_VERSION
     validate_telemetry.validate_telemetry(redacted)
     return redacted
 

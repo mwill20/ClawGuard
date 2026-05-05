@@ -1,0 +1,25 @@
+{
+  "agent_session_id": "digest-20260505T163003-d9133ff9",
+  "digest_path": "/data/clawguard/digests/digest_2026-05-05.json",
+  "digest_summary": {
+    "auto_prepared": 0,
+    "compile_only": true,
+    "credits_remaining": 1000,
+    "credits_used_today": 0,
+    "good_matches": 0,
+    "moderate_matches": 0,
+    "new_jobs": 0,
+    "newly_inserted_in_run": 0,
+    "strong_matches": 0,
+    "total_found": 0,
+    "total_jobs_in_db": 178
+  },
+  "digest_top_match_source_counts": {},
+  "finding_count": 0,
+  "finding_source_platform_counts": {},
+  "findings": [],
+  "generated_at": "2026-05-05T16:30:03.302794",
+  "rule_counts": {},
+  "schema_version": "1.0",
+  "severity_counts": {}
+}

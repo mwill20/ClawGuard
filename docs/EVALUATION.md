@@ -141,11 +141,12 @@ Documented baselines:
 
 - `lessons/clawguard-telemetry-baseline-001.md`
 - `lessons/clawguard-telemetry-baseline-002.md`
+- `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/telemetry.json`
 
 Known baseline result:
 
 - 0 ASI06 and 0 ASI01 findings across clean sessions.
-- ASI02 was implemented after those baselines; new curated baselines should record ASI02 counts explicitly.
+- ASI02 was implemented after the first two Markdown baselines; the curated Phase 2 JSON baseline records zero findings with schema `1.0`.
 - 0 auto-prepared application packages.
 - 0 Oxylabs credits used.
 

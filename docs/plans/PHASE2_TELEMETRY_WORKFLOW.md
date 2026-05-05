@@ -1,7 +1,7 @@
 # Phase 2 - Curated Telemetry Export Workflow
 
 Last updated: 2026-05-05
-Status: In progress; schema versioning through 1.2, structured session selection, redaction, and dry-run export are implemented
+Status: In progress; schema versioning through 1.2, structured session selection, redaction, dry-run export, and first curated clean-baseline export are implemented
 Predecessor: `scripts/export_latest_telemetry.ps1`, post-compile hook
 
 ## Context
@@ -11,6 +11,7 @@ Phase 1 set up operational telemetry generation:
 - `clawguard_post_compile.sh` writes per-session JSON+MD telemetry to `/data/clawguard/telemetry/`.
 - `telemetry_latest.{json,md}` is updated atomically after each compile.
 - `scripts/export_telemetry.ps1` lets a human pull curated, redacted samples to `lessons/telemetry/`.
+- The first curated Phase 2 clean baseline lives at `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/`.
 - The repo intentionally does **not** auto-push from the operational host.
 
 The architectural rule is:
@@ -120,7 +121,7 @@ Older clean-baseline sessions can be pruned via a `--Prune` flag once they are n
 2. Add `scripts/select_review_sessions.py`. Done.
 3. Extend or replace the existing PowerShell export helper with `--Sessions` and redaction. Done.
 4. Add per-version branches to `validate_telemetry.py`. Done.
-5. Re-export historical samples to update their structure.
+5. Re-export historical samples to update their structure. First clean baseline done; broader backfill pending.
 6. Document the new workflow in `lessons/README.md` and `docs/MONITORING.md`. Done.
 
 Each step is independently shippable. Schema versioning is the only runtime-output change and can land first without changing the repo's telemetry export contract.

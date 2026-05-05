@@ -249,6 +249,32 @@ micro F1 1.0 is below expected 1.1
 Why this failure is useful: it proves the evaluator exits non-zero when the
 quality gate is not met.
 
+### Exercise 5: Validate the first curated clean baseline
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\validate_telemetry.py --input lessons\telemetry\2026-05\digest-20260505T163003-d9133ff9\telemetry.json
+```
+
+Expected output:
+
+```json
+{
+  "agent_session_id": "digest-20260505T163003-d9133ff9",
+  "finding_count": 0,
+  "rule_count_keys": [],
+  "schema_version": "1.0",
+  "status": "valid"
+}
+```
+
+Why this matters: ASI02 needs clean real telemetry as much as adversarial
+fixtures. A zero-finding curated session proves the export, redaction,
+validation, and lesson artifact path works without adding synthetic attacker
+content to live providers.
+
 ## 5. Interview Preparation Section
 
 **Q: Why is ASI02 content-side only in Phase 2?**
@@ -282,6 +308,7 @@ actions.
 - It covers HTTP egress, notifications, shell payloads, and file writes.
 - It preserves evidence using the same review-friendly pattern as ASI06.
 - It links to ASI06/ASI01 when content and goal signals corroborate.
+- The first curated telemetry artifact is a clean baseline, not a positive ASI02 example.
 - It does not claim runtime enforcement yet.
 
 ## 7. Summary Reference Card
@@ -294,6 +321,7 @@ actions.
 | Evaluator | `scripts/evaluate_asi02.py` |
 | Tests | `tests/test_asi02_detector.py`, `tests/test_asi02_evaluation.py` |
 | Telemetry schema | `1.2` |
+| Curated clean baseline | `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/telemetry.json` |
 | Rule IDs | `ASI02_EGRESS_REDIRECT`, `ASI02_NOTIFY_REDIRECT`, `ASI02_SHELL_INJECTION`, `ASI02_FILE_PATH_REDIRECT` |
 | Deferred | Runtime tool-call instrumentation and blocking |
 
@@ -307,3 +335,7 @@ Study the Phase 2 ASI03 and ASI05 roadmap specs next:
 Optional challenge: add a clean fixture where a security role discusses
 webhooks defensively, then prove ASI02 stays silent. That is how you keep
 detectors useful instead of noisy.
+
+Next curated-data challenge: add a finding-bearing or false-positive review
+artifact under `lessons/telemetry/` after a real session warrants it. Do not
+seed live job providers with synthetic attacker content just to create one.

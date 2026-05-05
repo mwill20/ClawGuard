@@ -124,6 +124,32 @@ class TelemetryRedactionTests(unittest.TestCase):
             self.assertNotIn("206-555-1212", redacted_md)
             self.assertIn(session, index_md)
 
+    def test_export_materializes_legacy_schema_version(self):
+        payload = {
+            "generated_at": "2026-05-05T16:30:03",
+            "digest_path": "/data/clawguard/digests/digest_2026-05-05.json",
+            "agent_session_id": "digest-20260505T163003-5ba489e3",
+            "finding_count": 0,
+            "rule_counts": {},
+            "severity_counts": {},
+            "finding_source_platform_counts": {},
+            "digest_top_match_source_counts": {},
+            "digest_summary": {
+                "total_found": 0,
+                "new_jobs": 0,
+                "auto_prepared": 0,
+                "credits_used_today": 0,
+            },
+            "findings": [],
+        }
+
+        redacted = export_telemetry._redacted_payload(
+            payload,
+            telemetry_redaction.DEFAULT_CONFIG,
+        )
+
+        self.assertEqual(redacted["schema_version"], "1.0")
+
     def test_export_dry_run_does_not_write_files(self):
         with tempfile.TemporaryDirectory() as temp:
             input_dir = Path(temp) / "input"

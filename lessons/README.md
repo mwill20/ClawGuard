@@ -16,6 +16,7 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | `Lesson06_ASI01_Goal_Hijack_Scaffold.md` | Complete | ASI01 detector v1 and semantic-first design decision |
 | `Lesson07_Source_Compass_And_Phase2_Map.md` | Complete | Source-status semantics and Phase 2 planning map |
 | `Lesson08_ASI02_Tool_Misuse_Defense_Lab.md` | Complete | ASI02 detector v1 and tool-misuse defense lab |
+| `telemetry/2026-05/digest-20260505T163003-d9133ff9/` | Complete | First redacted curated Phase 2 clean-baseline telemetry set |
 | `assets/asi06_red_team_jobs.json` | Complete | Local clean/adversarial sample jobs for lesson exercises |
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
 | `clawguard-telemetry-baseline-002.md` | Complete | First autonomous full cron-chain telemetry baseline |
@@ -66,6 +67,18 @@ Curated samples can be pulled into `lessons/telemetry/` manually after redaction
 .\scripts\export_telemetry.ps1 -DryRun -Sessions digest-20260503T163003-b91b67e1
 ```
 
+The first Phase 2 curated baseline is:
+
+```text
+lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/
+```
+
+Validate it with:
+
+```powershell
+python -B scripts\validate_telemetry.py --input lessons\telemetry\2026-05\digest-20260505T163003-d9133ff9\telemetry.json
+```
+
 To inspect the latest VPS telemetry without exporting files:
 
 ```powershell
@@ -100,6 +113,13 @@ Baseline `digest-20260503T163003-b91b67e1` captured the first autonomous cron-ch
 - USAJobs returned 0 matches.
 - Digest reported 0 newly inserted jobs.
 - Post-compile telemetry hook completed.
+- 0 findings, 0 auto-prepared packages, 0 credits used.
+
+Baseline `digest-20260505T163003-d9133ff9` captured the first redacted curated Phase 2 telemetry export:
+
+- Compile evaluated 0 jobs, so detector activation lines were not expected in that run.
+- Post-compile telemetry hook completed.
+- Export helper redacted, validated, and wrote JSON/Markdown artifacts under `lessons/telemetry/2026-05/`.
 - 0 findings, 0 auto-prepared packages, 0 credits used.
 
 ## Entry 1 Preview: Bot Detection And Agent Monitoring

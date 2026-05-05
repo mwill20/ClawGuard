@@ -76,7 +76,7 @@ Phase 1 has strong synthetic fixtures but no large real-world labeled corpus. Ph
 Deliverables:
 
 - `examples/asi02_labeled_eval.json` with clean, single-rule, and combo cases. Done.
-- A sanitized real-world review corpus under `lessons/telemetry/` or `examples/curated/`.
+- A sanitized real-world review corpus under `lessons/telemetry/` or `examples/curated/`. First clean baseline exported; finding-bearing/false-positive samples still pending.
 - A red-team lab that exercises ASI06, ASI01, and ASI02 together without touching live job providers. Done for ASI02 synthetic fixture workflow; curated real-world lab still pending.
 - A documented confusion-matrix workflow for synthetic and curated sets.
 
@@ -129,13 +129,13 @@ Phase 2 is complete when:
 2. Telemetry schema versioning and curated export workflow are implemented.
 3. Redaction is tested before curated artifacts enter the repo.
 4. ASI02 synthetic fixture evaluation is wired into preflight.
-5. At least one sanitized curated telemetry set exists for reviewer learning.
+5. At least one sanitized curated telemetry set exists for reviewer learning. Done for clean baseline.
 6. ASI03 and ASI05 have scoped roadmap specs with implementation prerequisites.
 7. Lessons are updated with the bot-detection-to-agent-monitoring analogy and the ASI02 defense lab.
 
 ## Immediate Next Actions
 
-1. Deploy ASI02 to the VPS and run cron confirmation after first invocation.
-2. Start a sanitized curated telemetry set for reviewer learning.
-3. Expand the ASI02 defense lab with curated real-world false-positive examples.
-4. Decide whether Phase 2 needs ASI02 score impact or review-only persistence after live telemetry appears.
+1. Add a finding-bearing or false-positive curated telemetry sample when real telemetry warrants it.
+2. Expand the ASI02 defense lab with curated real-world false-positive examples.
+3. Decide whether Phase 2 needs ASI02 score impact or review-only persistence after live telemetry appears.
+4. Keep ASI02 deployed and rerun cron confirmation after a compile with jobs to evaluate.
