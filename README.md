@@ -6,7 +6,7 @@ Guardrail-first AI agent security monitoring framework for OpenClaw job-search t
 
 ## Purpose
 
-This project demonstrates agent-security monitoring for a real OpenClaw `job-search-custom` deployment. It solves the problem of detecting and preserving evidence for unsafe or adversarial job-description content by combining a low-volume OpenClaw job-search pipeline, deterministic ASI06 detection rules, SQLite-backed findings, and post-compile telemetry exports.
+This project demonstrates agent-security monitoring for a real OpenClaw `job-search-custom` deployment. It solves the problem of detecting and preserving evidence for unsafe or adversarial job-description content by combining a low-volume OpenClaw job-search pipeline, deterministic ASI06/ASI01/ASI02 detection rules, SQLite-backed findings, and post-compile telemetry exports.
 
 The repository includes runnable detector code, tests, sample inputs and outputs, setup instructions, evaluation notes, security documentation, limitations, and lesson material.
 
@@ -14,12 +14,12 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 
 - Detector-backed ASI06 checks for prompt injection, PII requests, skill stuffing, and suspicious apply-domain mismatches.
 - ASI01 goal-hijack detector v1 that classifies goal redirects using ASI06 prompt-injection findings as upstream corroboration.
-- OpenClaw runtime integration that requires the packaged ASI06 and ASI01 detector modules.
+- OpenClaw runtime integration that requires the packaged ASI06, ASI01, and ASI02 detector modules.
 - SQLite persistence for jobs, scores, search runs, quota state, and `job_security_findings`.
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
-- Ready-to-run unit tests and ASI06 sample input/output examples.
-- GitHub Actions CI for unit tests, synthetic ASI06 fixture evaluation, and telemetry validation.
+- Ready-to-run unit tests, ASI06 sample input/output, and ASI02 labeled fixture examples.
+- GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, and telemetry validation.
 - Local preflight and cron-confirmation helper scripts for repeatable operator checks.
 - Teaching curriculum under `lessons/`.
 
@@ -49,9 +49,9 @@ Out of scope:
 
 Current status: prototype / educational technical asset with a live internal OpenClaw deployment.
 
-The repo has runnable local tests and documented VPS operational telemetry, but it is not claimed to be production-ready. The current live deployment is used as a controlled telemetry source for ClawGuard Phase 1.
+The repo has runnable local tests and documented VPS operational telemetry, but it is not claimed to be production-ready. The current live deployment is used as a controlled telemetry source for ClawGuard Phase 2.
 
-Last updated: 2026-05-04.
+Last updated: 2026-05-05.
 
 ## Responsible Use
 
@@ -118,11 +118,13 @@ ClawGuard/
   examples/
     sample_input.json
     sample_output.json
+    asi02_labeled_eval.json
     asi06_labeled_eval.json
     asi06_labeled_eval_results.json
     telemetry_sample.json
   detections/
     asi01_goal_hijack/
+    asi02_tool_misuse/
     asi06_jd_content/
   target-agent/
     skills/job-search-custom/
@@ -131,6 +133,7 @@ ClawGuard/
     check_cron_confirmation.ps1
     check_latest_telemetry.ps1
     deploy_openclaw_skill.ps1
+    evaluate_asi02.py
     evaluate_asi06.py
     export_telemetry.py
     export_telemetry.ps1
@@ -241,6 +244,24 @@ Expected key results:
 
 This is a small synthetic fixture evaluation for reproducible smoke metrics. It is not a real-world precision/recall benchmark.
 
+### Run the ASI02 labeled fixture evaluation
+
+```powershell
+python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 7
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+This is a small synthetic fixture evaluation for reproducible ASI02 smoke metrics. It is not a real-world precision/recall benchmark.
+
 ### Validate the telemetry JSON shape
 
 ```powershell
@@ -318,9 +339,10 @@ OpenClaw daily cron
 ```text
 OpenClaw cron
   -> job-search-custom searches LinkedIn, CyberSecJobs, USAJobs
-  -> SQLite stores jobs, scores, and ASI06/ASI01 findings
+  -> SQLite stores jobs, scores, and ASI06/ASI01/ASI02 findings
   -> detections/asi06_jd_content/detector.py evaluates job content
   -> detections/asi01_goal_hijack/detector.py classifies goal redirects
+  -> detections/asi02_tool_misuse/detector.py classifies attempted tool misuse
   -> digest compile creates agent_session_id
   -> clawguard_post_compile.sh exports telemetry JSON/Markdown
   -> lessons/ captures curated baselines and review artifacts
@@ -339,6 +361,7 @@ Current validation summary:
 | Unit tests | 48/48 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
+| ASI02 labeled synthetic fixture | Passing | 7 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
 | Live telemetry baseline | 0 findings | Baseline documents clean OpenClaw sessions, not detection failure |
 | Real-world precision/recall | Not yet measured | Current metrics are limited to the small synthetic fixture |
@@ -363,6 +386,7 @@ Important current limitations:
 
 - ASI06 is deterministic and regex/rule based; semantic fallback is planned, not implemented.
 - ASI01 v1 is deterministic and corroboration-based; ambiguous semantic cases still need a future LLM-as-judge or richer policy layer.
+- ASI02 v1 is deterministic and content-side; full tool-call enforcement requires future tool telemetry instrumentation.
 - Precision and recall are measured only against a small synthetic fixture, not a real-world corpus.
 - The OpenClaw deployment now requires `job_search_secure.py` and the `detections/` package to deploy together.
 

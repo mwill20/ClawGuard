@@ -6,7 +6,7 @@ Supersedes: `ClawGuardSpecs/ClawGuard_OpenClaw_Project_Spec_v2.md` and the Phase
 
 ## Why This Spec Exists
 
-The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06 and ASI01 modules, session-correlated SQLite findings, post-compile telemetry, lessons, CI, and 24 local tests.
+The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed and Phase 2 is in progress. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, lessons, CI, and 48 local tests.
 
 Phase 2 starts from that baseline. It should not repeat already-completed scaffold work.
 
@@ -18,7 +18,7 @@ Phase 1 delivered:
 |---|---|
 | Runtime | `target-agent/skills/job-search-custom/job_search_secure.py` deployed as the OpenClaw job-search runtime |
 | Search posture | Low-volume daily maintenance mode; Brave and USAJobs are zero-credit paths; Oxylabs is disabled for maintenance |
-| Detectors | ASI06 job-content detector and ASI01 goal-hijack detector v1 are importable runtime modules |
+| Detectors | ASI06 job-content detector, ASI01 goal-hijack detector v1, and ASI02 tool-misuse detector v1 are importable runtime modules |
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
@@ -49,7 +49,7 @@ Acceptance criteria:
 - `run_jd_security_detections()` executes ASI06, then ASI01, then ASI02. Done.
 - `record_security_findings()` replaces `ASI02_%` findings along with ASI06/ASI01 families. Done.
 - ASI02 evidence includes `pattern`, `matched_text`, `snippet`, attempted operation category, and corroboration links when ASI06/ASI01 also fired. Done.
-- Clean cybersecurity job content that merely discusses shell, curl, APIs, or prompt injection does not produce HIGH findings without imperative misuse language.
+- Clean cybersecurity job content that merely discusses shell, curl, APIs, or prompt injection does not produce HIGH findings without imperative misuse language. Done.
 - `scripts/deploy_openclaw_skill.ps1` compiles ASI02 during dry-run and deploy. Done.
 - `scripts/check_cron_confirmation.ps1` can report ASI02 module activation without failing before first invocation. Done.
 
@@ -61,13 +61,13 @@ Phase 2 formalizes how telemetry moves from the operational host to the repo wit
 
 Acceptance criteria:
 
-- Telemetry JSON gains a top-level `schema_version`.
-- A structured selector can choose sessions by rule, finding count, date, and clean-baseline status.
-- Selection uses a JSON parser, not grep-style parsing.
-- Export applies redaction before artifacts land under `lessons/telemetry/`.
-- Redaction covers email, phone, private profile strings, deployment identifiers, and configurable additional patterns.
-- `scripts/validate_telemetry.py` validates every supported schema version.
-- Curated exports produce a monthly `index.md` with session IDs, schema version, finding counts, and reviewer notes.
+- Telemetry JSON gains a top-level `schema_version`. Done.
+- A structured selector can choose sessions by rule, finding count, date, and clean-baseline status. Done.
+- Selection uses a JSON parser, not grep-style parsing. Done.
+- Export applies redaction before artifacts land under `lessons/telemetry/`. Done.
+- Redaction covers email, phone, private profile strings, deployment identifiers, and configurable additional patterns. Done.
+- `scripts/validate_telemetry.py` validates every supported schema version. Done through schema `1.2`.
+- Curated exports produce a monthly `index.md` with session IDs, schema version, finding counts, and reviewer notes. Done.
 
 ## Track C - Corpus and Red-Team Exercises
 
@@ -77,13 +77,13 @@ Deliverables:
 
 - `examples/asi02_labeled_eval.json` with clean, single-rule, and combo cases. Done.
 - A sanitized real-world review corpus under `lessons/telemetry/` or `examples/curated/`.
-- A red-team lab that exercises ASI06, ASI01, and ASI02 together without touching live job providers.
+- A red-team lab that exercises ASI06, ASI01, and ASI02 together without touching live job providers. Done for ASI02 synthetic fixture workflow; curated real-world lab still pending.
 - A documented confusion-matrix workflow for synthetic and curated sets.
 
 Acceptance criteria:
 
 - Preflight includes ASI02 fixture evaluation. Done.
-- `docs/EVALUATION.md` separates synthetic fixture metrics from curated real-world review notes.
+- `docs/EVALUATION.md` separates synthetic fixture metrics from curated real-world review notes. Done.
 - No live provider is polluted with synthetic attacker URLs or fake job content.
 
 ## Track D - ASI03 and ASI05 Roadmap Specs
@@ -92,8 +92,8 @@ The March spec listed ASI03 identity/privilege abuse and ASI05 unexpected code e
 
 Phase 2 deliverables:
 
-- `docs/plans/PHASE2_ASI03_IDENTITY_SPEC.md` as a scaffold spec only.
-- `docs/plans/PHASE2_ASI05_CODE_EXEC_SPEC.md` as a scaffold spec only.
+- `docs/plans/PHASE2_ASI03_IDENTITY_SPEC.md` as a scaffold spec only. Done.
+- `docs/plans/PHASE2_ASI05_CODE_EXEC_SPEC.md` as a scaffold spec only. Done.
 - Clear prerequisites for implementation, such as structured credential-use events, tool-call logs, process/container telemetry, or deployment config snapshots.
 
 Non-goal:
@@ -136,6 +136,6 @@ Phase 2 is complete when:
 ## Immediate Next Actions
 
 1. Deploy ASI02 to the VPS and run cron confirmation after first invocation.
-2. Draft ASI03 and ASI05 roadmap specs.
-3. Add the ASI02 defense lab to lessons.
-4. Start a sanitized curated telemetry set for reviewer learning.
+2. Start a sanitized curated telemetry set for reviewer learning.
+3. Expand the ASI02 defense lab with curated real-world false-positive examples.
+4. Decide whether Phase 2 needs ASI02 score impact or review-only persistence after live telemetry appears.

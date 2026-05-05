@@ -5,9 +5,10 @@
 1. Does the ASI06 detector identify known adversarial job-description patterns?
 2. Does the detector avoid findings for clean sample input?
 3. Does ASI01 fire on corroborated goal-redirect content and stay silent on clean content?
-4. Does the OpenClaw runtime require the detector modules when available?
-5. Are findings queryable by `agent_session_id`?
-6. Does post-compile telemetry preserve session-correlated results?
+4. Does ASI02 identify content-side tool-misuse attempts and stay silent on clean tool mentions?
+5. Does the OpenClaw runtime require the detector modules when available?
+6. Are findings queryable by `agent_session_id`?
+7. Does post-compile telemetry preserve session-correlated results?
 
 ## Current Metrics
 
@@ -16,12 +17,14 @@
 | Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 48/48 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
-| Synthetic labeled fixture exact match | Verifies expected rule sets on curated fixtures | 1.0 across 8 synthetic records |
-| Synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible detector smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
+| ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
+| ASI06 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI06 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
+| ASI02 synthetic labeled fixture exact match | Verifies expected ASI02 rule sets on curated fixtures | 1.0 across 7 synthetic records |
+| ASI02 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI02 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
 | Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
 | Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
 
-Important scope note: the labeled ASI06 fixture is small and synthetic. It is useful for regression and reviewer reproducibility, but it is not a real-world precision/recall benchmark.
+Important scope note: the labeled ASI06 and ASI02 fixtures are small and synthetic. They are useful for regression and reviewer reproducibility, but they are not real-world precision/recall benchmarks.
 
 ## Test Procedure
 
@@ -52,7 +55,7 @@ python -B -c "import json; from pathlib import Path; from detections.asi06_jd_co
 
 Expected output matches [examples/sample_output.json](../examples/sample_output.json).
 
-## Labeled Fixture Evaluation
+## ASI06 Labeled Fixture Evaluation
 
 PowerShell:
 
@@ -78,6 +81,30 @@ Expected key results:
 
 The stable checked-in result artifact is [examples/asi06_labeled_eval_results.json](../examples/asi06_labeled_eval_results.json).
 
+## ASI02 Labeled Fixture Evaluation
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_asi02.py --input examples/asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 7
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
 ## Continuous Integration
 
 GitHub Actions workflow: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
@@ -88,6 +115,7 @@ The CI workflow runs:
 python -m pip install -r requirements.txt
 python -B -m unittest discover -s tests
 python -B scripts/evaluate_asi06.py --input examples/asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+python -B scripts/evaluate_asi02.py --input examples/asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
 python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json
 ```
 
@@ -117,6 +145,7 @@ Documented baselines:
 Known baseline result:
 
 - 0 ASI06 and 0 ASI01 findings across clean sessions.
+- ASI02 was implemented after those baselines; new curated baselines should record ASI02 counts explicitly.
 - 0 auto-prepared application packages.
 - 0 Oxylabs credits used.
 

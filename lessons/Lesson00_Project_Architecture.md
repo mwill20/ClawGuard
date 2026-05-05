@@ -57,9 +57,10 @@ Without this architecture, the project would be a set of disconnected scripts. W
 | ClawGuard | The guardrail and detection layer built around OpenClaw behavior. |
 | ASI06 | OWASP Agentic risk category used here for malicious job-description content ingestion. |
 | ASI01 | Goal hijacking and instruction override; detector-backed runtime v1. |
+| ASI02 | Tool misuse attempts such as unsafe egress, notification redirects, shell payloads, and file-write redirects. |
 | `agent_session_id` | Correlation ID like `digest-20260503T163003-b91b67e1`. |
 | Clean baseline | A run with zero findings that proves the pipeline can run without noise. |
-| Detector-backed runtime | `job_search_secure.py` imports ASI06 and ASI01 detector modules directly after VPS deployment confirmation. |
+| Detector-backed runtime | `job_search_secure.py` imports ASI06, ASI01, and ASI02 detector modules directly. |
 
 ### Larger architecture
 
@@ -81,7 +82,7 @@ Job source APIs
 Project implements:
 
 - Low-volume daily runs so OpenClaw acts as telemetry generator, not application machine.
-- Detector-backed ASI06 and ASI01 paths as required runtime dependencies.
+- Detector-backed ASI06, ASI01, and ASI02 paths as required runtime dependencies.
 - Manual telemetry export instead of auto-pushing from the VPS.
 
 Recommended (not implemented here):
@@ -119,7 +120,8 @@ Key block:
 ```text
 OpenClaw cron
   -> job-search-custom searches LinkedIn, CyberSecJobs, USAJobs
-  -> SQLite stores jobs, scores, and ASI06/ASI01 findings
+  -> SQLite stores jobs, scores, and ASI06/ASI01/ASI02 findings
+  -> ASI06/ASI01/ASI02 detectors classify content, goal redirects, and tool misuse
   -> digest compile creates agent_session_id
   -> clawguard_post_compile.sh exports telemetry JSON/Markdown
   -> lessons/ captures curated baselines and review artifacts
@@ -214,13 +216,13 @@ Expected output includes:
 ModuleNotFoundError: No module named 'detections.missing_detector'
 ```
 
-Why this matters: the ASI06 and ASI01 runtimes now require packaged detector modules. Missing detector imports should fail loudly during packaging checks.
+Why this matters: the ASI06, ASI01, and ASI02 runtimes now require packaged detector modules. Missing detector imports should fail loudly during packaging checks.
 
 ## 5. Interview Preparation Section
 
 **Q: What problem does ClawGuard solve in this repo?**
 
-**A:** It turns OpenClaw from a job-search script into a real telemetry source for AI agent security monitoring. The system watches untrusted job content, records ASI06 and ASI01 findings with evidence and session IDs, and exports digest-linked telemetry for later detector work. This answer shows you understand both the security goal and the operational pipeline.
+**A:** It turns OpenClaw from a job-search script into a real telemetry source for AI agent security monitoring. The system watches untrusted job content, records ASI06, ASI01, and ASI02 findings with evidence and session IDs, and exports digest-linked telemetry for later detector work. This answer shows you understand both the security goal and the operational pipeline.
 
 **Q: Why use a real OpenClaw deployment instead of synthetic examples only?**
 

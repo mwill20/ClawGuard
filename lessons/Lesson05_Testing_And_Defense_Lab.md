@@ -19,9 +19,9 @@ Why this matters: tests are the proof that ClawGuard behavior is more than docum
 ### Learning objectives
 
 - Run the full regression suite.
-- Explain what `tests/test_asi06_detector.py` proves.
+- Explain what `tests/test_asi06_detector.py` and `tests/test_asi02_detector.py` prove.
 - Explain what `tests/test_job_search_secure.py` proves.
-- Use the ASI06 red-team dataset.
+- Use the ASI06 red-team dataset and ASI02 synthetic fixture.
 - Trigger intentional failures safely.
 - Identify current test gaps.
 
@@ -33,12 +33,12 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 
 ### Project implements
 
-- Detector tests: `tests/test_asi06_detector.py`
-- Runtime tests: `tests/test_job_search_secure.py` (15 tests covering ASI06, ASI01, source-status, DB queryability)
-- Evaluation tests: `tests/test_asi06_evaluation.py`
+- Detector tests: `tests/test_asi06_detector.py`, `tests/test_asi02_detector.py`
+- Runtime tests: `tests/test_job_search_secure.py` (20 tests covering ASI06, ASI01, ASI02, source-status, DB queryability)
+- Evaluation tests: `tests/test_asi06_evaluation.py`, `tests/test_asi02_evaluation.py`
 - Telemetry validation tests: `tests/test_telemetry_validation.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
-- Synthetic labeled fixture: `examples/asi06_labeled_eval.json`
+- Synthetic labeled fixtures: `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
 - Full suite: 48 tests passing.
 
@@ -73,9 +73,15 @@ Project implements:
 - `test_asi01_silent_on_uncorroborated_score_redirect`: low-confidence imperatives don't fire alone.
 - `test_asi01_fires_uncorroborated_when_role_replace_imperative`: high-confidence imperatives fire alone.
 - `test_asi01_findings_persist_with_session_id`: ASI01 findings persist with `agent_session_id` and `related_asi06_rule_id`.
+- `test_asi02_egress_redirect_fires_on_unsafe_url_instruction`: ASI02 catches unsafe outbound URL instructions.
+- `test_asi02_notify_redirect_fires_on_email_redirect`: ASI02 catches notification redirection attempts.
+- `test_asi02_shell_injection_fires_on_imperative_payload`: ASI02 catches shell/script payload instructions.
+- `test_asi02_silent_on_clean_tool_mentions`: ASI02 avoids clean operational tool mentions.
+- `test_asi02_persists_with_session_id_and_corroboration_links`: ASI02 findings persist with session and upstream-rule evidence.
 - `test_search_site_emits_source_status_audit_event`: source-status audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`.
 - `test_load_profile_supports_private_env_path`: private profile data can live outside Git via `CLAWGUARD_PROFILE_PATH`.
 - `test_labeled_fixture_metrics_are_reproducible`: synthetic ASI06 fixture metrics stay stable.
+- `test_fixture_evaluates_at_expected_micro_f1`: synthetic ASI02 fixture metrics stay stable.
 - `test_sample_telemetry_matches_schema`: sample post-compile telemetry follows the expected JSON shape.
 - DB tests for `agent_session_id` queryability.
 
@@ -182,18 +188,20 @@ PowerShell:
 
 ```powershell
 Set-Location C:\Projects\ClawGuard
-python -B -m unittest tests.test_asi06_detector
+python -B -m unittest tests.test_asi06_detector tests.test_asi02_detector
 ```
 
 Expected output:
 
 ```text
-...
+........
 ----------------------------------------------------------------------
-Ran 3 tests in 0.003s
+Ran 8 tests in 0.006s
 
 OK
 ```
+
+The exact seconds may vary.
 
 ### 🧪 Exercise 3: Run the ASI06 defense lab
 
@@ -281,6 +289,27 @@ Expected output includes:
 
 Why: this protects the post-compile telemetry contract before downstream ClawGuard tooling starts reading it.
 
+### Exercise 8: Run the synthetic ASI02 fixture evaluation
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected output includes:
+
+```text
+"record_count": 7
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+Why: this proves ASI02 still matches the expected tool-misuse labels for clean, single-rule, and combo synthetic cases.
+
 ## 5. Interview Preparation Section
 
 **Q: What does the runtime detector test prove?**
@@ -308,20 +337,20 @@ Why: this protects the post-compile telemetry contract before downstream ClawGua
 | Item | Details |
 |---|---|
 | Full test command | `python -B -m unittest discover -s tests` |
-| Detector tests | `tests/test_asi06_detector.py` |
+| Detector tests | `tests/test_asi06_detector.py`, `tests/test_asi02_detector.py` |
 | Runtime tests | `tests/test_job_search_secure.py` |
-| Evaluation tests | `tests/test_asi06_evaluation.py` |
+| Evaluation tests | `tests/test_asi06_evaluation.py`, `tests/test_asi02_evaluation.py` |
 | Telemetry validation tests | `tests/test_telemetry_validation.py` |
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
-| Synthetic evaluation fixture | `examples/asi06_labeled_eval.json` |
+| Synthetic evaluation fixtures | `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
 | Current total | 48 tests (20 in `test_job_search_secure.py`, 28 across detector / evaluation / telemetry / selector / redaction-export) |
-| Core proof | Detector paths (ASI06 + ASI01) used by OpenClaw runtime, source-status semantics in audit log |
+| Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps
 
-Study [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) next: the implemented ASI01 v1 detector and its corroborated-classifier design. After that, [Lesson 07](Lesson07_Source_Compass_And_Phase2_Map.md) covers source-status semantics and points to the Phase 2 plans.
+Study [Lesson 06](Lesson06_ASI01_Goal_Hijack_Scaffold.md) next: the implemented ASI01 v1 detector and its corroborated-classifier design. After that, [Lesson 07](Lesson07_Source_Compass_And_Phase2_Map.md) covers source-status semantics and [Lesson 08](Lesson08_ASI02_Tool_Misuse_Defense_Lab.md) covers ASI02 tool-misuse detection.
 
-Optional challenge: add a new red-team sample where the JD discusses prompt-injection defensively and verify both ASI06 and ASI01 stay silent. This protects against future false-positive regressions.
+Optional challenge: add a new red-team sample where the JD discusses prompt-injection defensively and verify ASI06, ASI01, and ASI02 stay silent. This protects against future false-positive regressions.
 
 Remember: tests are how you turn "I think it works" into evidence. 🛡️

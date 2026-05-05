@@ -109,6 +109,34 @@ Expected key results:
 
 This is a synthetic smoke evaluation, not a real-world precision/recall benchmark.
 
+## ASI02 Labeled Fixture Evaluation
+
+Run the small synthetic tool-misuse fixture evaluation:
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_asi02.py --input examples/asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 7
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+This is a synthetic ASI02 smoke evaluation, not a real-world precision/recall benchmark.
+
 ## Telemetry Schema Validation
 
 Validate the sample post-compile telemetry shape:
@@ -141,7 +169,7 @@ Inspect latest telemetry without exporting:
 .\scripts\check_latest_telemetry.ps1
 ```
 
-Confirm the daily cron used the detector-backed ASI06 and ASI01 paths:
+Confirm the daily cron used the detector-backed ASI06 path, with ASI01/ASI02 activation notes when those detectors have not logged yet:
 
 ```powershell
 .\scripts\check_cron_confirmation.ps1
@@ -166,6 +194,7 @@ Dry-run a curated telemetry export:
 |---|---|
 | Validate local repo | `.\scripts\preflight.ps1` |
 | Run ASI06 fixture metrics | `python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
+| Run ASI02 fixture metrics | `python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
 | Validate telemetry sample | `python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json` |
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |

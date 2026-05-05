@@ -11,9 +11,9 @@ Phase 1 detection coverage protects against adversarial content (ASI06) and adve
 Current baseline:
 
 - ASI06 and ASI01 are implemented runtime detector modules.
-- `run_jd_security_detections()` already passes ASI06 findings into ASI01.
-- `record_security_findings()` currently replaces `ASI06_%` and `ASI01_%` findings.
-- Deploy dry-run compiles ASI06 and ASI01 detector modules.
+- `run_jd_security_detections()` passes ASI06 findings into ASI01, then passes ASI06/ASI01 findings into ASI02.
+- `record_security_findings()` replaces `ASI06_%`, `ASI01_%`, and `ASI02_%` findings.
+- Deploy dry-run compiles ASI06, ASI01, and ASI02 detector modules.
 - Full local preflight currently runs 48 tests.
 
 ## Tool Surface
@@ -129,11 +129,11 @@ class ASI02ToolMisuseDetector:
         ...
 ```
 
-It should reuse `JobContent.from_any` and `_pattern_evidence` from `detections.asi06_jd_content.detector` unless that creates circular import risk.
+It reuses the shared finding/evidence style from ASI06 so persisted rows keep the same reviewer-friendly fields: `pattern`, `matched_text`, and `snippet`.
 
 ## Runtime Integration
 
-Add to `target-agent/skills/job-search-custom/job_search_secure.py::run_jd_security_detections` after the ASI01 block:
+Implemented in `target-agent/skills/job-search-custom/job_search_secure.py::run_jd_security_detections` after the ASI01 block:
 
 ```python
 asi02_detector = ClawGuardASI02ToolMisuseDetector()
@@ -146,16 +146,16 @@ asi02_findings = [_security_finding_from_clawguard(f) for f in asi02_raw]
 return asi06_findings + asi01_findings + asi02_findings
 ```
 
-Required support edits:
+Implemented support edits:
 
-- Update imports for `ClawGuardASI02ToolMisuseDetector`.
-- Update `JobDatabase.record_security_findings()` to include `ASI02_%` in the replace clause.
-- Update `scripts/deploy_openclaw_skill.ps1` to py_compile `detections/asi02_tool_misuse/detector.py`.
-- Update `scripts/check_cron_confirmation.ps1` to look for `"ClawGuard ASI02 detector module active"` as a non-failing note before first invocation.
+- Imports include `ClawGuardASI02ToolMisuseDetector`.
+- `JobDatabase.record_security_findings()` includes `ASI02_%` in the replace clause.
+- `scripts/deploy_openclaw_skill.ps1` py_compiles `detections/asi02_tool_misuse/detector.py`.
+- `scripts/check_cron_confirmation.ps1` looks for `"ClawGuard ASI02 detector module active"` as a non-failing note before first invocation.
 
 ## Tests
 
-Add to `tests/test_job_search_secure.py`:
+Implemented in `tests/test_job_search_secure.py`:
 
 - `test_asi02_egress_redirect_fires_on_unsafe_url_instruction`
 - `test_asi02_notify_redirect_fires_on_email_redirect`
@@ -163,14 +163,14 @@ Add to `tests/test_job_search_secure.py`:
 - `test_asi02_silent_on_clean_tool_mentions`
 - `test_asi02_persists_with_session_id_and_corroboration_links`
 
-Add detector or fixture tests for:
+Implemented detector and fixture coverage:
 
 - Clean tool mentions.
 - One positive job per ASI02 rule.
 - One multi-rule combo job.
 - Shell snippet without imperative misuse language.
 
-Add a synthetic fixture at `examples/asi02_labeled_eval.json`, then wire it into `scripts/preflight.ps1` alongside the existing ASI06 evaluator step.
+The synthetic fixture lives at `examples/asi02_labeled_eval.json` and is wired into `scripts/preflight.ps1` alongside the existing ASI06 evaluator step.
 
 ## Verification
 
