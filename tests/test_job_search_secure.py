@@ -254,6 +254,46 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertTrue(all(context["job_title"] == "SOC Analyst" for context in contexts))
         self.assertTrue(all(context["source_field"] == "title_and_description" for context in contexts))
 
+    def test_asi02_findings_are_review_only_for_phase2_scoring(self):
+        job = job_search_secure.Job(
+            job_id="job-asi02-review-only",
+            title="SOC Analyst",
+            company="Acme Security",
+            location="Remote",
+            description="Build SOC automation with SIEM, EDR, and Python workflows.",
+            url="https://www.linkedin.com/jobs/view/job-asi02-review-only",
+            source="linkedin",
+        )
+        profile = job_search_secure.Profile(
+            full_name="Test User",
+            email="test@example.com",
+            phone="",
+            resume_text="SOC analyst with SIEM, EDR, and Python automation experience.",
+            target_roles=["SOC Analyst"],
+            target_locations=["Remote"],
+            preferences={},
+            key_skills=["SIEM", "EDR", "Python"],
+            certifications=[],
+        )
+        asi02_finding = job_search_secure.SecurityFinding(
+            rule_id="ASI02_EGRESS_REDIRECT",
+            severity=job_search_secure.FindingSeverity.HIGH,
+            message="External content instructs unsafe egress.",
+            evidence={"attempted_operation_category": "http-egress", "matches": []},
+            context={"source_platform": "linkedin"},
+        )
+        original_detector = job_search_secure.run_jd_security_detections
+        try:
+            job_search_secure.run_jd_security_detections = lambda _job, _jd_text=None: []
+            clean_score = job_search_secure.score_job(job, profile)
+            job_search_secure.run_jd_security_detections = lambda _job, _jd_text=None: [asi02_finding]
+            asi02_score = job_search_secure.score_job(job, profile)
+        finally:
+            job_search_secure.run_jd_security_detections = original_detector
+
+        self.assertEqual(asi02_score.score, clean_score.score)
+        self.assertEqual(asi02_score.recommendation, clean_score.recommendation)
+
     def test_security_findings_are_queryable_by_agent_session_id(self):
         job = job_search_secure.Job(
             job_id="job3",

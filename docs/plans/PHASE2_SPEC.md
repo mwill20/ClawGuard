@@ -22,7 +22,7 @@ Phase 1 delivered:
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 54 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
+| Testing | 55 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
@@ -122,6 +122,7 @@ Rules for historical specs:
 | D3 | Redaction location | Local-side redaction first for speed; revisit host-side redaction before any automation. |
 | D4 | ASI03/ASI05 scope | Specs only in Phase 2 unless structured runtime telemetry appears. |
 | D5 | Live confirmation | Use local/staging synthetic fixtures; do not inject fake attacker jobs into live job providers. |
+| D6 | ASI02 score impact | Review-only in Phase 2; persist and export findings, but do not reduce job score until real false-positive behavior is measured. |
 
 ## Phase 2 Exit Criteria
 
@@ -139,5 +140,4 @@ Phase 2 is complete when:
 
 1. Add a finding-bearing or false-positive curated telemetry sample when real telemetry warrants it.
 2. Expand the ASI02 defense lab with curated real-world false-positive examples.
-3. Decide whether Phase 2 needs ASI02 score impact or review-only persistence after live telemetry appears.
-4. Keep ASI02 deployed and rerun cron confirmation after a compile with jobs to evaluate.
+3. Keep ASI02 deployed and rerun cron confirmation after a compile with jobs to evaluate.

@@ -14,7 +14,7 @@ Current baseline:
 - `run_jd_security_detections()` passes ASI06 findings into ASI01, then passes ASI06/ASI01 findings into ASI02.
 - `record_security_findings()` replaces `ASI06_%`, `ASI01_%`, and `ASI02_%` findings.
 - Deploy dry-run compiles ASI06, ASI01, and ASI02 detector modules.
-- Full local preflight currently runs 54 tests.
+- Full local preflight currently runs 55 tests.
 
 ## Tool Surface
 
@@ -162,6 +162,7 @@ Implemented in `tests/test_job_search_secure.py`:
 - `test_asi02_shell_injection_fires_on_imperative_payload`
 - `test_asi02_silent_on_clean_tool_mentions`
 - `test_asi02_persists_with_session_id_and_corroboration_links`
+- `test_asi02_findings_are_review_only_for_phase2_scoring`
 
 Implemented detector and fixture coverage:
 
@@ -186,8 +187,18 @@ End-to-end Phase 2 ASI02 verification:
 
 Do not inject fake attacker jobs or synthetic malicious URLs into live job providers for confirmation.
 
+## Score Impact Decision
+
+ASI02 findings remain review-only in Phase 2. They persist to `job_security_findings`, appear in telemetry, and feed reviewer workflows, but they do not reduce `score` or change `recommendation`.
+
+Reasoning:
+
+- Current ASI02 evaluation is synthetic plus clean curated telemetry only.
+- Real-world false-positive behavior has not been measured.
+- The existing scoring penalty is intentionally limited to `ASI06_SKILL_STUFFING`, where the detector directly protects the skill-match score component.
+- Tool-misuse evidence is security telemetry first; ranking impact can be revisited after finding-bearing and false-positive-worthy real sessions exist.
+
 ## Open Questions
 
 1. Should `ASI02_FILE_PATH_REDIRECT` look only at content text, or also at runtime arguments? Runtime arguments require Phase 3 instrumentation.
 2. Should `ASI02_NOTIFY_REDIRECT` include phone numbers and chat handles in v1, or email/webhook only?
-3. Should ASI02 findings affect job score in v1, or only persist as review evidence until false-positive behavior is measured?
