@@ -22,7 +22,7 @@ Phase 1 delivered:
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 48 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
+| Testing | 49 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, review-session selection, export redaction, profile privacy, source-status audit, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
@@ -78,7 +78,7 @@ Deliverables:
 - `examples/asi02_labeled_eval.json` with clean, single-rule, and combo cases. Done.
 - A sanitized real-world review corpus under `lessons/telemetry/` or `examples/curated/`. First clean baseline exported; finding-bearing/false-positive samples still pending.
 - A red-team lab that exercises ASI06, ASI01, and ASI02 together without touching live job providers. Done for ASI02 synthetic fixture workflow; curated real-world lab still pending.
-- A documented confusion-matrix workflow for synthetic and curated sets.
+- A documented confusion-matrix workflow for synthetic and curated sets. Done for synthetic ASI02 results and clean-baseline telemetry interpretation; finding-bearing curated workflow still pending.
 
 Acceptance criteria:
 

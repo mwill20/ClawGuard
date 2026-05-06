@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 48/48 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 49/49 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -40,7 +40,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 48 tests in 0.0
+Ran 49 tests in 0.0
 
 OK
 ```
@@ -104,6 +104,40 @@ Expected key results:
 "recall": 1.0
 "f1": 1.0
 ```
+
+The stable checked-in result artifact is [examples/asi02_labeled_eval_results.json](../examples/asi02_labeled_eval_results.json).
+
+## Confusion-Matrix Workflow
+
+The ASI06 and ASI02 evaluators emit per-rule confusion counts:
+
+| Field | Meaning |
+|---|---|
+| `tp` | Rule expected and detector predicted it. |
+| `fp` | Rule not expected but detector predicted it. |
+| `fn` | Rule expected but detector missed it. |
+| `tn` | Rule not expected and detector stayed silent. |
+
+For ASI02, regenerate the checked-in result artifact with:
+
+```powershell
+python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --output examples\asi02_labeled_eval_results.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected ASI02 matrix summary:
+
+```text
+ASI02_EGRESS_REDIRECT: tp=2 fp=0 fn=0 tn=5
+ASI02_NOTIFY_REDIRECT: tp=2 fp=0 fn=0 tn=5
+ASI02_SHELL_INJECTION: tp=2 fp=0 fn=0 tn=5
+ASI02_FILE_PATH_REDIRECT: tp=2 fp=0 fn=0 tn=5
+```
+
+Use curated telemetry differently from synthetic fixtures:
+
+- Synthetic fixtures are labeled, so they can produce TP/FP/FN/TN counts.
+- Curated clean telemetry is operational evidence, so it is a false-positive smoke check unless manually labeled.
+- Finding-bearing or false-positive curated samples should be added only when real telemetry warrants them.
 
 ## Continuous Integration
 

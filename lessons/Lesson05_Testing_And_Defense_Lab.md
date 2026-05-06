@@ -40,7 +40,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixtures: `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 48 tests passing.
+- Full suite: 49 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -177,7 +177,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 48 tests in 0.22s
+Ran 49 tests in 0.22s
 
 OK
 ```
@@ -344,7 +344,7 @@ Why: this proves ASI02 still matches the expected tool-misuse labels for clean, 
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixtures | `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 48 tests (20 in `test_job_search_secure.py`, 28 across detector / evaluation / telemetry / selector / redaction-export) |
+| Current total | 49 tests (20 in `test_job_search_secure.py`, 29 across detector / evaluation / telemetry / selector / redaction-export) |
 | Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

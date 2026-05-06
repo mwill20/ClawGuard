@@ -1,0 +1,124 @@
+{
+  "exact_match_accuracy": 1.0,
+  "input_path": "examples/asi02_labeled_eval.json",
+  "micro": {
+    "f1": 1.0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 8
+  },
+  "notes": [
+    "Metrics are measured only on this small synthetic labeled fixture set.",
+    "These results are not a real-world precision/recall benchmark."
+  ],
+  "per_rule": {
+    "ASI02_EGRESS_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 5,
+      "tp": 2
+    },
+    "ASI02_FILE_PATH_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 5,
+      "tp": 2
+    },
+    "ASI02_NOTIFY_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 5,
+      "tp": 2
+    },
+    "ASI02_SHELL_INJECTION": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 5,
+      "tp": 2
+    }
+  },
+  "record_count": 7,
+  "records": [
+    {
+      "expected_rule_ids": [],
+      "job_id": "asi02-clean-001",
+      "predicted_rule_ids": []
+    },
+    {
+      "expected_rule_ids": [],
+      "job_id": "asi02-clean-002",
+      "predicted_rule_ids": []
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_EGRESS_REDIRECT"
+      ],
+      "job_id": "asi02-egress-001",
+      "predicted_rule_ids": [
+        "ASI02_EGRESS_REDIRECT"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_NOTIFY_REDIRECT"
+      ],
+      "job_id": "asi02-notify-001",
+      "predicted_rule_ids": [
+        "ASI02_NOTIFY_REDIRECT"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_SHELL_INJECTION"
+      ],
+      "job_id": "asi02-shell-001",
+      "predicted_rule_ids": [
+        "ASI02_SHELL_INJECTION"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_FILE_PATH_REDIRECT"
+      ],
+      "job_id": "asi02-file-001",
+      "predicted_rule_ids": [
+        "ASI02_FILE_PATH_REDIRECT"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_EGRESS_REDIRECT",
+        "ASI02_FILE_PATH_REDIRECT",
+        "ASI02_NOTIFY_REDIRECT",
+        "ASI02_SHELL_INJECTION"
+      ],
+      "job_id": "asi02-combo-001",
+      "predicted_rule_ids": [
+        "ASI02_EGRESS_REDIRECT",
+        "ASI02_FILE_PATH_REDIRECT",
+        "ASI02_NOTIFY_REDIRECT",
+        "ASI02_SHELL_INJECTION"
+      ]
+    }
+  ],
+  "rule_ids": [
+    "ASI02_EGRESS_REDIRECT",
+    "ASI02_NOTIFY_REDIRECT",
+    "ASI02_SHELL_INJECTION",
+    "ASI02_FILE_PATH_REDIRECT"
+  ]
+}

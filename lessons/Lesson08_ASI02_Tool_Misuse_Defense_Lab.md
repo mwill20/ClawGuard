@@ -275,6 +275,25 @@ fixtures. A zero-finding curated session proves the export, redaction,
 validation, and lesson artifact path works without adding synthetic attacker
 content to live providers.
 
+### Exercise 6: Inspect ASI02 confusion counts
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B -c "import json; from pathlib import Path; result=json.loads(Path('examples/asi02_labeled_eval_results.json').read_text()); print({rule: {k: v for k, v in counts.items() if k in ('tp','fp','fn','tn')} for rule, counts in result['per_rule'].items()})"
+```
+
+Expected output:
+
+```text
+{'ASI02_EGRESS_REDIRECT': {'fn': 0, 'fp': 0, 'tn': 5, 'tp': 2}, 'ASI02_FILE_PATH_REDIRECT': {'fn': 0, 'fp': 0, 'tn': 5, 'tp': 2}, 'ASI02_NOTIFY_REDIRECT': {'fn': 0, 'fp': 0, 'tn': 5, 'tp': 2}, 'ASI02_SHELL_INJECTION': {'fn': 0, 'fp': 0, 'tn': 5, 'tp': 2}}
+```
+
+Why this matters: a fixture score is more useful when you can explain the
+confusion counts. In an interview, `fp=0` on this tiny fixture means "no false
+positives in this synthetic set," not "no false positives in the real world."
+
 ## 5. Interview Preparation Section
 
 **Q: Why is ASI02 content-side only in Phase 2?**
@@ -319,6 +338,7 @@ actions.
 | Runtime hook | `run_jd_security_detections()` |
 | Fixture | `examples/asi02_labeled_eval.json` |
 | Evaluator | `scripts/evaluate_asi02.py` |
+| Result artifact | `examples/asi02_labeled_eval_results.json` |
 | Tests | `tests/test_asi02_detector.py`, `tests/test_asi02_evaluation.py` |
 | Telemetry schema | `1.2` |
 | Curated clean baseline | `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/telemetry.json` |
