@@ -13,6 +13,7 @@ Set-StrictMode -Version Latest
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $JobScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\job_search_secure.py"
+$RuntimeEventsScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\runtime_events.py"
 $DetectionsDir = Join-Path $RepoRoot "detections"
 $PostCompileHook = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_post_compile.sh"
 $CronScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\staggered_cron.sh"
@@ -41,6 +42,9 @@ function Invoke-Native {
 if (-not (Test-Path -LiteralPath $JobScript)) {
     throw "Missing runtime script: $JobScript"
 }
+if (-not (Test-Path -LiteralPath $RuntimeEventsScript)) {
+    throw "Missing runtime-events writer: $RuntimeEventsScript"
+}
 if (-not (Test-Path -LiteralPath $DetectionsDir)) {
     throw "Missing detections package: $DetectionsDir"
 }
@@ -56,6 +60,7 @@ $quotedSkillDir = ConvertTo-ShellLiteral $SkillDir
 $quotedContainer = ConvertTo-ShellLiteral $Container
 $quotedHostDataDir = ConvertTo-ShellLiteral $HostDataDir
 $jobContainerPath = "${Container}:${SkillDir}/job_search_secure.py"
+$runtimeEventsContainerPath = "${Container}:${SkillDir}/runtime_events.py"
 $detectionsContainerPath = "${Container}:${SkillDir}/detections"
 $hostHookPath = "${HostDataDir}/clawguard_post_compile.sh"
 $hostCronPath = "${HostDataDir}/staggered_cron.sh"
@@ -65,10 +70,12 @@ set -e
 trap "rm -rf $quotedStage" EXIT
 echo "Deploying OpenClaw skill package into $SkillDir"
 docker cp "$RemoteStage/job_search_secure.py" "$jobContainerPath"
+docker cp "$RemoteStage/runtime_events.py" "$runtimeEventsContainerPath"
 docker exec $quotedContainer mkdir -p "$SkillDir/detections"
 docker cp "$RemoteStage/detections/." "$detectionsContainerPath"
-docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py detections/asi06_jd_content/detector.py detections/asi01_goal_hijack/detector.py detections/asi02_tool_misuse/detector.py
-docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; print('asi06_module=' + m.ClawGuardASI06JobContentDetector.__module__); print('asi01_module=' + m.ClawGuardASI01GoalHijackDetector.__module__); print('asi02_module=' + m.ClawGuardASI02ToolMisuseDetector.__module__)"
+docker exec $quotedContainer mkdir -p "/data/clawguard/runtime_events"
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py runtime_events.py detections/asi06_jd_content/detector.py detections/asi01_goal_hijack/detector.py detections/asi02_tool_misuse/detector.py
+docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; import runtime_events as r; print('asi06_module=' + m.ClawGuardASI06JobContentDetector.__module__); print('asi01_module=' + m.ClawGuardASI01GoalHijackDetector.__module__); print('asi02_module=' + m.ClawGuardASI02ToolMisuseDetector.__module__); print('runtime_events_schema=' + r.SCHEMA_VERSION)"
 echo "Installing post-compile hook on host at $hostHookPath"
 mkdir -p $quotedHostDataDir
 install -m 0755 "$RemoteStage/clawguard_post_compile.sh" "$hostHookPath"
@@ -76,6 +83,7 @@ grep -q 'TELEMETRY_SCHEMA_VERSION' "$hostHookPath" && echo "post_compile_schema_
 echo "Installing cron wrapper on host at $hostCronPath"
 install -m 0755 "$RemoteStage/staggered_cron.sh" "$hostCronPath"
 grep -q 'CLAWGUARD_EMAIL_TO' "$hostCronPath" && echo "cron_email_to_forwarding=ok" || (echo "cron_email_to_forwarding=missing" && exit 1)
+grep -q 'CLAWGUARD_RUNTIME_EVENTS_ENABLED' "$hostCronPath" && echo "cron_runtime_events_forwarding=ok" || (echo "cron_runtime_events_forwarding=missing" && exit 1)
 echo "Deploy complete."
 "@
 
@@ -85,6 +93,7 @@ if ($DryRun) {
     Write-Host "SkillDir: $SkillDir"
     Write-Host "HostDataDir: $HostDataDir"
     Write-Host "JobScript: $JobScript"
+    Write-Host "RuntimeEventsScript: $RuntimeEventsScript"
     Write-Host "DetectionsDir: $DetectionsDir"
     Write-Host "PostCompileHook: $PostCompileHook"
     Write-Host "CronScript: $CronScript"
@@ -100,11 +109,13 @@ if ($DryRun) {
 
 Write-Host "Deploying OpenClaw skill package to $Remote..."
 Write-Host "  runtime: $JobScript"
+Write-Host "  runtime events: $RuntimeEventsScript"
 Write-Host "  detections: $DetectionsDir"
 Write-Host ""
 
 Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, "mkdir -p $quotedStage")
 Invoke-Native "scp" @($JobScript, "${Remote}:$RemoteStage/job_search_secure.py")
+Invoke-Native "scp" @($RuntimeEventsScript, "${Remote}:$RemoteStage/runtime_events.py")
 Invoke-Native "scp" @("-r", $DetectionsDir, "${Remote}:$RemoteStage/detections")
 Invoke-Native "scp" @($PostCompileHook, "${Remote}:$RemoteStage/clawguard_post_compile.sh")
 Invoke-Native "scp" @($CronScript, "${Remote}:$RemoteStage/staggered_cron.sh")

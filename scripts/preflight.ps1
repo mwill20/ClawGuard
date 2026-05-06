@@ -165,6 +165,7 @@ paths = [
     'scripts/validate_runtime_events.py',
     'detections/asi02_tool_misuse/detector.py',
     'target-agent/skills/job-search-custom/job_search_secure.py',
+    'target-agent/skills/job-search-custom/runtime_events.py',
 ]
 for path in paths:
     ast.parse(Path(path).read_text(encoding='utf-8'), filename=path)
@@ -218,7 +219,7 @@ Assert-GitGrepNoMatch `
 
 Assert-GitGrepNoMatch `
     -Name "No stale test-count claims" `
-    -Pattern "54 local tests|54 tests|54/54|Ran 54|50 local tests|50 tests|50/50|Ran 50|49 local tests|49 tests|49/49|Ran 49|35 local tests|35 tests|35/35|Ran 35|28 local tests|28 tests|28/28|Ran 28|24 local tests|24 tests|24/24|Ran 24|14 local tests|14 tests|14/14|Ran 14|12 local tests|12 tests|12/12|Ran 12|11 local tests|11 tests|11/11|Ran 11"
+    -Pattern "60 local tests|60 tests|60/60|Ran 60|55 local tests|55 tests|55/55|Ran 55|54 local tests|54 tests|54/54|Ran 54|50 local tests|50 tests|50/50|Ran 50|49 local tests|49 tests|49/49|Ran 49|35 local tests|35 tests|35/35|Ran 35|28 local tests|28 tests|28/28|Ran 28|24 local tests|24 tests|24/24|Ran 24|14 local tests|14 tests|14/14|Ran 14|12 local tests|12 tests|12/12|Ran 12|11 local tests|11 tests|11/11|Ran 11"
 
 Invoke-Step "Git diff whitespace check" {
     Invoke-Native "git" @("diff", "--check")
