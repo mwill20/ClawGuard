@@ -123,6 +123,7 @@ Older clean-baseline sessions can be pruned via a `--Prune` flag once they are n
 4. Add per-version branches to `validate_telemetry.py`. Done.
 5. Re-export historical samples to update their structure. First clean baseline done; broader backfill pending.
 6. Document the new workflow in `lessons/README.md` and `docs/MONITORING.md`. Done.
+7. Ship the post-compile hook to the operational host via `scripts/deploy_openclaw_skill.ps1`. Done. The deploy script now scps `clawguard_post_compile.sh` to `/docker/openclaw-utxu/data/clawguard/` and asserts `TELEMETRY_SCHEMA_VERSION` is present after install, so future deploys keep the hook in sync with the runtime.
 
 Each step is independently shippable. Schema versioning is the only runtime-output change and can land first without changing the repo's telemetry export contract.
 

@@ -2,6 +2,7 @@ param(
     [string]$Remote = "root@31.97.139.139",
     [string]$Container = "openclaw-utxu-openclaw-1",
     [string]$SkillDir = "/usr/local/lib/node_modules/openclaw/skills/job-search-custom",
+    [string]$HostDataDir = "/docker/openclaw-utxu/data/clawguard",
     [string]$RemoteStageBase = "/tmp/clawguard-openclaw-deploy",
     [string]$TempDir = (Join-Path $env:TEMP "clawguard-openclaw-deploy"),
     [switch]$DryRun
@@ -13,6 +14,7 @@ Set-StrictMode -Version Latest
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $JobScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\job_search_secure.py"
 $DetectionsDir = Join-Path $RepoRoot "detections"
+$PostCompileHook = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_post_compile.sh"
 $RemoteStage = "$RemoteStageBase-$PID"
 if (-not $RemoteStage.StartsWith("/tmp/clawguard-openclaw-deploy-")) {
     throw "RemoteStage must stay under /tmp/clawguard-openclaw-deploy-*"
@@ -41,12 +43,17 @@ if (-not (Test-Path -LiteralPath $JobScript)) {
 if (-not (Test-Path -LiteralPath $DetectionsDir)) {
     throw "Missing detections package: $DetectionsDir"
 }
+if (-not (Test-Path -LiteralPath $PostCompileHook)) {
+    throw "Missing post-compile hook: $PostCompileHook"
+}
 
 $quotedStage = ConvertTo-ShellLiteral $RemoteStage
 $quotedSkillDir = ConvertTo-ShellLiteral $SkillDir
 $quotedContainer = ConvertTo-ShellLiteral $Container
+$quotedHostDataDir = ConvertTo-ShellLiteral $HostDataDir
 $jobContainerPath = "${Container}:${SkillDir}/job_search_secure.py"
 $detectionsContainerPath = "${Container}:${SkillDir}/detections"
+$hostHookPath = "${HostDataDir}/clawguard_post_compile.sh"
 
 $remoteScript = @"
 set -e
@@ -57,6 +64,10 @@ docker exec $quotedContainer mkdir -p "$SkillDir/detections"
 docker cp "$RemoteStage/detections/." "$detectionsContainerPath"
 docker exec -w $quotedSkillDir $quotedContainer python3 -B -m py_compile job_search_secure.py detections/asi06_jd_content/detector.py detections/asi01_goal_hijack/detector.py detections/asi02_tool_misuse/detector.py
 docker exec -w $quotedSkillDir $quotedContainer python3 -B -c "import job_search_secure as m; print('asi06_module=' + m.ClawGuardASI06JobContentDetector.__module__); print('asi01_module=' + m.ClawGuardASI01GoalHijackDetector.__module__); print('asi02_module=' + m.ClawGuardASI02ToolMisuseDetector.__module__)"
+echo "Installing post-compile hook on host at $hostHookPath"
+mkdir -p $quotedHostDataDir
+install -m 0755 "$RemoteStage/clawguard_post_compile.sh" "$hostHookPath"
+grep -q 'TELEMETRY_SCHEMA_VERSION' "$hostHookPath" && echo "post_compile_schema_version=ok" || (echo "post_compile_schema_version=missing" && exit 1)
 echo "Deploy complete."
 "@
 
@@ -64,8 +75,10 @@ if ($DryRun) {
     Write-Host "Remote: $Remote"
     Write-Host "Container: $Container"
     Write-Host "SkillDir: $SkillDir"
+    Write-Host "HostDataDir: $HostDataDir"
     Write-Host "JobScript: $JobScript"
     Write-Host "DetectionsDir: $DetectionsDir"
+    Write-Host "PostCompileHook: $PostCompileHook"
     Write-Host "RemoteStage: $RemoteStage"
     Write-Host "Remote transport: scp temp script, then ssh -o BatchMode=yes $Remote bash /tmp/<script>"
     Write-Host ""
@@ -84,6 +97,7 @@ Write-Host ""
 Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, "mkdir -p $quotedStage")
 Invoke-Native "scp" @($JobScript, "${Remote}:$RemoteStage/job_search_secure.py")
 Invoke-Native "scp" @("-r", $DetectionsDir, "${Remote}:$RemoteStage/detections")
+Invoke-Native "scp" @($PostCompileHook, "${Remote}:$RemoteStage/clawguard_post_compile.sh")
 
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 $localRemoteScript = Join-Path $TempDir "deploy_openclaw_skill_$PID.sh"
