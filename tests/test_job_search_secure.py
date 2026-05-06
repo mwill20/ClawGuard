@@ -113,17 +113,24 @@ class JobSearchSecureTests(unittest.TestCase):
                         "url": "https://www.linkedin.com/jobs/view/security-engineer-at-acme-security-123",
                         "description": "Build detection engineering pipelines.",
                     },
+                    {
+                        "title": "34,000+ Security Analyst jobs in United States",
+                        "url": "https://www.linkedin.com/jobs/view/remote-tier-iii-soc-security-analyst-at-dxc-technology-1775983763",
+                        "description": "Remote SOC analyst role.",
+                    },
                 ]
             }
         }
 
         jobs = job_search_secure._parse_brave_response(data, "linkedin", 10, location="Seattle, WA")
 
-        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(jobs), 2)
         self.assertEqual(jobs[0].title, "Security Engineer")
         self.assertEqual(jobs[0].company, "Acme Security")
         self.assertEqual(jobs[0].location, "Seattle, WA")
         self.assertIn("/jobs/view/", jobs[0].url)
+        self.assertEqual(jobs[1].title, "Remote Tier III SOC Security Analyst")
+        self.assertEqual(jobs[1].company, "Dxc Technology")
 
     def test_digest_search_queries_expand_or_groups_and_profile_roles(self):
         profile = job_search_secure.Profile(
@@ -141,8 +148,13 @@ class JobSearchSecureTests(unittest.TestCase):
         queries = job_search_secure._build_digest_search_queries(profile)
 
         self.assertLess(queries.index("Cloud Security Engineer"), queries.index("SOC Engineer"))
-        self.assertIn("Security Operations Engineer", queries)
-        self.assertIn("Information Security Engineer", queries)
+        self.assertIn("SOC Analyst II", queries)
+        self.assertIn("SOC Analyst III", queries)
+        self.assertIn("Cybersecurity Engineer I", queries)
+        self.assertIn("AI Security", queries)
+        self.assertIn("AI Security Engineer", queries)
+        self.assertIn("Threat Hunter", queries)
+        self.assertNotIn("Customer Success Engineer cybersecurity", queries)
         self.assertEqual(queries.count("SOC Analyst"), 1)
 
     def test_digest_search_locations_include_remote_without_dropping_primary(self):

@@ -197,22 +197,31 @@ SITE_CONFIGS = {
 
 # Credit-efficient combined query groups
 QUERY_GROUPS = [
-    "SOC Analyst OR SOC Engineer OR Security Operations Engineer",
-    "Security Engineer OR Detection Engineer OR AI Security Engineer",
-    "Threat Hunter OR Customer Success Engineer cybersecurity",
+    "SOC Analyst II OR SOC Analyst III OR SOC Analyst",
+    "Threat Hunter OR Cyber Threat Hunter OR Detection Engineer",
+    "Cybersecurity Engineer I OR Cyber Security Engineer I OR AI Security Engineer",
 ]
 
 DEFAULT_DISCOVERY_QUERIES = [
+    "SOC Analyst II",
+    "SOC Analyst III",
+    "SOC Analyst 2",
+    "SOC Analyst 3",
     "SOC Analyst",
-    "SOC Engineer",
-    "Security Operations Engineer",
-    "Security Engineer",
-    "Detection Engineer",
-    "AI Security Engineer",
     "Threat Hunter",
-    "Customer Success Engineer cybersecurity",
-    "Information Security Analyst",
+    "Cyber Threat Hunter",
+    "Cybersecurity Engineer I",
+    "Cyber Security Engineer I",
+    "Cybersecurity Engineer",
+    "Cyber Security Engineer",
+    "AI Security",
+    "AI Security Engineer",
+    "AI Security Analyst",
+    "Detection Engineer",
+    "Security Operations Engineer",
+    "SOC Engineer",
     "Information Security Engineer",
+    "Information Security Analyst",
 ]
 
 # ============================================================================
@@ -1287,6 +1296,26 @@ def _split_title_company(raw_title: str, site_name: str) -> Tuple[str, str]:
     return title or "Unknown Title", "Unknown Company"
 
 
+def _titleize_job_slug(value: str) -> str:
+    text = re.sub(r"[-_]+", " ", value or "")
+    text = re.sub(r"\s+", " ", text).strip().title()
+    for acronym in ["AI", "SOC", "II", "III", "IV", "IR", "EDR", "SIEM"]:
+        text = re.sub(rf"\b{acronym.title()}\b", acronym, text)
+    return text
+
+
+def _split_linkedin_slug(url: str) -> Optional[Tuple[str, str]]:
+    parsed = urlparse(str(url or ""))
+    match = re.search(r"/jobs/view/(?P<slug>[^/?#]+)", parsed.path)
+    if not match:
+        return None
+    slug = re.sub(r"-\d+$", "", match.group("slug"))
+    if "-at-" in slug:
+        title_slug, company_slug = slug.rsplit("-at-", 1)
+        return _titleize_job_slug(title_slug), _titleize_job_slug(company_slug)
+    return _titleize_job_slug(slug), "Unknown Company"
+
+
 def _unique_in_order(values: List[str]) -> List[str]:
     seen = set()
     unique = []
@@ -1375,6 +1404,10 @@ def _parse_brave_response(data: dict, site_key: str, max_results: int, location:
             config.get("name", site_key),
         )
         url = item.get("url") or item.get("profile", {}).get("url") or ""
+        if site_key == "linkedin" and re.match(r"^\d[\d,]*\+?\s+.+\s+jobs\b", title.lower()):
+            parsed = _split_linkedin_slug(str(url))
+            if parsed:
+                title, company = parsed
         if not _is_brave_job_result(site_key, title, str(url)):
             continue
         desc = _clean_search_text(item.get("description"))
@@ -1975,14 +2008,15 @@ def score_job(
 
     # 3. Title match (25%)
     title_lower = job.title.lower()
+    target_roles = _build_digest_search_queries(profile)
     title_match = any(
         role.lower() in title_lower or title_lower in role.lower()
-        for role in profile.target_roles
+        for role in target_roles
     )
     if not title_match:
         title_match = any(
             all(word in title_lower for word in role.lower().split())
-            for role in profile.target_roles
+            for role in target_roles
         )
     title_score = 1.0 if title_match else 0.2
 
