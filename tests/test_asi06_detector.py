@@ -48,18 +48,29 @@ class ASI06DetectorTests(unittest.TestCase):
         self.assertEqual(prompt_finding.context["source_field"], "title_and_description")
 
     def test_safe_apply_domains_do_not_trigger_url_mismatch(self):
-        job = JobContent(
-            job_id="job-456",
-            title="Security Engineer",
-            company="Unknown Company",
-            description="Build detection rules for SIEM.",
-            apply_url="https://jobs.lever.co/example/security-engineer",
-            source_platform="cybersecjobs",
-        )
+        jobs = [
+            JobContent(
+                job_id="job-456",
+                title="Security Engineer",
+                company="Unknown Company",
+                description="Build detection rules for SIEM.",
+                apply_url="https://jobs.lever.co/example/security-engineer",
+                source_platform="cybersecjobs",
+            ),
+            JobContent(
+                job_id="job-usajobs-443",
+                title="Cybersecurity Engineer",
+                company="Customs and Border Protection",
+                description="Federal cybersecurity role.",
+                apply_url="https://www.usajobs.gov:443/job/867465800",
+                source_platform="usajobs",
+            ),
+        ]
 
-        findings = ASI06JobContentDetector().detect(job)
+        for job in jobs:
+            findings = ASI06JobContentDetector().detect(job)
 
-        self.assertNotIn("ASI06_URL_MISMATCH", {finding.rule_id for finding in findings})
+            self.assertNotIn("ASI06_URL_MISMATCH", {finding.rule_id for finding in findings})
 
     def test_finding_can_serialize_to_db_ready_record(self):
         job = JobContent(

@@ -261,7 +261,8 @@ class ASI06JobContentDetector:
     def detect_apply_url_mismatch(self, company: str, apply_url: str) -> Optional[DetectionFinding]:
         if not apply_url:
             return None
-        domain = urlparse(apply_url).netloc.lower()
+        parsed = urlparse(apply_url)
+        domain = (parsed.hostname or parsed.netloc).lower()
         domain = domain[4:] if domain.startswith("www.") else domain
         if not domain:
             return None
