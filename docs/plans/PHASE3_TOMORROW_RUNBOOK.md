@@ -1,7 +1,15 @@
 # Phase 3 Tomorrow Runbook - May 6, 2026
 
-Status: Operational target for Wednesday, May 6, 2026
+Status: Active runbook; partial completion as of 2026-05-06 13:10 UTC
 Purpose: Confirm daily schedule health before starting Phase 3 runtime-event instrumentation.
+
+## Current State Snapshot
+
+As of 2026-05-06 13:10 UTC:
+
+- The 2026-05-06 manual compile-only run at 05:13 UTC sent the digest email and wrote schema `1.2` telemetry. Manual gate satisfied.
+- The scheduled 16:30 UTC compile has not yet run. Schedule gate pending.
+- Cron-confirm for 2026-05-06 currently shows the 05:13 manual compile entry only; re-run after 16:35 UTC for the scheduled-compile evidence the runbook requires.
 
 ## Context
 

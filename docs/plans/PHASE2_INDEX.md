@@ -1,8 +1,9 @@
 # Phase 2 Plans - Index
 
-Last updated: 2026-05-05
+Last updated: 2026-05-06
+Status: Phase 2 implementation tracks complete; active work has moved to Phase 3
 
-Phase 1 closed with the OpenClaw telemetry baseline, ASI06 detector module, ASI01 v1, and digest-source-status clarity. Phase 2 expands the detection engine and matures the telemetry pipeline.
+Phase 1 closed with the OpenClaw telemetry baseline, ASI06 detector module, ASI01 v1, and digest-source-status clarity. Phase 2 expanded the detection engine and matured the telemetry pipeline. ASI02 detector, schema-versioned telemetry, curated export, combined detector-chain lab, and the `runtime-events/0.1` contract all shipped.
 
 ## Phase 2 Goals
 

@@ -1,7 +1,7 @@
 # Phase 3 Plans - Index
 
-Last updated: 2026-05-05
-Status: Draft handoff for May 6, 2026 execution
+Last updated: 2026-05-06
+Status: In flight; Track A awaiting scheduled compile evidence, runtime writer not yet built
 
 Phase 2 built the ASI02 detector, curated telemetry workflow, combined detector-chain lab, and the `runtime-events/0.1` contract. Phase 3 turns that contract into observed runtime telemetry before ASI03 and ASI05 are allowed to become runtime detectors.
 
