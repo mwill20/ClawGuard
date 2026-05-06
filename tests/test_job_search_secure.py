@@ -652,6 +652,87 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertEqual(completed_events[1]["new"], 0)
         self.assertEqual(completed_events[1]["already_known"], 1)
 
+    def test_source_run_summary_distinguishes_known_empty_and_error_runs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = job_search_secure.JobDatabase(Path(tmpdir) / "jobs.db")
+            try:
+                db.record_search_run("r1", "linkedin", "soc", "Seattle", 5, 0, 0)
+                db.record_search_run("r2", "cybersecjobs", "soc", "Seattle", 4, 2, 0)
+                db.record_search_run("r3", "usajobs", "soc", "Seattle", 0, 0, 0)
+                db.record_search_run("r4", "linkedin", "ai security", "Seattle", 0, 0, 0, "timeout")
+
+                summary = db.get_source_run_summary(since="2000-01-01T00:00:00")
+            finally:
+                db.close()
+
+        self.assertEqual(summary["run_count"], 4)
+        self.assertEqual(summary["candidates_seen"], 9)
+        self.assertEqual(summary["newly_inserted"], 2)
+        self.assertEqual(summary["already_known"], 7)
+        self.assertEqual(summary["all_known_runs"], 1)
+        self.assertEqual(summary["ok_new_runs"], 1)
+        self.assertEqual(summary["empty_runs"], 1)
+        self.assertEqual(summary["error_runs"], 1)
+        self.assertEqual(summary["by_site"]["linkedin"]["candidates_seen"], 5)
+        self.assertEqual(summary["by_site"]["linkedin"]["error_runs"], 1)
+
+    def test_email_digest_surfaces_source_health_when_no_jobs_are_evaluated(self):
+        digest = {
+            "date": "2026-05-06",
+            "summary": {
+                "total_found": 0,
+                "new_jobs": 0,
+                "strong_matches": 0,
+                "good_matches": 0,
+                "moderate_matches": 0,
+                "auto_prepared": 0,
+                "credits_remaining": 1000,
+                "source_health": {
+                    "run_count": 9,
+                    "candidates_seen": 26,
+                    "newly_inserted": 0,
+                    "already_known": 26,
+                    "empty_runs": 3,
+                    "error_runs": 0,
+                    "by_site": {
+                        "linkedin": {
+                            "run_count": 3,
+                            "candidates_seen": 15,
+                            "newly_inserted": 0,
+                            "already_known": 15,
+                            "empty_runs": 0,
+                            "error_runs": 0,
+                        },
+                        "usajobs": {
+                            "run_count": 3,
+                            "candidates_seen": 0,
+                            "newly_inserted": 0,
+                            "already_known": 0,
+                            "empty_runs": 3,
+                            "error_runs": 0,
+                        },
+                    },
+                },
+            },
+            "top_matches": [],
+        }
+
+        html, text = job_search_secure.format_email_html(digest)
+        subject = job_search_secure.build_digest_email_subject(
+            digest,
+            strong_count=0,
+            good_count=0,
+            evaluated_count=0,
+            compile_only=True,
+        )
+
+        self.assertIn("Evaluated 0 digest jobs, 0 new today", text)
+        self.assertIn("26 candidates seen across 9 source runs", text)
+        self.assertIn("26 already known", text)
+        self.assertIn("Source health", html)
+        self.assertIn("<td>linkedin</td>", html)
+        self.assertIn("(0 evaluated, 26 seen)", subject)
+
 
 if __name__ == "__main__":
     unittest.main()

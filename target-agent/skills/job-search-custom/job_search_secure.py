@@ -22,6 +22,7 @@ import sys
 import logging
 import argparse
 import hashlib
+import html as html_lib
 import re
 import time
 import sqlite3
@@ -646,6 +647,81 @@ class JobDatabase:
             jobs_found, new_jobs, credits_used, error
         ))
         self.conn.commit()
+
+    def get_source_run_summary(self, since: Optional[str] = None) -> Dict:
+        """Summarize recent source runs so compile-only digests show provider health."""
+        if since is None:
+            since = f"{datetime.now().date().isoformat()}T00:00:00"
+
+        rows = self.conn.execute(
+            """
+            SELECT site, query, location, started_at, completed_at,
+                   jobs_found, new_jobs, credits_used, error
+            FROM search_runs
+            WHERE started_at >= ?
+            ORDER BY started_at ASC, id ASC
+            """,
+            (since,),
+        ).fetchall()
+
+        summary = {
+            "since": since,
+            "run_count": 0,
+            "candidates_seen": 0,
+            "newly_inserted": 0,
+            "already_known": 0,
+            "ok_new_runs": 0,
+            "all_known_runs": 0,
+            "empty_runs": 0,
+            "error_runs": 0,
+            "credits_used": 0,
+            "by_site": {},
+        }
+
+        for row in rows:
+            jobs_found = int(row["jobs_found"] or 0)
+            new_jobs = int(row["new_jobs"] or 0)
+            already_known = max(0, jobs_found - new_jobs)
+            error = (row["error"] or "").strip()
+            site = row["site"] or "unknown"
+            site_summary = summary["by_site"].setdefault(site, {
+                "run_count": 0,
+                "candidates_seen": 0,
+                "newly_inserted": 0,
+                "already_known": 0,
+                "ok_new_runs": 0,
+                "all_known_runs": 0,
+                "empty_runs": 0,
+                "error_runs": 0,
+                "credits_used": 0,
+            })
+
+            summary["run_count"] += 1
+            summary["candidates_seen"] += jobs_found
+            summary["newly_inserted"] += new_jobs
+            summary["already_known"] += already_known
+            summary["credits_used"] += int(row["credits_used"] or 0)
+
+            site_summary["run_count"] += 1
+            site_summary["candidates_seen"] += jobs_found
+            site_summary["newly_inserted"] += new_jobs
+            site_summary["already_known"] += already_known
+            site_summary["credits_used"] += int(row["credits_used"] or 0)
+
+            if error:
+                summary["error_runs"] += 1
+                site_summary["error_runs"] += 1
+            elif jobs_found == 0:
+                summary["empty_runs"] += 1
+                site_summary["empty_runs"] += 1
+            elif new_jobs == 0:
+                summary["all_known_runs"] += 1
+                site_summary["all_known_runs"] += 1
+            else:
+                summary["ok_new_runs"] += 1
+                site_summary["ok_new_runs"] += 1
+
+        return summary
 
     # -- Security findings --
 
@@ -2046,16 +2122,63 @@ def format_email_html(digest: Dict) -> Tuple[str, str]:
     """Format digest as HTML email and plain text."""
     s = digest["summary"]
     matches = digest.get("top_matches", [])
+    source = s.get("source_health") or {}
+    source_text_lines = []
+    source_html = ""
+    if source:
+        source_text_lines.append(
+            "Source health: "
+            f"{source.get('candidates_seen', 0)} candidates seen across "
+            f"{source.get('run_count', 0)} source runs; "
+            f"{source.get('newly_inserted', 0)} new, "
+            f"{source.get('already_known', 0)} already known, "
+            f"{source.get('empty_runs', 0)} empty runs, "
+            f"{source.get('error_runs', 0)} errors."
+        )
+        for site_name, site_summary in sorted(source.get("by_site", {}).items()):
+            source_text_lines.append(
+                f"- {site_name}: {site_summary.get('candidates_seen', 0)} seen, "
+                f"{site_summary.get('newly_inserted', 0)} new, "
+                f"{site_summary.get('already_known', 0)} already known, "
+                f"{site_summary.get('empty_runs', 0)} empty, "
+                f"{site_summary.get('error_runs', 0)} errors"
+            )
+
+        source_rows = ""
+        for site_name, site_summary in sorted(source.get("by_site", {}).items()):
+            source_rows += (
+                "<tr>"
+                f"<td>{html_lib.escape(str(site_name))}</td>"
+                f"<td>{site_summary.get('run_count', 0)}</td>"
+                f"<td>{site_summary.get('candidates_seen', 0)}</td>"
+                f"<td>{site_summary.get('newly_inserted', 0)}</td>"
+                f"<td>{site_summary.get('already_known', 0)}</td>"
+                f"<td>{site_summary.get('empty_runs', 0)}</td>"
+                f"<td>{site_summary.get('error_runs', 0)}</td>"
+                "</tr>"
+            )
+        source_html = f"""
+    <p><strong>Source health:</strong> {source.get('candidates_seen', 0)} candidates seen across
+    {source.get('run_count', 0)} source runs; {source.get('newly_inserted', 0)} new,
+    {source.get('already_known', 0)} already known, {source.get('empty_runs', 0)} empty runs,
+    {source.get('error_runs', 0)} errors.</p>
+    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
+    <tr style="background:#f3f4f6"><th>Source</th><th>Runs</th><th>Seen</th><th>New</th><th>Already known</th><th>Empty</th><th>Errors</th></tr>
+    {source_rows}
+    </table>"""
 
     # Plain text
     lines = [
         f"ClawGuard Job Digest — {digest['date']}",
-        f"Found {s['total_found']} jobs, {s['new_jobs']} new",
+        f"Evaluated {s['total_found']} digest jobs, {s['new_jobs']} new today",
         f"Strong: {s['strong_matches']} | Good: {s['good_matches']} | Moderate: {s['moderate_matches']}",
         f"Auto-prepared: {s.get('auto_prepared', 0)} jobs",
         f"Credits: {s['credits_remaining']} remaining",
         "",
     ]
+    if source_text_lines:
+        lines.extend(source_text_lines)
+        lines.append("")
     for i, m in enumerate(matches[:15], 1):
         lines.append(f"{i}. [{m['score']:.0%}] {m['title']} @ {m['company']}")
         lines.append(f"   {m['location']} | {m['source']} | {m.get('salary', 'N/A')}")
@@ -2086,9 +2209,10 @@ def format_email_html(digest: Dict) -> Tuple[str, str]:
 
     html = f"""<html><body style="font-family:sans-serif">
     <h2>ClawGuard Job Digest — {digest['date']}</h2>
-    <p>Found <strong>{s['total_found']}</strong> jobs, <strong>{s['new_jobs']}</strong> new today.
+    <p>Evaluated <strong>{s['total_found']}</strong> digest jobs, <strong>{s['new_jobs']}</strong> new today.
     Auto-prepared materials for <strong>{s.get('auto_prepared', 0)}</strong> jobs.</p>
     <p>🟢 Strong: {s['strong_matches']} | 🔵 Good: {s['good_matches']} | 🟡 Moderate: {s['moderate_matches']}</p>
+    {source_html}
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
     <tr style="background:#f3f4f6"><th>#</th><th>Score</th><th>Position</th><th>Location</th><th>Source</th><th>Salary</th><th>Apply</th><th>Prepared</th></tr>
     {rows}
@@ -2098,6 +2222,24 @@ def format_email_html(digest: Dict) -> Tuple[str, str]:
     </body></html>"""
 
     return html, text
+
+
+def build_digest_email_subject(
+    digest: Dict,
+    strong_count: int,
+    good_count: int,
+    evaluated_count: int,
+    compile_only: bool = False,
+) -> str:
+    """Build an email subject that distinguishes evaluated jobs from source candidates."""
+    source_seen = digest.get("summary", {}).get("source_health", {}).get("candidates_seen", 0)
+    subject_count = f"{evaluated_count} evaluated"
+    if compile_only and source_seen != evaluated_count:
+        subject_count = f"{evaluated_count} evaluated, {source_seen} seen"
+    return (
+        f"ClawGuard: {strong_count} strong + {good_count} good matches "
+        f"({subject_count}) — {digest['date']}"
+    )
 
 
 # ============================================================================
@@ -2263,6 +2405,7 @@ def run_daily_digest(
     moderate = [s for s in scored if s.recommendation == "MODERATE_MATCH"]
 
     used, total = db.get_quota()
+    source_health = db.get_source_run_summary()
 
     digest = {
         "date": datetime.now().strftime("%Y-%m-%d"),
@@ -2280,6 +2423,7 @@ def run_daily_digest(
             "credits_used_today": used,
             "credits_remaining": total - used,
             "total_jobs_in_db": db.get_total_count(),
+            "source_health": source_health,
         },
         "top_matches": [
             {
@@ -2317,9 +2461,12 @@ def run_daily_digest(
     if send_notification and compile_only or (not site and send_notification):
         # Email
         html, text = format_email_html(digest)
-        subject = (
-            f"ClawGuard: {len(strong)} strong + {len(good)} good matches "
-            f"({len(all_jobs)} total) — {digest['date']}"
+        subject = build_digest_email_subject(
+            digest,
+            strong_count=len(strong),
+            good_count=len(good),
+            evaluated_count=len(all_jobs),
+            compile_only=compile_only,
         )
         send_email_digest(subject, html, text)
 
