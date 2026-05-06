@@ -1,6 +1,6 @@
 # Phase 2 - ASI02 Tool Misuse Detection Spec
 
-Last updated: 2026-05-05
+Last updated: 2026-05-06
 Status: v1 implemented; runtime tool-call instrumentation remains Phase 3
 Predecessor: ASI06 (`detections/asi06_jd_content/`), ASI01 (`detections/asi01_goal_hijack/`)
 
@@ -14,7 +14,8 @@ Current baseline:
 - `run_jd_security_detections()` passes ASI06 findings into ASI01, then passes ASI06/ASI01 findings into ASI02.
 - `record_security_findings()` replaces `ASI06_%`, `ASI01_%`, and `ASI02_%` findings.
 - Deploy dry-run compiles ASI06, ASI01, and ASI02 detector modules.
-- Full local preflight currently runs 63 tests.
+- Full local preflight currently runs 69 tests.
+- ASI02 module activation has been confirmed on a real-job no-notify compile after the May 6 discovery fix.
 
 ## Tool Surface
 

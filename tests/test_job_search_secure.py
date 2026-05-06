@@ -81,6 +81,137 @@ class JobSearchSecureTests(unittest.TestCase):
         self.assertEqual(jobs[0].company, "Acme Security")
         self.assertEqual(jobs[0].source, "linkedin")
 
+    def test_split_title_company_handles_linkedin_hiring_title_shape(self):
+        title, company = job_search_secure._split_title_company(
+            "Alignerr hiring Principal Cloud Security Architect in Seattle, WA | LinkedIn",
+            "LinkedIn",
+        )
+
+        self.assertEqual(title, "Principal Cloud Security Architect")
+        self.assertEqual(company, "Alignerr")
+
+    def test_split_title_company_handles_dash_company_shape(self):
+        title, company = job_search_secure._split_title_company(
+            "SOC Analyst I - Take2 Consulting, LLC",
+            "LinkedIn",
+        )
+
+        self.assertEqual(title, "SOC Analyst I")
+        self.assertEqual(company, "Take2 Consulting, LLC")
+
+    def test_brave_parser_filters_linkedin_aggregate_pages(self):
+        data = {
+            "web": {
+                "results": [
+                    {
+                        "title": "4,000+ Security Engineer jobs in Seattle, Washington, United States",
+                        "url": "https://www.linkedin.com/jobs/security-engineer-jobs-seattle-wa",
+                        "description": "Browse aggregate LinkedIn search results.",
+                    },
+                    {
+                        "title": "Acme Security hiring Security Engineer in Seattle, WA | LinkedIn",
+                        "url": "https://www.linkedin.com/jobs/view/security-engineer-at-acme-security-123",
+                        "description": "Build detection engineering pipelines.",
+                    },
+                ]
+            }
+        }
+
+        jobs = job_search_secure._parse_brave_response(data, "linkedin", 10, location="Seattle, WA")
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Security Engineer")
+        self.assertEqual(jobs[0].company, "Acme Security")
+        self.assertEqual(jobs[0].location, "Seattle, WA")
+        self.assertIn("/jobs/view/", jobs[0].url)
+
+    def test_digest_search_queries_expand_or_groups_and_profile_roles(self):
+        profile = job_search_secure.Profile(
+            full_name="Test User",
+            email="test@example.com",
+            phone="",
+            resume_text="Security engineer resume.",
+            target_roles=["Cloud Security Engineer", "SOC Analyst"],
+            target_locations=["Seattle, WA", "Remote"],
+            preferences={},
+            key_skills=[],
+            certifications=[],
+        )
+
+        queries = job_search_secure._build_digest_search_queries(profile)
+
+        self.assertLess(queries.index("Cloud Security Engineer"), queries.index("SOC Engineer"))
+        self.assertIn("Security Operations Engineer", queries)
+        self.assertIn("Information Security Engineer", queries)
+        self.assertEqual(queries.count("SOC Analyst"), 1)
+
+    def test_digest_search_locations_include_remote_without_dropping_primary(self):
+        locations = job_search_secure._build_digest_search_locations(["Seattle, WA", "Remote", "Bellevue, WA"])
+
+        self.assertEqual(locations, ["Seattle, WA", "Remote"])
+
+    def test_usajobs_api_splits_or_query_terms(self):
+        old_key = job_search_secure.USAJOBS_AUTH_KEY
+        old_agent = job_search_secure.USAJOBS_USER_AGENT
+        old_http = job_search_secure._http_get_json
+        calls = []
+
+        def fake_http_get_json(url, headers):
+            calls.append(url)
+            if "SOC+Analyst" in url:
+                return {
+                    "SearchResult": {
+                        "SearchResultItems": [
+                            {
+                                "MatchedObjectDescriptor": {
+                                    "PositionID": "SOC1",
+                                    "PositionTitle": "SOC Analyst",
+                                    "OrganizationName": "Agency One",
+                                    "PositionLocationDisplay": "Seattle, Washington",
+                                    "PositionURI": "https://www.usajobs.gov/job/1",
+                                    "UserArea": {"Details": {"JobSummary": "SOC monitoring."}},
+                                }
+                            }
+                        ]
+                    }
+                }
+            return {
+                "SearchResult": {
+                    "SearchResultItems": [
+                        {
+                            "MatchedObjectDescriptor": {
+                                "PositionID": "SEC1",
+                                "PositionTitle": "Security Engineer",
+                                "OrganizationName": "Agency Two",
+                                "PositionLocationDisplay": "Seattle, Washington",
+                                "PositionURI": "https://www.usajobs.gov/job/2",
+                                "UserArea": {"Details": {"JobSummary": "Security engineering."}},
+                            }
+                        }
+                    ]
+                }
+            }
+
+        try:
+            job_search_secure.USAJOBS_AUTH_KEY = "test-key"
+            job_search_secure.USAJOBS_USER_AGENT = "test@example.com"
+            job_search_secure._http_get_json = fake_http_get_json
+
+            jobs, credits = job_search_secure._search_usajobs_api(
+                "SOC Analyst OR Security Engineer",
+                "Seattle, WA",
+                10,
+            )
+        finally:
+            job_search_secure.USAJOBS_AUTH_KEY = old_key
+            job_search_secure.USAJOBS_USER_AGENT = old_agent
+            job_search_secure._http_get_json = old_http
+
+        self.assertEqual(credits, 0)
+        self.assertEqual([job.job_id for job in jobs], ["SOC1", "SEC1"])
+        self.assertIn("Keyword=SOC+Analyst", calls[0])
+        self.assertIn("Keyword=Security+Engineer", calls[1])
+
     def test_provider_order_supports_forced_fallback_modes(self):
         old_brave = job_search_secure.BRAVE_SEARCH_API_KEY
         old_usajobs_key = job_search_secure.USAJOBS_AUTH_KEY

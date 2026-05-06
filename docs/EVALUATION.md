@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event writer behavior, source-health digest reporting, review-session selection, export redaction, profile privacy override, and DB behavior | 63/63 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event writer behavior, source-health digest reporting, review-session selection, export redaction, profile privacy override, and DB behavior | 69/69 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -42,7 +42,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 63 tests in 0.4
+Ran 69 tests in 0.4
 
 OK
 ```

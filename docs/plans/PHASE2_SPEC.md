@@ -1,12 +1,12 @@
 # Phase 2 Spec v3 - Current Baseline and Execution Plan
 
-Last updated: 2026-05-05
+Last updated: 2026-05-06
 Status: Active Phase 2 umbrella spec
 Supersedes: `ClawGuardSpecs/ClawGuard_OpenClaw_Project_Spec_v2.md` and the Phase 2 section in `ClawGuardSpecs/CLAWGUARD_PROJECT_SPEC.md`
 
 ## Why This Spec Exists
 
-The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed and Phase 2 is in progress. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, runtime-event writer tests, source-health digest reporting, lessons, CI, and 63 local tests.
+The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed and Phase 2 is in progress. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, runtime-event writer tests, source-health digest reporting, lessons, CI, and 69 local tests.
 
 Phase 2 starts from that baseline. It should not repeat already-completed scaffold work.
 
@@ -21,8 +21,9 @@ Phase 1 delivered:
 | Detectors | ASI06 job-content detector, ASI01 goal-hijack detector v1, and ASI02 tool-misuse detector v1 are importable runtime modules |
 | Persistence | `job_security_findings` stores `job_id`, `agent_session_id`, `rule_id`, `severity`, `message`, JSON `evidence`, JSON `context`, and `detected_at` |
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
+| Discovery reliability | Daily search expands profile/default role terms, searches primary + Remote locations, uses Brave freshness/pagination, filters aggregate pages, and splits USAJobs OR terms before API calls |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 63 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract and writer behavior, review-session selection, export redaction, profile privacy, source-status audit, source-health digest reporting, schema-version branches, and fixture evaluation |
+| Testing | 69 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract and writer behavior, review-session selection, export redaction, profile privacy, source-status audit, source-health digest reporting, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 
@@ -52,6 +53,7 @@ Acceptance criteria:
 - Clean cybersecurity job content that merely discusses shell, curl, APIs, or prompt injection does not produce HIGH findings without imperative misuse language. Done.
 - `scripts/deploy_openclaw_skill.ps1` compiles ASI02 during dry-run and deploy. Done.
 - `scripts/check_cron_confirmation.ps1` can report ASI02 module activation without failing before first invocation. Done.
+- ASI02 activation has been confirmed on a no-notify compile over real discovered jobs. Done on May 6, 2026.
 
 ## Track B - Curated Telemetry Workflow
 
@@ -140,4 +142,4 @@ Phase 2 is complete when:
 
 1. Add a finding-bearing or false-positive curated telemetry sample when real telemetry warrants it.
 2. Expand the ASI02 defense lab with curated real-world false-positive examples.
-3. Keep ASI02 deployed and rerun cron confirmation after a compile with jobs to evaluate.
+3. Watch the next scheduled digest after the discovery fix and compare delivered matches against the no-notify preview baseline.

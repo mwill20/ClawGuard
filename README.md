@@ -180,7 +180,7 @@ Expected result:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 63 tests in 0.4
+Ran 69 tests in 0.4
 
 OK
 ```
@@ -362,7 +362,7 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 63/63 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 69/69 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | ASI02 labeled synthetic fixture | Passing | 7 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |

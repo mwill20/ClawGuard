@@ -58,8 +58,11 @@ MAX_RESULTS_PER_SEARCH = 50
 MIN_SCORE_THRESHOLD = 0.40
 AUTO_PREPARE_THRESHOLD = float(os.getenv("CLAWGUARD_AUTO_PREPARE_THRESHOLD", "0.75"))
 ENRICHMENT_DAILY_CAP = int(os.getenv("CLAWGUARD_ENRICHMENT_DAILY_CAP", "10"))
-DIGEST_MAX_RESULTS_PER_SITE = int(os.getenv("CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE", "5"))
+DIGEST_MAX_RESULTS_PER_SITE = int(os.getenv("CLAWGUARD_DIGEST_MAX_RESULTS_PER_SITE", "20"))
 DIGEST_TOP_MATCH_LIMIT = int(os.getenv("CLAWGUARD_DIGEST_TOP_MATCH_LIMIT", "10"))
+DIGEST_LOCATION_LIMIT = int(os.getenv("CLAWGUARD_DIGEST_LOCATION_LIMIT", "2"))
+BRAVE_FRESHNESS = os.getenv("CLAWGUARD_BRAVE_FRESHNESS", "pw").strip()
+BRAVE_RESULT_PAGES = int(os.getenv("CLAWGUARD_BRAVE_RESULT_PAGES", "2"))
 ASI06_SKILL_STUFFING_THRESHOLD = int(os.getenv("CLAWGUARD_SKILL_STUFFING_THRESHOLD", "15"))
 ASI06_SKILL_STUFFING_PENALTY = float(os.getenv("CLAWGUARD_SKILL_STUFFING_PENALTY", "0.15"))
 
@@ -77,7 +80,7 @@ USAJOBS_AUTH_KEY = os.getenv("USAJOBS_AUTH_KEY", "")
 USAJOBS_USER_AGENT = os.getenv("USAJOBS_USER_AGENT") or os.getenv("CLAWGUARD_EMAIL_TO", "")
 CLAWGUARD_SEARCH_PROVIDER = (os.getenv("CLAWGUARD_SEARCH_PROVIDER") or "auto").lower()
 CLAWGUARD_DISABLE_OXYLABS = os.getenv("CLAWGUARD_DISABLE_OXYLABS", "").lower() in {"1", "true", "yes"}
-CLAWGUARD_FALLBACK_ON_EMPTY = os.getenv("CLAWGUARD_FALLBACK_ON_EMPTY", "").lower() in {"1", "true", "yes"}
+CLAWGUARD_FALLBACK_ON_EMPTY = os.getenv("CLAWGUARD_FALLBACK_ON_EMPTY", "1").lower() in {"1", "true", "yes"}
 HTTP_TIMEOUT_SECONDS = int(os.getenv("CLAWGUARD_HTTP_TIMEOUT_SECONDS", "20"))
 
 BRAVE_WEB_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
@@ -197,6 +200,19 @@ QUERY_GROUPS = [
     "SOC Analyst OR SOC Engineer OR Security Operations Engineer",
     "Security Engineer OR Detection Engineer OR AI Security Engineer",
     "Threat Hunter OR Customer Success Engineer cybersecurity",
+]
+
+DEFAULT_DISCOVERY_QUERIES = [
+    "SOC Analyst",
+    "SOC Engineer",
+    "Security Operations Engineer",
+    "Security Engineer",
+    "Detection Engineer",
+    "AI Security Engineer",
+    "Threat Hunter",
+    "Customer Success Engineer cybersecurity",
+    "Information Security Analyst",
+    "Information Security Engineer",
 ]
 
 # ============================================================================
@@ -1260,8 +1276,10 @@ def _split_title_company(raw_title: str, site_name: str) -> Tuple[str, str]:
     title = re.sub(r"\s+[-|]\s+(LinkedIn|Indeed|Monster|Dice|USAJOBS|SimplyHired).*$", "", title, flags=re.IGNORECASE)
 
     for pattern in [
+        r"^(?P<company>.+?)\s+hiring\s+(?P<title>.+?)\s+in\s+.+$",
         r"^(?P<title>.+?)\s+at\s+(?P<company>.+)$",
         r"^(?P<title>.+?)\s+@\s+(?P<company>.+)$",
+        r"^(?P<title>.+?)\s+-\s+(?P<company>.+)$",
     ]:
         match = re.match(pattern, title, flags=re.IGNORECASE)
         if match:
@@ -1269,29 +1287,111 @@ def _split_title_company(raw_title: str, site_name: str) -> Tuple[str, str]:
     return title or "Unknown Title", "Unknown Company"
 
 
-def _parse_brave_response(data: dict, site_key: str, max_results: int) -> List[Job]:
+def _unique_in_order(values: List[str]) -> List[str]:
+    seen = set()
+    unique = []
+    for value in values:
+        normalized = re.sub(r"\s+", " ", str(value or "")).strip()
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(normalized)
+    return unique
+
+
+def _split_or_query_terms(query: str) -> List[str]:
+    return _unique_in_order(re.split(r"\s+OR\s+", query or "", flags=re.IGNORECASE))
+
+
+def _build_digest_search_queries(profile: Optional[Profile] = None) -> List[str]:
+    candidates: List[str] = []
+    if profile:
+        candidates.extend(profile.target_roles or [])
+    for group in QUERY_GROUPS:
+        candidates.extend(_split_or_query_terms(group))
+    candidates.extend(DEFAULT_DISCOVERY_QUERIES)
+    return _unique_in_order(candidates)
+
+
+def _build_digest_search_locations(locations: List[str]) -> List[str]:
+    ordered: List[str] = []
+    non_remote = [loc for loc in locations if str(loc).strip().lower() != "remote"]
+    if non_remote:
+        ordered.append(non_remote[0])
+    elif locations:
+        ordered.append(locations[0])
+    else:
+        ordered.append("Seattle, WA")
+    if any(str(loc).strip().lower() == "remote" for loc in locations):
+        ordered.append("Remote")
+    ordered.extend(locations)
+    limit = max(1, DIGEST_LOCATION_LIMIT)
+    return _unique_in_order(ordered)[:limit]
+
+
+def _is_brave_job_result(site_key: str, title: str, url: str) -> bool:
+    parsed = urlparse(str(url or ""))
+    host = parsed.netloc.lower()
+    path = parsed.path.lower()
+    title_l = _clean_search_text(title).lower()
+
+    if not url:
+        return False
+    if site_key == "linkedin":
+        return "/jobs/view/" in path
+    if site_key == "cybersecjobs":
+        return host == "jobs.cybersecurityjobs.com" and path.startswith("/job/")
+    if site_key == "usajobs":
+        return "usajobs.gov" in host and path.startswith("/job/")
+
+    aggregate_title = re.match(r"^\d[\d,]*\+?\s+.+\s+jobs\b", title_l)
+    aggregate_path = any(part in path for part in ["/jobs/search", "/search", "/jobs/"])
+    if aggregate_title and aggregate_path:
+        return False
+    return True
+
+
+def _brave_query_variants(site_key: str, query: str, location: str) -> List[str]:
+    config = SITE_CONFIGS[site_key]
+    domain = urlparse(config["url_builder"](query, location)).netloc.lower()
+    if site_key == "cybersecjobs":
+        return _unique_in_order([
+            f'site:jobs.cybersecurityjobs.com/job "{query}"',
+            f'"{query}" "CyberSecurityJobs.com" job',
+        ])
+    return [f"site:{domain} {query} {location} job"]
+
+
+def _parse_brave_response(data: dict, site_key: str, max_results: int, location: str = "") -> List[Job]:
     config = SITE_CONFIGS.get(site_key, {})
     results = data.get("web", {}).get("results", []) or []
     jobs = []
-    for item in results[:max_results]:
+    for item in results:
         title, company = _split_title_company(
             item.get("title", "Unknown Title"),
             config.get("name", site_key),
         )
         url = item.get("url") or item.get("profile", {}).get("url") or ""
+        if not _is_brave_job_result(site_key, title, str(url)):
+            continue
         desc = _clean_search_text(item.get("description"))
         job_id = hashlib.md5(f"{title}{company}{url}".encode()).hexdigest()[:12]
         jobs.append(Job(
             job_id=job_id,
             title=title,
             company=company,
-            location="",
+            location=location,
             description=desc,
             url=str(url),
             source=site_key,
             posted_date=item.get("age"),
             salary_range=None,
         ))
+        if len(jobs) >= max_results:
+            break
     return jobs
 
 
@@ -1299,23 +1399,46 @@ def _search_brave_site(site_key: str, query: str, location: str, max_results: in
     if not BRAVE_SEARCH_API_KEY:
         raise SearchProviderError("BRAVE_SEARCH_API_KEY not set")
 
-    config = SITE_CONFIGS[site_key]
-    domain = urlparse(config["url_builder"](query, location)).netloc.lower()
-    brave_query = f"site:{domain} {query} {location} job"
-    params = {
-        "q": brave_query,
-        "count": max(1, min(max_results, 20)),
-        "country": "us",
-        "search_lang": "en",
-    }
-    data = _http_get_json(
-        f"{BRAVE_WEB_SEARCH_URL}?{urlencode(params)}",
-        {
-            "Accept": "application/json",
-            "X-Subscription-Token": BRAVE_SEARCH_API_KEY,
-        },
-    )
-    return _parse_brave_response(data, site_key, max_results), 0
+    jobs: List[Job] = []
+    seen_urls = set()
+    pages = max(1, min(BRAVE_RESULT_PAGES, 10))
+    per_page = max(1, min(max_results, 20))
+    freshness_attempts = [BRAVE_FRESHNESS] if BRAVE_FRESHNESS else [""]
+    if BRAVE_FRESHNESS:
+        freshness_attempts.append("")
+
+    for freshness in freshness_attempts:
+        for brave_query in _brave_query_variants(site_key, query, location):
+            for offset in range(pages):
+                params = {
+                    "q": brave_query,
+                    "count": per_page,
+                    "offset": offset,
+                    "country": "us",
+                    "search_lang": "en",
+                }
+                if freshness:
+                    params["freshness"] = freshness
+                data = _http_get_json(
+                    f"{BRAVE_WEB_SEARCH_URL}?{urlencode(params)}",
+                    {
+                        "Accept": "application/json",
+                        "X-Subscription-Token": BRAVE_SEARCH_API_KEY,
+                    },
+                )
+                for job in _parse_brave_response(data, site_key, max_results, location=location):
+                    url_key = job.url.lower()
+                    if url_key in seen_urls:
+                        continue
+                    seen_urls.add(url_key)
+                    jobs.append(job)
+                    if len(jobs) >= max_results:
+                        return jobs[:max_results], 0
+                if not data.get("query", {}).get("more_results_available"):
+                    break
+        if jobs:
+            break
+    return jobs[:max_results], 0
 
 
 def _format_usajobs_salary(remuneration: List[dict]) -> Optional[str]:
@@ -1366,20 +1489,31 @@ def _search_usajobs_api(query: str, location: str, max_results: int) -> Tuple[Li
     if not _usajobs_configured():
         raise SearchProviderError("USAJOBS_AUTH_KEY and USAJOBS_USER_AGENT must both be set")
 
-    params = {
-        "Keyword": query,
-        "LocationName": location,
-        "ResultsPerPage": max(1, min(max_results, 25)),
-    }
-    data = _http_get_json(
-        f"{USAJOBS_SEARCH_URL}?{urlencode(params)}",
-        {
-            "Host": "data.usajobs.gov",
-            "User-Agent": USAJOBS_USER_AGENT,
-            "Authorization-Key": USAJOBS_AUTH_KEY,
-        },
-    )
-    return _parse_usajobs_response(data, max_results), 0
+    jobs: List[Job] = []
+    seen_ids = set()
+    for keyword in _split_or_query_terms(query) or [query]:
+        params = {
+            "Keyword": keyword,
+            "LocationName": location,
+            "ResultsPerPage": max(1, min(max_results, 25)),
+        }
+        data = _http_get_json(
+            f"{USAJOBS_SEARCH_URL}?{urlencode(params)}",
+            {
+                "Host": "data.usajobs.gov",
+                "User-Agent": USAJOBS_USER_AGENT,
+                "Authorization-Key": USAJOBS_AUTH_KEY,
+            },
+        )
+        for job in _parse_usajobs_response(data, max_results):
+            job_key = job.job_id or job.url
+            if job_key in seen_ids:
+                continue
+            seen_ids.add(job_key)
+            jobs.append(job)
+            if len(jobs) >= max_results:
+                return jobs[:max_results], 0
+    return jobs[:max_results], 0
 
 
 def _search_oxylabs_site(
@@ -2271,10 +2405,9 @@ def run_daily_digest(
     agent_session_id = new_agent_session_id()
 
     locations = profile.target_locations
-    primary_location = next(
-        (loc for loc in locations if loc.lower() != "remote"),
-        locations[0] if locations else "Seattle, WA"
-    )
+    search_locations = _build_digest_search_locations(locations)
+    primary_location = search_locations[0]
+    search_queries = _build_digest_search_queries(profile)
 
     new_jobs_total = 0
 
@@ -2285,27 +2418,30 @@ def run_daily_digest(
             search_sites = [k for k, v in SITE_CONFIGS.items() if v.get("enabled")]
 
         credits_spent_this_run = 0
-        for query_group in QUERY_GROUPS:
-            remaining = db.get_remaining_credits()
-            if remaining < 1:
-                logger.info("No credits remaining, stopping")
-                break
-            run_budget_remaining = max(0, budget_limit - credits_spent_this_run)
-            if budget_limit is not None and run_budget_remaining <= 0:
-                logger.info(f"Run budget reached ({credits_spent_this_run}/{budget_limit})")
-                break
-            effective_budget = min(run_budget_remaining, remaining) if budget_limit is not None else remaining
-            credits_before, _ = db.get_quota()
+        for search_location in search_locations:
+            for query_group in search_queries:
+                remaining = db.get_remaining_credits()
+                if remaining < 1:
+                    logger.info("No credits remaining, stopping")
+                    break
+                run_budget_remaining = max(0, budget_limit - credits_spent_this_run)
+                if budget_limit is not None and run_budget_remaining <= 0:
+                    logger.info(f"Run budget reached ({credits_spent_this_run}/{budget_limit})")
+                    break
+                effective_budget = min(run_budget_remaining, remaining) if budget_limit is not None else remaining
+                credits_before, _ = db.get_quota()
 
-            _, new_count = search_all_sites(
-                query=query_group, location=primary_location,
-                sites=search_sites, max_results_per_site=max_results_per_site,
-                budget_limit=effective_budget, db=db, rate_limiter=rate_limiter,
-                provider=provider,
-            )
-            credits_after, _ = db.get_quota()
-            credits_spent_this_run += max(0, credits_after - credits_before)
-            new_jobs_total += new_count
+                _, new_count = search_all_sites(
+                    query=query_group, location=search_location,
+                    sites=search_sites, max_results_per_site=max_results_per_site,
+                    budget_limit=effective_budget, db=db, rate_limiter=rate_limiter,
+                    provider=provider,
+                )
+                credits_after, _ = db.get_quota()
+                credits_spent_this_run += max(0, credits_after - credits_before)
+                new_jobs_total += new_count
+            if budget_limit is not None and credits_spent_this_run >= budget_limit:
+                break
 
         if site:
             # Single-site mode: just report and exit
@@ -2446,9 +2582,10 @@ def run_daily_digest(
             }
             for s in scored if s.score >= min_score
         ][:DIGEST_TOP_MATCH_LIMIT],
-        "query_groups_used": QUERY_GROUPS,
+        "query_groups_used": search_queries,
         "sites_searched": sites if sites is not None else ([site] if site else list(SITE_CONFIGS.keys())),
         "location": primary_location,
+        "locations_searched": search_locations,
     }
 
     # Save digest
