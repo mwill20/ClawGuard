@@ -15,6 +15,7 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $JobScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\job_search_secure.py"
 $DetectionsDir = Join-Path $RepoRoot "detections"
 $PostCompileHook = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_post_compile.sh"
+$CronScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\staggered_cron.sh"
 $RemoteStage = "$RemoteStageBase-$PID"
 if (-not $RemoteStage.StartsWith("/tmp/clawguard-openclaw-deploy-")) {
     throw "RemoteStage must stay under /tmp/clawguard-openclaw-deploy-*"
@@ -46,6 +47,9 @@ if (-not (Test-Path -LiteralPath $DetectionsDir)) {
 if (-not (Test-Path -LiteralPath $PostCompileHook)) {
     throw "Missing post-compile hook: $PostCompileHook"
 }
+if (-not (Test-Path -LiteralPath $CronScript)) {
+    throw "Missing cron wrapper: $CronScript"
+}
 
 $quotedStage = ConvertTo-ShellLiteral $RemoteStage
 $quotedSkillDir = ConvertTo-ShellLiteral $SkillDir
@@ -54,6 +58,7 @@ $quotedHostDataDir = ConvertTo-ShellLiteral $HostDataDir
 $jobContainerPath = "${Container}:${SkillDir}/job_search_secure.py"
 $detectionsContainerPath = "${Container}:${SkillDir}/detections"
 $hostHookPath = "${HostDataDir}/clawguard_post_compile.sh"
+$hostCronPath = "${HostDataDir}/staggered_cron.sh"
 
 $remoteScript = @"
 set -e
@@ -68,6 +73,9 @@ echo "Installing post-compile hook on host at $hostHookPath"
 mkdir -p $quotedHostDataDir
 install -m 0755 "$RemoteStage/clawguard_post_compile.sh" "$hostHookPath"
 grep -q 'TELEMETRY_SCHEMA_VERSION' "$hostHookPath" && echo "post_compile_schema_version=ok" || (echo "post_compile_schema_version=missing" && exit 1)
+echo "Installing cron wrapper on host at $hostCronPath"
+install -m 0755 "$RemoteStage/staggered_cron.sh" "$hostCronPath"
+grep -q 'CLAWGUARD_EMAIL_TO' "$hostCronPath" && echo "cron_email_to_forwarding=ok" || (echo "cron_email_to_forwarding=missing" && exit 1)
 echo "Deploy complete."
 "@
 
@@ -79,6 +87,7 @@ if ($DryRun) {
     Write-Host "JobScript: $JobScript"
     Write-Host "DetectionsDir: $DetectionsDir"
     Write-Host "PostCompileHook: $PostCompileHook"
+    Write-Host "CronScript: $CronScript"
     Write-Host "RemoteStage: $RemoteStage"
     Write-Host "Remote transport: scp temp script, then ssh -o BatchMode=yes $Remote bash /tmp/<script>"
     Write-Host ""
@@ -98,6 +107,7 @@ Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, "mkdir -p $quotedStage")
 Invoke-Native "scp" @($JobScript, "${Remote}:$RemoteStage/job_search_secure.py")
 Invoke-Native "scp" @("-r", $DetectionsDir, "${Remote}:$RemoteStage/detections")
 Invoke-Native "scp" @($PostCompileHook, "${Remote}:$RemoteStage/clawguard_post_compile.sh")
+Invoke-Native "scp" @($CronScript, "${Remote}:$RemoteStage/staggered_cron.sh")
 
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 $localRemoteScript = Join-Path $TempDir "deploy_openclaw_skill_$PID.sh"

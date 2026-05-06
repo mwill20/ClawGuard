@@ -10,6 +10,7 @@
 | Provider results | Per-source job counts | Detect provider failure or duplicates |
 | Credits | `credits_used_today`, `credits_remaining` | Avoid unexpected provider cost |
 | Telemetry writes | `telemetry_latest.md` timestamp | Confirm post-compile hook runs |
+| Email delivery | `Email digest sent to` in compile log | Confirm the daily digest reaches the human reviewer |
 
 ## Logs Produced
 
@@ -43,6 +44,13 @@ Confirm the daily cron used the detector-backed ASI06 path, with ASI01/ASI02 act
 
 ```powershell
 .\scripts\check_cron_confirmation.ps1
+```
+
+Confirm the May 6, 2026 schedule after 9:35 AM PT / 16:35 UTC:
+
+```powershell
+.\scripts\check_cron_confirmation.ps1 -Date 2026-05-06
+.\scripts\check_latest_telemetry.ps1
 ```
 
 Dry-run a curated telemetry export:
@@ -106,3 +114,4 @@ Recommended future checks:
 - Finding count drift by source platform.
 - False-positive review log.
 - Rule version drift between repo and deployed container.
+- Email delivery drift after host-wrapper changes.

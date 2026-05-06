@@ -1,0 +1,112 @@
+# Phase 3 Spec - Runtime Event Instrumentation and Detector Promotion
+
+Last updated: 2026-05-05
+Status: Draft for May 6, 2026 start
+Predecessor: Phase 2 ASI02 detector, curated telemetry workflow, and `runtime-events/0.1` contract
+
+## Mission
+
+Phase 3 moves ClawGuard from content-side detection to runtime-observed agent behavior. The first deliverable is not ASI03 or ASI05 findings. The first deliverable is trustworthy runtime event emission with redaction, validation, and session correlation.
+
+## Starting Baseline
+
+Implemented before Phase 3:
+
+- ASI06, ASI01, and ASI02 runtime detectors.
+- `job_security_findings` persistence keyed by `agent_session_id`.
+- Post-compile telemetry JSON/Markdown with schema `1.2`.
+- Curated telemetry selection, redaction, validation, and export helpers.
+- Combined ASI06 + ASI01 + ASI02 synthetic detector-chain lab.
+- `runtime-events/0.1` schema fixture and validator.
+- Deploy helper ships runtime, detections, post-compile hook, and cron wrapper.
+- Email compile path verified after `CLAWGUARD_EMAIL_TO` forwarding fix.
+
+## Phase 3 Tracks
+
+### Track A - Operational Readiness
+
+Goal: make sure the daily system is healthy before adding new runtime signals.
+
+Acceptance criteria:
+
+- May 6 scheduled compile runs at 9:30 AM PT.
+- Email delivery succeeds from the scheduled compile.
+- `telemetry_latest.json` validates as schema `1.2`.
+- ASI02 activation is confirmed only if a real compile evaluates jobs.
+- No synthetic malicious jobs are inserted into live providers.
+
+Primary runbook: [PHASE3_TOMORROW_RUNBOOK.md](PHASE3_TOMORROW_RUNBOOK.md)
+
+### Track B - Runtime Event Emission
+
+Goal: emit `runtime-events/0.1` records in observe-only mode.
+
+Required event types:
+
+- `identity_context`
+- `credential_use`
+- `network_egress`
+- `file_write`
+- `process_exec`
+- `container_action`
+- `policy_decision`
+
+Acceptance criteria:
+
+- Runtime event files validate with `scripts/validate_runtime_events.py`.
+- No raw secrets, raw tokens, private host identifiers, raw command args, or profile paths are stored.
+- Every event has `agent_session_id`.
+- Events are correlated to digest and telemetry sessions.
+- Preflight includes at least one runtime-event validation fixture.
+
+Primary spec: [PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md](PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md)
+
+### Track C - Host-Side Redaction
+
+Goal: prepare for future automation without moving sensitive data off-host first.
+
+Acceptance criteria:
+
+- Host-side redaction runs before any automated export.
+- Local redaction remains as a second validation layer.
+- Redaction tests cover runtime-event artifacts.
+- Export artifacts include redaction status and schema version.
+
+### Track D - ASI03/ASI05 Detector Promotion
+
+Goal: promote ASI03 and ASI05 from roadmap specs to runtime detectors only after runtime events exist.
+
+Promotion gates:
+
+- At least one clean runtime-event baseline exists.
+- At least one real review-worthy runtime-event sample exists, or a local-only synthetic fixture clearly models the rule without touching live providers.
+- False-positive checks exist for normal cron/deploy/search behavior.
+- Findings never persist raw credentials, command args, private paths, or host identifiers.
+
+Non-goals:
+
+- No ASI03 regex scanner over job text.
+- No ASI05 detector that duplicates ASI02 shell-content detection.
+- No blocking/enforcement before observe-only telemetry is stable.
+
+## Phase 3 Exit Criteria
+
+Phase 3 is complete when:
+
+1. Runtime events are emitted in observe-only mode.
+2. Runtime events validate under `runtime-events/0.1`.
+3. Host-side redaction exists before automated export.
+4. Curated runtime-event baselines exist for reviewer learning.
+5. ASI03/ASI05 detector promotion gates are either satisfied or explicitly deferred with evidence.
+6. Lessons and evaluation docs explain runtime-event monitoring and ASI03/ASI05 readiness.
+
+## First Implementation Slice
+
+Start with event plumbing, not new findings:
+
+1. Add a runtime-event writer that can emit JSONL or session JSON under `/data/clawguard/runtime_events/`.
+2. Emit one `identity_context` event per digest session.
+3. Emit provider `network_egress` and credential-label events from Brave/USAJobs calls.
+4. Emit file-write events for digest and telemetry writes.
+5. Extend validation/export helpers for runtime-event artifacts.
+6. Keep all runtime-event emission observe-only.

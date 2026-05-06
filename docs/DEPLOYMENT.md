@@ -31,10 +31,12 @@ The detector-backed deployment requires:
 
 ```text
 target-agent/skills/job-search-custom/job_search_secure.py
+target-agent/skills/job-search-custom/staggered_cron.sh
+target-agent/skills/job-search-custom/clawguard_post_compile.sh
 detections/
 ```
 
-The inline ASI06 fallback has been removed after a normal VPS cron run confirmed the detector-backed path on 2026-05-04. Deploy `job_search_secure.py` and `detections/` together.
+The inline ASI06 fallback has been removed after a normal VPS cron run confirmed the detector-backed path on 2026-05-04. Deploy `job_search_secure.py`, `detections/`, the host cron wrapper, and the post-compile hook together.
 
 ## Environment Variables
 
@@ -102,7 +104,7 @@ Packaged deploy helper:
 .\scripts\deploy_openclaw_skill.ps1
 ```
 
-The helper stages `job_search_secure.py` and `detections/` together, copies them into the OpenClaw container, compiles the runtime script and detector, then prints the resolved detector module.
+The helper stages `job_search_secure.py`, `detections/`, `staggered_cron.sh`, and `clawguard_post_compile.sh` together. It copies runtime files into the OpenClaw container, installs host-side scripts under `/docker/openclaw-utxu/data/clawguard/`, compiles the runtime script and detectors, then asserts the post-compile hook has `TELEMETRY_SCHEMA_VERSION` and the cron wrapper forwards `CLAWGUARD_EMAIL_TO`.
 
 ## Rollback Approach
 

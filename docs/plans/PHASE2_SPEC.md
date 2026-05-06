@@ -6,7 +6,7 @@ Supersedes: `ClawGuardSpecs/ClawGuard_OpenClaw_Project_Spec_v2.md` and the Phase
 
 ## Why This Spec Exists
 
-The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed and Phase 2 is in progress. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, lessons, CI, and 54 local tests.
+The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 is closed and Phase 2 is in progress. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, lessons, CI, and 55 local tests.
 
 Phase 2 starts from that baseline. It should not repeat already-completed scaffold work.
 

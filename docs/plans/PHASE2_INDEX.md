@@ -43,3 +43,12 @@ These are deferred to Phase 3 runtime work:
 - `search_runs` schema migration to persist `source_status`, `already_known_count`, and structured error codes (Phase 1 added these to the audit log only).
 - ASI03/ASI05 runtime rule modules. Phase 2 may add roadmap specs, but runtime detectors require additional telemetry.
 - A web UI for telemetry triage.
+
+## Phase 3 Handoff
+
+Phase 3 planning now lives in:
+
+- [PHASE3_INDEX.md](PHASE3_INDEX.md)
+- [PHASE3_TOMORROW_RUNBOOK.md](PHASE3_TOMORROW_RUNBOOK.md)
+- [PHASE3_SPEC.md](PHASE3_SPEC.md)
+- [PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md](PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md)
