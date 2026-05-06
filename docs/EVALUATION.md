@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 50/50 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, review-session selection, export redaction, profile privacy override, and DB behavior | 54/54 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -23,6 +23,7 @@
 | ASI02 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI02 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
 | Combined detector-chain synthetic fixture | Verifies ASI06, ASI01, and ASI02 run together through the runtime adapter | 1.0 exact match and micro F1 across 4 synthetic records |
 | Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
+| Runtime event contract | Defines ASI03/ASI05 prerequisite telemetry before runtime detectors exist | Passing for `examples/runtime_events_minimal.json` with `--require asi03 --require asi05` |
 | Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
 
 Important scope note: the labeled ASI06 and ASI02 fixtures are small and synthetic. They are useful for regression and reviewer reproducibility, but they are not real-world precision/recall benchmarks.
@@ -41,7 +42,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 50 tests in 0.0
+Ran 54 tests in 0.0
 
 OK
 ```

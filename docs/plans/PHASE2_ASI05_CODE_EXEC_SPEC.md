@@ -35,16 +35,19 @@ Untrusted content or compromised tooling attempts to:
 
 ## Required Runtime Signals Before Implementation
 
-Do not implement ASI05 runtime rules until at least one of these signal classes
-exists:
+Do not implement ASI05 runtime rules until the minimum contract in
+[PHASE2_RUNTIME_TELEMETRY_CONTRACT.md](PHASE2_RUNTIME_TELEMETRY_CONTRACT.md)
+is available from runtime instrumentation.
+
+At minimum, ASI05 needs:
 
 | Signal | Why It Matters |
 |---|---|
 | Process execution logs | Shows command, args, cwd, exit code, and caller |
-| Tool-call logs | Shows agent-level intent before execution |
-| Container event logs | Shows Docker exec/cp/restart operations |
-| File modification telemetry | Shows changes to cron, scripts, configs, or binaries |
-| Policy decisions | Shows whether execution was allowed, blocked, or reviewed |
+| Container-action or file-write logs | Shows Docker exec/cp/restart or mutation operations |
+| Policy decisions | Shows whether execution was allowed, blocked, observed, or reviewed |
+| Session correlation | Maps every event back to `agent_session_id` |
+| Redacted labels | Keeps command args, paths, hosts, and container identifiers out of public artifacts |
 
 ## Candidate Rule Families
 
@@ -66,11 +69,12 @@ exists:
 
 - Keep this spec linked from `PHASE2_INDEX.md`.
 - Preserve ASI02 shell payload evidence as the pre-action precursor signal.
-- Document process/container telemetry requirements before Phase 3.
+- Keep the runtime-event contract linked from `PHASE2_INDEX.md`.
+- Validate synthetic runtime-event fixtures before Phase 3.
 
 ## Phase 3 Readiness Checklist
 
-- Runtime emits structured tool-call or process events.
+- Runtime emits structured process, container, file-write, and policy events.
 - Approved command inventory exists for cron, deploy, validation, and local tests.
 - Findings can correlate execution events to `agent_session_id`.
 - Redaction covers command arguments that may include credentials.

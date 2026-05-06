@@ -36,12 +36,13 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Detector tests: `tests/test_asi06_detector.py`, `tests/test_asi02_detector.py`
 - Runtime tests: `tests/test_job_search_secure.py` (20 tests covering ASI06, ASI01, ASI02, source-status, DB queryability)
 - Evaluation tests: `tests/test_asi06_evaluation.py`, `tests/test_asi02_evaluation.py`
-- Telemetry validation tests: `tests/test_telemetry_validation.py`
+- Telemetry validation tests: `tests/test_telemetry_validation.py`, `tests/test_runtime_event_contract.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixtures: `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json`
 - Combined detector-chain fixture: `examples/combined_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 50 tests passing.
+- Runtime event contract fixture: `examples/runtime_events_minimal.json`
+- Full suite: 54 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -178,7 +179,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 50 tests in 0.22s
+Ran 54 tests in 0.22s
 
 OK
 ```
@@ -362,12 +363,13 @@ Why: this proves the runtime chain can produce ASI06, ASI01, and ASI02 findings 
 | Detector tests | `tests/test_asi06_detector.py`, `tests/test_asi02_detector.py` |
 | Runtime tests | `tests/test_job_search_secure.py` |
 | Evaluation tests | `tests/test_asi06_evaluation.py`, `tests/test_asi02_evaluation.py` |
-| Telemetry validation tests | `tests/test_telemetry_validation.py` |
+| Telemetry validation tests | `tests/test_telemetry_validation.py`, `tests/test_runtime_event_contract.py` |
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixtures | `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json` |
 | Combined detector-chain fixture | `examples/combined_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 50 tests (20 in `test_job_search_secure.py`, 30 across detector / evaluation / telemetry / selector / redaction-export) |
+| Runtime event contract fixture | `examples/runtime_events_minimal.json` |
+| Current total | 54 tests (20 in `test_job_search_secure.py`, 34 across detector / evaluation / telemetry / runtime-event contract / selector / redaction-export) |
 | Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

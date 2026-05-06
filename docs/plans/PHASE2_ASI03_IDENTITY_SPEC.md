@@ -36,16 +36,19 @@ Untrusted content or compromised tooling attempts to:
 
 ## Required Runtime Signals Before Implementation
 
-Do not implement ASI03 runtime rules until at least one of these signal classes
-exists:
+Do not implement ASI03 runtime rules until the minimum contract in
+[PHASE2_RUNTIME_TELEMETRY_CONTRACT.md](PHASE2_RUNTIME_TELEMETRY_CONTRACT.md)
+is available from runtime instrumentation.
+
+At minimum, ASI03 needs:
 
 | Signal | Why It Matters |
 |---|---|
+| Identity context events | Shows which user/service identity was active for the session |
 | Credential-use events | Shows when a key/token is read or used |
-| Tool-call logs | Shows file reads, network sends, and auth-related calls |
-| Identity context snapshots | Shows active user/service identity per action |
-| Secret-path access logs | Shows reads of `.env`, profile files, or auth stores |
-| Destination telemetry | Shows where identity material may have been sent |
+| File-access or network-egress events | Shows where identity material may have been read from or sent |
+| Policy decisions | Shows whether the action was allowed, blocked, observed, or routed to review |
+| Session correlation | Maps every event back to `agent_session_id` |
 
 ## Candidate Rule Families
 
@@ -66,12 +69,13 @@ exists:
 ## Phase 2 Deliverables
 
 - Keep this spec linked from `PHASE2_INDEX.md`.
+- Keep the runtime-event contract linked from `PHASE2_INDEX.md`.
 - Ensure redaction prevents identity artifacts from entering curated telemetry.
 - Add ASI03 examples to future red-team labs only as sanitized synthetic records.
 
 ## Phase 3 Readiness Checklist
 
-- Tool-call logging captures file reads and network sends.
+- Tool-call/runtime logging captures identity context, credential labels, file reads, and network sends.
 - Sensitive path allowlist/denylist exists.
 - Findings can store redacted hashes or labels without leaking secret values.
 - Deployment config snapshots can prove expected identity context.

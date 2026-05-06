@@ -117,6 +117,19 @@ Invoke-Step "Telemetry sample validation" {
     )
 }
 
+Invoke-Step "Runtime event contract validation" {
+    Invoke-Native "python" @(
+        "-B",
+        "scripts\validate_runtime_events.py",
+        "--input",
+        "examples\runtime_events_minimal.json",
+        "--require",
+        "asi03",
+        "--require",
+        "asi05"
+    )
+}
+
 Invoke-Step "Sample detector output matches expected JSON" {
     $code = @'
 import json
@@ -149,6 +162,7 @@ paths = [
     'scripts/select_review_sessions.py',
     'scripts/telemetry_redaction.py',
     'scripts/validate_telemetry.py',
+    'scripts/validate_runtime_events.py',
     'detections/asi02_tool_misuse/detector.py',
     'target-agent/skills/job-search-custom/job_search_secure.py',
 ]
@@ -204,7 +218,7 @@ Assert-GitGrepNoMatch `
 
 Assert-GitGrepNoMatch `
     -Name "No stale test-count claims" `
-    -Pattern "49 tests|49/49|Ran 49|35 tests|35/35|Ran 35|28 tests|28/28|Ran 28|24 tests|24/24|Ran 24|14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
+    -Pattern "50 tests|50/50|Ran 50|49 tests|49/49|Ran 49|35 tests|35/35|Ran 35|28 tests|28/28|Ran 28|24 tests|24/24|Ran 24|14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
 
 Invoke-Step "Git diff whitespace check" {
     Invoke-Native "git" @("diff", "--check")
