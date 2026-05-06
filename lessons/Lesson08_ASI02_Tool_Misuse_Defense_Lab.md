@@ -294,6 +294,30 @@ Why this matters: a fixture score is more useful when you can explain the
 confusion counts. In an interview, `fp=0` on this tiny fixture means "no false
 positives in this synthetic set," not "no false positives in the real world."
 
+### Exercise 7: Run the combined detector-chain lab
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\evaluate_combined_detectors.py --input examples\combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected output includes:
+
+```text
+"record_count": 4
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+Why this matters: this command exercises the actual runtime chain, not just
+the standalone ASI02 detector. It proves ASI06, ASI01, and ASI02 can produce
+the expected combined rule set from local fixtures without touching live job
+providers.
+
 ## 5. Interview Preparation Section
 
 **Q: Why is ASI02 content-side only in Phase 2?**
@@ -339,6 +363,9 @@ actions.
 | Fixture | `examples/asi02_labeled_eval.json` |
 | Evaluator | `scripts/evaluate_asi02.py` |
 | Result artifact | `examples/asi02_labeled_eval_results.json` |
+| Combined fixture | `examples/combined_labeled_eval.json` |
+| Combined evaluator | `scripts/evaluate_combined_detectors.py` |
+| Combined result artifact | `examples/combined_labeled_eval_results.json` |
 | Tests | `tests/test_asi02_detector.py`, `tests/test_asi02_evaluation.py` |
 | Telemetry schema | `1.2` |
 | Curated clean baseline | `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/telemetry.json` |

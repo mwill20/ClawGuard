@@ -32,5 +32,8 @@ jobs:
       - name: Run ASI02 labeled fixture evaluation
         run: python -B scripts/evaluate_asi02.py --input examples/asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
 
+      - name: Run combined detector-chain fixture evaluation
+        run: python -B scripts/evaluate_combined_detectors.py --input examples/combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+
       - name: Validate telemetry sample schema
         run: python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json

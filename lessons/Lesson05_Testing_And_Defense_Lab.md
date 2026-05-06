@@ -39,8 +39,9 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Telemetry validation tests: `tests/test_telemetry_validation.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
 - Synthetic labeled fixtures: `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json`
+- Combined detector-chain fixture: `examples/combined_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
-- Full suite: 49 tests passing.
+- Full suite: 50 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -177,7 +178,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 49 tests in 0.22s
+Ran 50 tests in 0.22s
 
 OK
 ```
@@ -310,6 +311,27 @@ Expected output includes:
 
 Why: this proves ASI02 still matches the expected tool-misuse labels for clean, single-rule, and combo synthetic cases.
 
+### Exercise 9: Run the combined detector-chain fixture evaluation
+
+PowerShell:
+
+```powershell
+Set-Location C:\Projects\ClawGuard
+python -B scripts\evaluate_combined_detectors.py --input examples\combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected output includes:
+
+```text
+"record_count": 4
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+Why: this proves the runtime chain can produce ASI06, ASI01, and ASI02 findings together from local fixtures, without adding synthetic attacker content to live providers.
+
 ## 5. Interview Preparation Section
 
 **Q: What does the runtime detector test prove?**
@@ -343,8 +365,9 @@ Why: this proves ASI02 still matches the expected tool-misuse labels for clean, 
 | Telemetry validation tests | `tests/test_telemetry_validation.py` |
 | Defense lab data | `lessons/assets/asi06_red_team_jobs.json` |
 | Synthetic evaluation fixtures | `examples/asi06_labeled_eval.json`, `examples/asi02_labeled_eval.json` |
+| Combined detector-chain fixture | `examples/combined_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
-| Current total | 49 tests (20 in `test_job_search_secure.py`, 29 across detector / evaluation / telemetry / selector / redaction-export) |
+| Current total | 50 tests (20 in `test_job_search_secure.py`, 30 across detector / evaluation / telemetry / selector / redaction-export) |
 | Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

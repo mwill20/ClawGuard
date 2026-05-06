@@ -137,6 +137,32 @@ Expected key results:
 
 This is a synthetic ASI02 smoke evaluation, not a real-world precision/recall benchmark.
 
+## Combined Detector-Chain Evaluation
+
+Run the local ASI06 -> ASI01 -> ASI02 runtime-chain fixture:
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_combined_detectors.py --input examples\combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_combined_detectors.py --input examples/combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 4
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
 ## Telemetry Schema Validation
 
 Validate the sample post-compile telemetry shape:
@@ -195,6 +221,7 @@ Dry-run a curated telemetry export:
 | Validate local repo | `.\scripts\preflight.ps1` |
 | Run ASI06 fixture metrics | `python -B scripts\evaluate_asi06.py --input examples\asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
 | Run ASI02 fixture metrics | `python -B scripts\evaluate_asi02.py --input examples\asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
+| Run combined detector-chain metrics | `python -B scripts\evaluate_combined_detectors.py --input examples\combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing` |
 | Validate telemetry sample | `python -B scripts\validate_telemetry.py --input examples\telemetry_sample.json` |
 | Demo ASI06 sample | Use `examples/sample_input.json` command above |
 | Study implementation | Start with `lessons/00_Index.md` |

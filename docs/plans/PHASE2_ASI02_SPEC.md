@@ -14,7 +14,7 @@ Current baseline:
 - `run_jd_security_detections()` passes ASI06 findings into ASI01, then passes ASI06/ASI01 findings into ASI02.
 - `record_security_findings()` replaces `ASI06_%`, `ASI01_%`, and `ASI02_%` findings.
 - Deploy dry-run compiles ASI06, ASI01, and ASI02 detector modules.
-- Full local preflight currently runs 49 tests.
+- Full local preflight currently runs 50 tests.
 
 ## Tool Surface
 
@@ -171,6 +171,8 @@ Implemented detector and fixture coverage:
 - Shell snippet without imperative misuse language.
 
 The synthetic fixture lives at `examples/asi02_labeled_eval.json` and is wired into `scripts/preflight.ps1` alongside the existing ASI06 evaluator step.
+
+The combined runtime-chain fixture lives at `examples/combined_labeled_eval.json` and is evaluated by `scripts/evaluate_combined_detectors.py`. It exercises clean content, ASI06+ASI01 goal redirect, ASI02-only tool misuse, and a multi-family ASI06+ASI01+ASI02 case without touching live job providers.
 
 ## Verification
 

@@ -17,6 +17,7 @@ Teaching-oriented documentation built alongside the project. Each entry should b
 | `Lesson07_Source_Compass_And_Phase2_Map.md` | Complete | Source-status semantics and Phase 2 planning map |
 | `Lesson08_ASI02_Tool_Misuse_Defense_Lab.md` | Complete | ASI02 detector v1 and tool-misuse defense lab |
 | `telemetry/2026-05/digest-20260505T163003-d9133ff9/` | Complete | First redacted curated Phase 2 clean-baseline telemetry set |
+| `../examples/combined_labeled_eval.json` | Complete | Local ASI06 + ASI01 + ASI02 runtime-chain defense lab fixture |
 | `assets/asi06_red_team_jobs.json` | Complete | Local clean/adversarial sample jobs for lesson exercises |
 | `clawguard-telemetry-baseline-001.md` | Complete | First clean OpenClaw telemetry baseline for ClawGuard Phase 1 |
 | `clawguard-telemetry-baseline-002.md` | Complete | First autonomous full cron-chain telemetry baseline |

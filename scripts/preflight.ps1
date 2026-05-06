@@ -96,6 +96,18 @@ Invoke-Step "ASI02 synthetic fixture evaluation" {
     )
 }
 
+Invoke-Step "Combined detector-chain fixture evaluation" {
+    Invoke-Native "python" @(
+        "-B",
+        "scripts\evaluate_combined_detectors.py",
+        "--input",
+        "examples\combined_labeled_eval.json",
+        "--expected-micro-f1",
+        "1.0",
+        "--hide-timing"
+    )
+}
+
 Invoke-Step "Telemetry sample validation" {
     Invoke-Native "python" @(
         "-B",
@@ -132,6 +144,7 @@ from pathlib import Path
 paths = [
     'scripts/evaluate_asi06.py',
     'scripts/evaluate_asi02.py',
+    'scripts/evaluate_combined_detectors.py',
     'scripts/export_telemetry.py',
     'scripts/select_review_sessions.py',
     'scripts/telemetry_redaction.py',
@@ -191,7 +204,7 @@ Assert-GitGrepNoMatch `
 
 Assert-GitGrepNoMatch `
     -Name "No stale test-count claims" `
-    -Pattern "35 tests|35/35|Ran 35|28 tests|28/28|Ran 28|24 tests|24/24|Ran 24|14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
+    -Pattern "49 tests|49/49|Ran 49|35 tests|35/35|Ran 35|28 tests|28/28|Ran 28|24 tests|24/24|Ran 24|14 tests|14/14|Ran 14|12 tests|12/12|Ran 12|11 tests|11/11|Ran 11"
 
 Invoke-Step "Git diff whitespace check" {
     Invoke-Native "git" @("diff", "--check")

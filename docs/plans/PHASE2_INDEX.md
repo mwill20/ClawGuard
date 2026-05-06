@@ -32,7 +32,7 @@ Phase 2 work is parallelizable. Recommended order:
 2. Land telemetry schema versioning and redaction first because those protect every later review artifact.
 3. ASI02 v1 and synthetic fixture coverage are implemented; deploy and cron-confirm after first invocation.
 4. ASI03 and ASI05 roadmap specs are drafted; keep them as prerequisites-first specs until runtime telemetry exists.
-5. ASI02 defense lab is added; next add a sanitized curated telemetry set.
+5. ASI02 defense lab and combined detector-chain fixture are added; next add finding-bearing or false-positive curated telemetry when real sessions warrant it.
 
 ## Out of Scope for Phase 2 Runtime
 

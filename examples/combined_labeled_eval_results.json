@@ -1,0 +1,161 @@
+{
+  "exact_match_accuracy": 1.0,
+  "input_path": "examples/combined_labeled_eval.json",
+  "micro": {
+    "f1": 1.0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 11
+  },
+  "notes": [
+    "Metrics cover the combined runtime detector chain on a small synthetic fixture set.",
+    "These results are not a real-world precision/recall benchmark."
+  ],
+  "per_rule": {
+    "ASI01_EXTERNAL_GOAL_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 2,
+      "tp": 2
+    },
+    "ASI02_EGRESS_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 2,
+      "tp": 2
+    },
+    "ASI02_FILE_PATH_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 3,
+      "tp": 1
+    },
+    "ASI02_NOTIFY_REDIRECT": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 3,
+      "tp": 1
+    },
+    "ASI02_SHELL_INJECTION": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 3,
+      "tp": 1
+    },
+    "ASI06_PII_REQUEST": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 3,
+      "tp": 1
+    },
+    "ASI06_PROMPT_INJECTION": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 2,
+      "tp": 2
+    },
+    "ASI06_SKILL_STUFFING": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 4,
+      "tp": 0
+    },
+    "ASI06_URL_MISMATCH": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tn": 3,
+      "tp": 1
+    }
+  },
+  "record_count": 4,
+  "records": [
+    {
+      "expected_rule_ids": [],
+      "job_id": "combined-clean-001",
+      "predicted_rule_ids": []
+    },
+    {
+      "expected_rule_ids": [
+        "ASI01_EXTERNAL_GOAL_REDIRECT",
+        "ASI06_PROMPT_INJECTION"
+      ],
+      "job_id": "combined-goal-001",
+      "predicted_rule_ids": [
+        "ASI01_EXTERNAL_GOAL_REDIRECT",
+        "ASI06_PROMPT_INJECTION"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI02_EGRESS_REDIRECT"
+      ],
+      "job_id": "combined-tool-001",
+      "predicted_rule_ids": [
+        "ASI02_EGRESS_REDIRECT"
+      ]
+    },
+    {
+      "expected_rule_ids": [
+        "ASI01_EXTERNAL_GOAL_REDIRECT",
+        "ASI02_EGRESS_REDIRECT",
+        "ASI02_FILE_PATH_REDIRECT",
+        "ASI02_NOTIFY_REDIRECT",
+        "ASI02_SHELL_INJECTION",
+        "ASI06_PII_REQUEST",
+        "ASI06_PROMPT_INJECTION",
+        "ASI06_URL_MISMATCH"
+      ],
+      "job_id": "combined-full-001",
+      "predicted_rule_ids": [
+        "ASI01_EXTERNAL_GOAL_REDIRECT",
+        "ASI02_EGRESS_REDIRECT",
+        "ASI02_FILE_PATH_REDIRECT",
+        "ASI02_NOTIFY_REDIRECT",
+        "ASI02_SHELL_INJECTION",
+        "ASI06_PII_REQUEST",
+        "ASI06_PROMPT_INJECTION",
+        "ASI06_URL_MISMATCH"
+      ]
+    }
+  ],
+  "rule_ids": [
+    "ASI06_SKILL_STUFFING",
+    "ASI06_URL_MISMATCH",
+    "ASI06_PROMPT_INJECTION",
+    "ASI06_PII_REQUEST",
+    "ASI01_EXTERNAL_GOAL_REDIRECT",
+    "ASI02_EGRESS_REDIRECT",
+    "ASI02_NOTIFY_REDIRECT",
+    "ASI02_SHELL_INJECTION",
+    "ASI02_FILE_PATH_REDIRECT"
+  ]
+}

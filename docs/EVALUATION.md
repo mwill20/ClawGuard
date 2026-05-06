@@ -14,13 +14,14 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 49/49 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, review-session selection, export redaction, profile privacy override, and DB behavior | 50/50 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
 | ASI06 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI06 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
 | ASI02 synthetic labeled fixture exact match | Verifies expected ASI02 rule sets on curated fixtures | 1.0 across 7 synthetic records |
 | ASI02 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI02 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
+| Combined detector-chain synthetic fixture | Verifies ASI06, ASI01, and ASI02 run together through the runtime adapter | 1.0 exact match and micro F1 across 4 synthetic records |
 | Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
 | Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
 
@@ -40,7 +41,7 @@ Expected output:
 ```text
 ........................
 ----------------------------------------------------------------------
-Ran 49 tests in 0.0
+Ran 50 tests in 0.0
 
 OK
 ```
@@ -106,6 +107,41 @@ Expected key results:
 ```
 
 The stable checked-in result artifact is [examples/asi02_labeled_eval_results.json](../examples/asi02_labeled_eval_results.json).
+
+## Combined Detector-Chain Evaluation
+
+This fixture runs the runtime detector chain instead of one detector module:
+
+```text
+job_search_secure.run_jd_security_detections()
+  -> ASI06 content findings
+  -> ASI01 goal-hijack findings
+  -> ASI02 tool-misuse findings
+```
+
+PowerShell:
+
+```powershell
+python -B scripts\evaluate_combined_detectors.py --input examples\combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Bash:
+
+```bash
+python -B scripts/evaluate_combined_detectors.py --input examples/combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
+```
+
+Expected key results:
+
+```text
+"record_count": 4
+"exact_match_accuracy": 1.0
+"precision": 1.0
+"recall": 1.0
+"f1": 1.0
+```
+
+The stable checked-in result artifact is [examples/combined_labeled_eval_results.json](../examples/combined_labeled_eval_results.json).
 
 ## Confusion-Matrix Workflow
 
