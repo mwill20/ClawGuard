@@ -1,7 +1,7 @@
 # Phase 4 - ASI03/ASI05 Detector Promotion Spec
 
 Last updated: 2026-05-07
-Status: Draft design; no Phase 4 detector code implemented yet
+Status: Implemented locally; no live persistence/enforcement
 Input docs:
 
 - `docs/plans/PHASE4_SPEC.md`
@@ -53,12 +53,12 @@ tests/test_asi03_runtime_detector.py
 tests/test_asi05_runtime_detector.py
 ```
 
-Use the ASI06/ASI01/ASI02 pattern: detector classes return finding objects with
-a `to_record()` method, but do not wire persistence until output is stable.
+Implemented with detector classes returning runtime finding objects with a
+`to_record()` method. Persistence remains deferred until output is stable.
 
 ## Shared Finding Shape
 
-Recommended fields:
+Implemented fields:
 
 | Field | Purpose |
 |---|---|
@@ -70,7 +70,7 @@ Recommended fields:
 | `evidence` | Label-only facts; no raw secrets/commands/paths |
 | `context` | Schema version, detector version, source artifact metadata |
 
-Recommended evidence keys:
+Example evidence keys:
 
 ```json
 {
@@ -203,7 +203,7 @@ Required evaluator behavior:
 
 ## Preflight/CI Gates
 
-Add steps only after detector tests pass locally:
+Implemented preflight/CI commands:
 
 ```powershell
 python -B scripts\evaluate_runtime_detectors.py --input examples\runtime_events_asi03_positive.json --expected-micro-f1 1.0 --hide-timing
@@ -255,10 +255,12 @@ runtime_security_findings(
 
 ## First Build Slice
 
-1. Add `examples/runtime_events_asi03_positive.json`.
-2. Add `detections/asi03_identity_abuse/detector.py` with the two v1 ASI03 rules.
-3. Add ASI03 tests proving clean baselines stay clean.
-4. Add `examples/runtime_events_asi05_positive.json`.
-5. Add `detections/asi05_code_execution/detector.py` with the two v1 ASI05 rules.
-6. Add ASI05 tests proving clean baselines stay clean.
-7. Add combined evaluator only after both detector modules pass independently.
+Done:
+
+1. Added `examples/runtime_events_asi03_positive.json`.
+2. Added `detections/asi03_identity_abuse/detector.py` with the two v1 ASI03 rules.
+3. Added ASI03 tests proving clean baselines stay clean.
+4. Added `examples/runtime_events_asi05_positive.json`.
+5. Added `detections/asi05_code_execution/detector.py` with the two v1 ASI05 rules.
+6. Added ASI05 tests proving clean baselines stay clean.
+7. Added `scripts/evaluate_runtime_detectors.py` after both detector modules passed independently.

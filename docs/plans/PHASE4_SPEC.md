@@ -1,7 +1,7 @@
 # Phase 4 Spec - Runtime Detector Promotion
 
 Last updated: 2026-05-07
-Status: Draft; begins after the next scheduled runtime-event confirmation
+Status: In progress; local detector promotion complete, scheduled runtime confirmation pending
 Predecessor: Phase 3 runtime-event monitoring and curated clean baselines
 
 ## Mission
@@ -31,6 +31,7 @@ Implemented before Phase 4:
 - `examples/runtime_events_normal_ops.json` clean false-positive fixture.
 - False-positive expectations in
   `docs/plans/PHASE3_FALSE_POSITIVE_EXPECTATIONS.md`.
+- Local-only ASI03/ASI05 positive fixtures and runtime detectors.
 
 ## Phase 4 Tracks
 
@@ -65,6 +66,8 @@ examples/runtime_events_asi05_positive.json
 examples/runtime_events_asi03_asi05_combined.json
 ```
 
+Status: done.
+
 Acceptance criteria:
 
 - Fixtures validate under `runtime-events/0.1`.
@@ -76,11 +79,13 @@ Acceptance criteria:
 
 Goal: detect identity and privilege abuse from runtime events.
 
-Candidate module:
+Module:
 
 ```text
 detections/asi03_identity_abuse/detector.py
 ```
+
+Status: done for the first two v1 rules.
 
 Initial rule families:
 
@@ -102,11 +107,13 @@ Acceptance criteria:
 
 Goal: detect unexpected code execution from runtime events.
 
-Candidate module:
+Module:
 
 ```text
 detections/asi05_code_execution/detector.py
 ```
+
+Status: done for the first two v1 rules.
 
 Initial rule families:
 
@@ -136,6 +143,8 @@ Acceptance criteria:
 - Add CI steps mirroring preflight.
 - Keep stale test-count guard current.
 
+Status: done with `scripts/evaluate_runtime_detectors.py`, preflight, and CI.
+
 ### Track F - Persistence Decision
 
 Goal: decide whether runtime findings should be persisted in SQLite.
@@ -146,6 +155,9 @@ Default Phase 4 posture:
 - Do not add a DB migration until detector outputs stabilize.
 - If persistence is needed, prefer a separate `runtime_security_findings` table
   keyed by `agent_session_id` and `event_id`, not `job_id`.
+
+Status: deferred. ASI03/ASI05 currently remain evaluator/file based with no
+SQLite migration.
 
 ## Non-Goals
 

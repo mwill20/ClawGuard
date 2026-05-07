@@ -35,6 +35,21 @@ jobs:
       - name: Run combined detector-chain fixture evaluation
         run: python -B scripts/evaluate_combined_detectors.py --input examples/combined_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
 
+      - name: Run runtime detector clean false-positive fixture evaluation
+        run: python -B scripts/evaluate_runtime_detectors.py --input examples/runtime_events_normal_ops.json --expect-no-findings --hide-timing
+
+      - name: Run runtime detector curated clean baseline evaluation
+        run: python -B scripts/evaluate_runtime_detectors.py --input lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/runtime_events.json --expect-no-findings --hide-timing
+
+      - name: Run ASI03 runtime detector fixture evaluation
+        run: python -B scripts/evaluate_runtime_detectors.py --input examples/runtime_events_asi03_positive.json --expected-micro-f1 1.0 --hide-timing
+
+      - name: Run ASI05 runtime detector fixture evaluation
+        run: python -B scripts/evaluate_runtime_detectors.py --input examples/runtime_events_asi05_positive.json --expected-micro-f1 1.0 --hide-timing
+
+      - name: Run combined runtime detector fixture evaluation
+        run: python -B scripts/evaluate_runtime_detectors.py --input examples/runtime_events_asi03_asi05_combined.json --expected-micro-f1 1.0 --hide-timing
+
       - name: Validate telemetry sample schema
         run: python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json
 

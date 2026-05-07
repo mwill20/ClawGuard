@@ -11,6 +11,8 @@
 | Credits | `credits_used_today`, `credits_remaining` | Avoid unexpected provider cost |
 | Telemetry writes | `telemetry_latest.md` timestamp | Confirm post-compile hook runs |
 | Email delivery | `Email digest sent to` in compile log | Confirm the daily digest reaches the human reviewer |
+| Runtime events | `/data/clawguard/runtime_events/runtime_events_latest.json` | Confirm Phase 3 observe-only runtime monitoring |
+| Runtime detector outputs | `scripts/evaluate_runtime_detectors.py` on local/curated fixtures | Confirm ASI03/ASI05 detector behavior without live-provider seeding |
 
 ## Logs Produced
 
@@ -30,6 +32,7 @@ Telemetry artifacts:
 ```text
 /data/clawguard/telemetry/telemetry_latest.json
 /data/clawguard/telemetry/telemetry_latest.md
+/data/clawguard/runtime_events/runtime_events_latest.json
 ```
 
 ## Local Helper Commands
@@ -63,6 +66,18 @@ Validate the first curated Phase 2 clean-baseline export:
 
 ```powershell
 python -B scripts\validate_telemetry.py --input lessons\telemetry\2026-05\digest-20260505T163003-d9133ff9\telemetry.json
+```
+
+Validate the curated ASI03/ASI05 runtime-event baseline:
+
+```powershell
+python -B scripts\validate_runtime_events.py --input lessons\runtime-events\2026-05\digest-20260507T174059-2121b8be\runtime_events.json --require asi03 --require asi05
+```
+
+Confirm runtime detectors keep clean baselines clean:
+
+```powershell
+python -B scripts\evaluate_runtime_detectors.py --input lessons\runtime-events\2026-05\digest-20260507T174059-2121b8be\runtime_events.json --expect-no-findings
 ```
 
 Deploy the OpenClaw runtime package after code changes:
@@ -115,3 +130,5 @@ Recommended future checks:
 - False-positive review log.
 - Rule version drift between repo and deployed container.
 - Email delivery drift after host-wrapper changes.
+- Scheduled runtime-event emission drift after `CLAWGUARD_RUNTIME_EVENTS_ENABLED` changes.
+- Runtime detector false-positive drift against curated clean baselines.

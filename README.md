@@ -180,7 +180,7 @@ Expected result:
 ```text
 .................................................................................
 ----------------------------------------------------------------------
-Ran 81 tests in 0.6
+Ran 87 tests in 0.6
 
 OK
 ```
@@ -362,11 +362,13 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 81/81 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 87/87 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | ASI02 labeled synthetic fixture | Passing | 7 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Combined detector-chain synthetic fixture | Passing | 4 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
+| ASI03/ASI05 runtime detector fixtures | Passing | Local-only runtime-event fixtures; exact match 1.0; micro precision/recall/F1 1.0 |
+| Runtime detector clean baselines | Passing | Normal ops and curated runtime baseline produce zero ASI03/ASI05 findings |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
 | Runtime event contract | Passing | `examples/runtime_events_minimal.json` validates ASI03/ASI05 readiness shape without live-provider seeding |
 | Runtime normal-ops fixture | Passing | `examples/runtime_events_normal_ops.json` validates the ASI03/ASI05 clean false-positive baseline |

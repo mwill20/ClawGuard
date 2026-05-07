@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event normal-ops fixture validation, runtime-event writer behavior, runtime-event export/redaction, host annotation, source-health digest reporting, review-session selection, profile privacy override, and DB behavior | 81/81 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI03/ASI05/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event normal-ops fixture validation, runtime-event writer behavior, runtime-event export/redaction, host annotation, source-health digest reporting, review-session selection, profile privacy override, and DB behavior | 87/87 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -22,6 +22,10 @@
 | ASI02 synthetic labeled fixture exact match | Verifies expected ASI02 rule sets on curated fixtures | 1.0 across 7 synthetic records |
 | ASI02 synthetic labeled fixture micro precision/recall/F1 | Gives a reproducible ASI02 smoke metric | 1.0 / 1.0 / 1.0 on synthetic fixtures only |
 | Combined detector-chain synthetic fixture | Verifies ASI06, ASI01, and ASI02 run together through the runtime adapter | 1.0 exact match and micro F1 across 4 synthetic records |
+| ASI03 runtime detector positive fixture | Verifies unknown credential label and credential/egress mismatch rules | 1.0 exact match and micro F1 on local-only runtime-event fixture |
+| ASI05 runtime detector positive fixture | Verifies unapproved process and container action rules | 1.0 exact match and micro F1 on local-only runtime-event fixture |
+| Combined ASI03/ASI05 runtime detector fixture | Verifies both runtime detector families run together | 1.0 exact match and micro F1 on local-only runtime-event fixture |
+| Runtime detector clean baselines | Protects normal cron/search/deploy runtime behavior from ASI03/ASI05 false positives | `examples/runtime_events_normal_ops.json` and curated `digest-20260507T174059-2121b8be` produce zero findings |
 | Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
 | Runtime event contract | Defines ASI03/ASI05 prerequisite telemetry before runtime detectors exist | Passing for `examples/runtime_events_minimal.json` with `--require asi03 --require asi05` |
 | Runtime normal-ops false-positive fixture | Defines clean runtime behavior future ASI03/ASI05 detectors must not alert on | Passing for `examples/runtime_events_normal_ops.json` with `--require asi03 --require asi05` |
@@ -29,6 +33,9 @@
 | Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
 
 Important scope note: the labeled ASI06 and ASI02 fixtures are small and synthetic. They are useful for regression and reviewer reproducibility, but they are not real-world precision/recall benchmarks.
+
+The ASI03 and ASI05 runtime fixtures are also local-only. They model runtime
+events and are never seeded into live job providers.
 
 ## Test Procedure
 
@@ -44,7 +51,7 @@ Expected output:
 ```text
 .................................................................................
 ----------------------------------------------------------------------
-Ran 81 tests in 0.6
+Ran 87 tests in 0.6
 
 OK
 ```

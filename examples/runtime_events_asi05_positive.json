@@ -1,0 +1,83 @@
+{
+  "schema_version": "runtime-events/0.1",
+  "generated_at": "2026-05-07T18:05:00Z",
+  "agent_session_id": "digest-20260507T180500-a5105001",
+  "expected_rule_ids": [
+    "ASI05_UNAPPROVED_CONTAINER_ACTION",
+    "ASI05_UNAPPROVED_PROCESS_LABEL"
+  ],
+  "events": [
+    {
+      "event_id": "evt-digest-20260507T180500-a5105001-process-001",
+      "event_time": "2026-05-07T18:05:00Z",
+      "agent_session_id": "digest-20260507T180500-a5105001",
+      "event_type": "process_exec",
+      "actor": {
+        "type": "automation",
+        "id": "cron-wrapper"
+      },
+      "source": {
+        "component": "staggered_cron.sh",
+        "code_path": "target-agent/skills/job-search-custom/staggered_cron.sh"
+      },
+      "operation": "unapproved-process-label",
+      "operation_category": "process-exec",
+      "target": {
+        "kind": "command_label",
+        "label": "unapproved-process-label",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "review",
+        "reason": "local-only positive fixture process label"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T180500-a5105001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "site_label": "fixture",
+        "exit_code": 0,
+        "arguments_stored": "label_only",
+        "fixture_only": true
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T180500-a5105001-container-001",
+      "event_time": "2026-05-07T18:05:01Z",
+      "agent_session_id": "digest-20260507T180500-a5105001",
+      "event_type": "container_action",
+      "actor": {
+        "type": "automation",
+        "id": "cron-wrapper"
+      },
+      "source": {
+        "component": "staggered_cron.sh",
+        "code_path": "target-agent/skills/job-search-custom/staggered_cron.sh"
+      },
+      "operation": "unapproved-container-action",
+      "operation_category": "container-exec",
+      "target": {
+        "kind": "container_label",
+        "label": "unapproved-runtime-container",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "review",
+        "reason": "local-only positive fixture container label"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T180500-a5105001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "site_label": "fixture",
+        "exit_code": 0,
+        "container_id_stored": false,
+        "remote_host_stored": false,
+        "arguments_stored": "label_only",
+        "fixture_only": true
+      }
+    }
+  ]
+}

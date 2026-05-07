@@ -1,7 +1,7 @@
 # Phase 4 Plans - Index
 
 Last updated: 2026-05-07
-Status: Draft handoff; Phase 3 final preflight passed, implementation can start after the next scheduled runtime-event check
+Status: In progress; local ASI03/ASI05 detector promotion complete, scheduled runtime confirmation pending
 Predecessor: Phase 3 runtime-event instrumentation, host redaction, and curated clean baselines
 
 Phase 4 promotes runtime-event evidence into ASI03 and ASI05 detector work.
@@ -24,6 +24,18 @@ Phase 3 answered "can we observe runtime behavior safely?" Phase 4 answers
 | [PHASE4_SPEC.md](PHASE4_SPEC.md) | Phase 4 mission, tracks, gates, non-goals, and exit criteria |
 | [PHASE4_DETECTOR_PROMOTION_SPEC.md](PHASE4_DETECTOR_PROMOTION_SPEC.md) | Concrete ASI03/ASI05 detector-promotion design from runtime events |
 | `docs/plans/PHASE4_CHECKLIST.local.md` | Local tracking checklist; do not commit unless explicitly requested |
+
+## Implemented So Far
+
+| Area | Status |
+|---|---|
+| ASI03 positive fixture | `examples/runtime_events_asi03_positive.json` |
+| ASI05 positive fixture | `examples/runtime_events_asi05_positive.json` |
+| Combined ASI03/ASI05 fixture | `examples/runtime_events_asi03_asi05_combined.json` |
+| ASI03 runtime detector | `detections/asi03_identity_abuse/detector.py` |
+| ASI05 runtime detector | `detections/asi05_code_execution/detector.py` |
+| Runtime evaluator | `scripts/evaluate_runtime_detectors.py` |
+| Clean-baseline gates | Normal ops and curated runtime baseline produce zero runtime findings |
 
 ## Inputs from Phase 3
 

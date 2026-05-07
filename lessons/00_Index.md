@@ -23,6 +23,8 @@ Assumptions and scope:
 | 07 | [The Source Compass - Digest Semantics + Phase 2 Map](Lesson07_Source_Compass_And_Phase2_Map.md) | `search_site` source-status, `docs/plans/` | Required |
 | 08 | [The Tool-Use Gatekeeper - ASI02 Defense Lab](Lesson08_ASI02_Tool_Misuse_Defense_Lab.md) | `detections/asi02_tool_misuse/detector.py`, `examples/asi02_labeled_eval.json` | Required |
 | 09 | [The Flight Recorder - Runtime Event Monitoring](Lesson09_Runtime_Event_Monitoring.md) | `runtime_events.py`, host redaction/export, curated runtime baselines | Required |
+| 10 | [The Identity Notary - ASI03 Runtime Detector](Lesson10_ASI03_Runtime_Identity_Abuse.md) | `detections/asi03_identity_abuse/detector.py`, runtime-event fixtures | Required |
+| 11 | [The Command Ledger - ASI05 Runtime Detector](Lesson11_ASI05_Runtime_Code_Execution.md) | `detections/asi05_code_execution/detector.py`, runtime-event fixtures | Required |
 
 ## Phase Map
 
@@ -36,8 +38,10 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
   -> post-compile telemetry export
   -> runtime-events/0.1 observe-only monitoring
   -> host-side redaction and curated runtime baselines
+  -> ASI03 runtime detector (identity / credential misuse)
+  -> ASI05 runtime detector (process / container misuse)
   -> curated lessons and baselines
-  -> Phase 4: ASI03/ASI05 detector promotion from runtime evidence
+  -> Phase 4: scheduled runtime confirmation and runtime detector review
 ```
 
 ## Project Implements
@@ -51,6 +55,7 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - Source-status semantics in search audit log (`OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`) and digest summary fields (`newly_inserted_in_run`, `compile_only`).
 - Post-compile telemetry JSON/Markdown artifacts.
 - Runtime-event writer, validation, host-side redaction, host wrapper annotation, and curated clean baselines.
+- ASI03 and ASI05 runtime-event detector modules with local-only positive fixtures and clean-baseline zero-finding gates.
 - Runtime-event normal-ops fixture for ASI03/ASI05 false-positive promotion work.
 - Local regression tests covering parsers, session IDs, ASI06 + ASI01 + ASI02 detector behavior, source-status audit, runtime-event export/redaction, and DB queryability.
 - GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, telemetry sample validation, and runtime-event validation.
@@ -65,6 +70,7 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - Signed deployment bundles for `job_search_secure.py` plus `detections/`.
 - `search_runs` schema migration to persist `source_status` and `already_known_count` columns (currently audit-log only).
 - Runtime enforcement or blocking based on ASI03/ASI05 findings.
+- SQLite runtime-finding persistence for ASI03/ASI05 findings.
 
 ## Hands-On Starting Point
 
@@ -80,7 +86,7 @@ Expected output:
 ```text
 .................................................................................
 ----------------------------------------------------------------------
-Ran 81 tests in 0.57s
+Ran 87 tests in 0.65s
 
 OK
 ```
@@ -97,7 +103,7 @@ Expected output:
 ```text
 .................................................................................
 ----------------------------------------------------------------------
-Ran 81 tests in 0.57s
+Ran 87 tests in 0.65s
 
 OK
 ```
@@ -111,3 +117,4 @@ OK
 5. Use Lesson 07 to understand source-status semantics and the Phase 2 roadmap.
 6. Use Lesson 08 to practice ASI02 tool-misuse detection.
 7. Use Lesson 09 to understand runtime-event monitoring and Phase 4 detector promotion readiness.
+8. Use Lessons 10 and 11 to explain ASI03/ASI05 runtime detector promotion.
