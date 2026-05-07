@@ -1,7 +1,7 @@
 # Phase 3 - Runtime Event Instrumentation Spec
 
 Last updated: 2026-05-06
-Status: Implementation spec; runtime writer module not yet built
+Status: Implementation in progress; writer and Python runtime hooks deployed, observe-only baseline validated
 Input contract: [PHASE2_RUNTIME_TELEMETRY_CONTRACT.md](PHASE2_RUNTIME_TELEMETRY_CONTRACT.md)
 
 ## Purpose
@@ -198,7 +198,7 @@ the same way it now forwards `CLAWGUARD_EMAIL_TO`.
 
 ### Step 1 - Local Writer
 
-Add a writer module at `target-agent/skills/job-search-custom/runtime_events.py`
+Done: a writer module exists at `target-agent/skills/job-search-custom/runtime_events.py`
 implementing:
 
 ```text
@@ -208,7 +208,7 @@ flush_runtime_events()
 reset_for_tests()
 ```
 
-Keep it disabled by default until tests cover it. Env flag:
+It remains disabled by default unless this env flag is set:
 
 ```text
 CLAWGUARD_RUNTIME_EVENTS_ENABLED=1
@@ -216,7 +216,7 @@ CLAWGUARD_RUNTIME_EVENTS_ENABLED=1
 
 ### Step 2 - Tests
 
-Add tests that verify:
+Done for the writer, and in progress for runtime integration. Tests verify:
 
 - Session event validates.
 - Provider event validates.
@@ -228,6 +228,31 @@ Add tests that verify:
   is the proof that the writer and the validator agree on shape.
 - `flush_runtime_events()` does not recurse into `record_runtime_event()`.
 - Singleton resets cleanly between sessions in `reset_for_tests()`.
+
+### Step 3 - Python Runtime Hooks
+
+Done in `target-agent/skills/job-search-custom/job_search_secure.py`:
+
+- `run_daily_digest()` starts one runtime-event session per `agent_session_id`.
+- `run_daily_digest()` emits `identity_context` with profile labels only.
+- `_search_brave_site()` emits `credential_use` and `network_egress` labels around Brave API calls.
+- `_search_usajobs_api()` emits `credential_use` and `network_egress` labels around USAJobs API calls.
+- Digest JSON writes emit a `file_write` event labeled `digest-output`.
+- `flush_runtime_events()` writes the runtime-event artifact at session close.
+
+Observed VPS validation on May 7, 2026 UTC:
+
+- No-notify compile baseline: valid `runtime-events/0.1` with
+  `identity_context` and `file_write` events.
+- Read-only USAJobs provider smoke test: valid `runtime-events/0.1 --require
+  asi03` with `identity_context`, `credential_use`, `network_egress`, and
+  `file_write` events.
+
+Deferred until the Python-side baseline is stable:
+
+- Telemetry hook `file_write` events.
+- Application-material `file_write` events.
+- Host wrapper `process_exec` and `container_action` events.
 
 ### Step 3 - Preflight
 

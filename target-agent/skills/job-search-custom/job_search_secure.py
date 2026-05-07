@@ -39,6 +39,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urlencode, urlparse
 from urllib.request import Request, urlopen
 
+SKILL_MODULE_DIR = Path(__file__).parent.resolve()
+if str(SKILL_MODULE_DIR) not in sys.path:
+    sys.path.insert(0, str(SKILL_MODULE_DIR))
+
+import runtime_events as clawguard_runtime_events
 from detections.asi06_jd_content.detector import ASI06JobContentDetector as ClawGuardASI06JobContentDetector
 from detections.asi01_goal_hijack.detector import ASI01GoalHijackDetector as ClawGuardASI01GoalHijackDetector
 from detections.asi02_tool_misuse.detector import ASI02ToolMisuseDetector as ClawGuardASI02ToolMisuseDetector
@@ -87,7 +92,7 @@ BRAVE_WEB_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
 USAJOBS_SEARCH_URL = "https://data.usajobs.gov/api/search"
 
 # Skill base directory (where this script lives)
-SKILL_DIR = Path(__file__).parent.resolve()
+SKILL_DIR = SKILL_MODULE_DIR
 TAILORING_RULES_PATH = DATA_DIR / "tailoring_rules.json"
 TAILORING_RULES_DEFAULT = SKILL_DIR / "tailoring_rules.json"
 
@@ -253,6 +258,154 @@ def audit_log(event_type: str, **details):
         json.dump(log_entry, f)
         f.write("\n")
     logger.info(f"{event_type}: {details}")
+
+
+def _runtime_profile_label() -> str:
+    return "private-profile-env" if os.getenv("CLAWGUARD_PROFILE_PATH") else "default-profile"
+
+
+def _record_runtime_event_safely(
+    *,
+    event_type: str,
+    operation: str,
+    operation_category: str,
+    target_kind: str,
+    target_label: str,
+    target_redaction_status: str = "label_only",
+    policy_decision: str = "observe",
+    policy_reason: str = "observe-only runtime event",
+    evidence: Optional[Dict] = None,
+) -> bool:
+    """Record observe-only runtime telemetry without disrupting the job run."""
+
+    try:
+        return clawguard_runtime_events.record_runtime_event(
+            clawguard_runtime_events.build_runtime_event(
+                event_type=event_type,
+                source_component="job_search_secure.py",
+                source_code_path="target-agent/skills/job-search-custom/job_search_secure.py",
+                operation=operation,
+                operation_category=operation_category,
+                target_kind=target_kind,
+                target_label=target_label,
+                target_redaction_status=target_redaction_status,
+                policy_decision=policy_decision,
+                policy_reason=policy_reason,
+                evidence=evidence or {},
+            )
+        )
+    except Exception as e:
+        logger.warning(f"Runtime event skipped ({event_type}/{operation}): {e}")
+        return False
+
+
+def _start_runtime_events_safely(agent_session_id: str) -> None:
+    try:
+        session = clawguard_runtime_events.start_runtime_event_session(agent_session_id)
+        if session is not None:
+            logger.info("ClawGuard runtime-event writer active")
+    except Exception as e:
+        logger.warning(f"Runtime event session not started: {e}")
+
+
+def _flush_runtime_events_safely() -> Optional[Path]:
+    try:
+        return clawguard_runtime_events.flush_runtime_events()
+    except Exception as e:
+        logger.warning(f"Runtime event flush skipped: {e}")
+        return None
+
+
+def _record_identity_runtime_event() -> bool:
+    return _record_runtime_event_safely(
+        event_type="identity_context",
+        operation="set_identity_context",
+        operation_category="identity-context",
+        target_kind="service_identity",
+        target_label="openclaw-job-search-profile",
+        target_redaction_status="label_only",
+        policy_decision="observe",
+        policy_reason="baseline job-search runtime identity context",
+        evidence={
+            "runtime_component": "job_search_secure.py",
+            "profile_label": _runtime_profile_label(),
+            "profile_contents_stored": False,
+            "resume_contents_stored": False,
+            "candidate_contact_stored": False,
+            "credential_material_present": False,
+        },
+    )
+
+
+def _record_provider_runtime_events(
+    *,
+    provider: str,
+    site_key: str,
+    credential_label: str,
+    credential_configured: bool,
+    destination_domain: str,
+    request_context: Optional[Dict] = None,
+) -> None:
+    safe_context = request_context or {}
+    _record_runtime_event_safely(
+        event_type="credential_use",
+        operation="read_provider_credential_label",
+        operation_category="credential-use",
+        target_kind="credential_label",
+        target_label=credential_label,
+        target_redaction_status="redacted",
+        policy_decision="allow",
+        policy_reason="approved search provider credential",
+        evidence={
+            "provider": provider,
+            "site": site_key,
+            "credential_configured": bool(credential_configured),
+            "credential_purpose": "provider_api_auth",
+            "raw_value_stored": False,
+        },
+    )
+    _record_runtime_event_safely(
+        event_type="network_egress",
+        operation="search_provider_request",
+        operation_category="http-egress",
+        target_kind="domain",
+        target_label=destination_domain,
+        target_redaction_status="label_only",
+        policy_decision="allow",
+        policy_reason="approved job-search provider egress",
+        evidence={
+            "provider": provider,
+            "site": site_key,
+            "destination_category": "search-provider",
+            "query_text_stored": False,
+            "full_url_stored": False,
+            **safe_context,
+        },
+    )
+
+
+def _record_file_write_runtime_event(
+    *,
+    operation: str,
+    target_label: str,
+    file_format: str,
+    atomic_write: bool,
+) -> bool:
+    return _record_runtime_event_safely(
+        event_type="file_write",
+        operation=operation,
+        operation_category="file-write",
+        target_kind="path_label",
+        target_label=target_label,
+        target_redaction_status="label_only",
+        policy_decision="allow",
+        policy_reason="approved ClawGuard output path",
+        evidence={
+            "file_format": file_format,
+            "atomic_write": bool(atomic_write),
+            "path_label_only": True,
+        },
+    )
 
 # ============================================================================
 # DATA STRUCTURES
@@ -1452,6 +1605,18 @@ def _search_brave_site(site_key: str, query: str, location: str, max_results: in
                 }
                 if freshness:
                     params["freshness"] = freshness
+                _record_provider_runtime_events(
+                    provider="brave",
+                    site_key=site_key,
+                    credential_label="brave-search-provider-credential",
+                    credential_configured=bool(BRAVE_SEARCH_API_KEY),
+                    destination_domain=urlparse(BRAVE_WEB_SEARCH_URL).hostname or "api.search.brave.com",
+                    request_context={
+                        "freshness_label": "configured" if freshness else "none",
+                        "page_offset_index": offset,
+                        "result_count_requested": per_page,
+                    },
+                )
                 data = _http_get_json(
                     f"{BRAVE_WEB_SEARCH_URL}?{urlencode(params)}",
                     {
@@ -1530,6 +1695,18 @@ def _search_usajobs_api(query: str, location: str, max_results: int) -> Tuple[Li
             "LocationName": location,
             "ResultsPerPage": max(1, min(max_results, 25)),
         }
+        _record_provider_runtime_events(
+            provider="usajobs",
+            site_key="usajobs",
+            credential_label="usajobs-search-provider-credential",
+            credential_configured=bool(USAJOBS_AUTH_KEY and USAJOBS_USER_AGENT),
+            destination_domain=urlparse(USAJOBS_SEARCH_URL).hostname or "data.usajobs.gov",
+            request_context={
+                "keyword_text_stored": False,
+                "location_text_stored": False,
+                "result_count_requested": params["ResultsPerPage"],
+            },
+        )
         data = _http_get_json(
             f"{USAJOBS_SEARCH_URL}?{urlencode(params)}",
             {
@@ -2437,6 +2614,8 @@ def run_daily_digest(
     profile = load_profile()
     tailoring = TailoringEngine(profile.resume_text, TAILORING_RULES_PATH)
     agent_session_id = new_agent_session_id()
+    _start_runtime_events_safely(agent_session_id)
+    _record_identity_runtime_event()
 
     locations = profile.target_locations
     search_locations = _build_digest_search_locations(locations)
@@ -2480,6 +2659,7 @@ def run_daily_digest(
         if site:
             # Single-site mode: just report and exit
             logger.info(f"Single-site digest ({site}): {new_jobs_total} new jobs added to DB")
+            _flush_runtime_events_safely()
             return {"site": site, "new_jobs": new_jobs_total, "mode": "single-site"}
 
     # ── Compile mode: score, auto-prepare, build digest ──
@@ -2627,6 +2807,12 @@ def run_daily_digest(
     archive_path = DIGESTS_DIR / f"digest_{digest['date']}.json"
     with open(archive_path, "w") as f:
         json.dump(digest, f, indent=2)
+    _record_file_write_runtime_event(
+        operation="write_digest",
+        target_label="digest-output",
+        file_format="json",
+        atomic_write=False,
+    )
 
     # Send notifications
     if send_notification and compile_only or (not site and send_notification):
@@ -2642,6 +2828,7 @@ def run_daily_digest(
         send_email_digest(subject, html, text)
 
     db.close()
+    _flush_runtime_events_safely()
     return digest
 
 

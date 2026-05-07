@@ -1,7 +1,7 @@
 # Phase 3 Plans - Index
 
 Last updated: 2026-05-06
-Status: In flight; Track A awaiting scheduled compile evidence, runtime writer not yet built
+Status: In flight; Phase 2 gates closed, Python runtime hooks deployed, observe-only baseline validated
 
 Phase 2 built the ASI02 detector, curated telemetry workflow, combined detector-chain lab, and the `runtime-events/0.1` contract. Phase 3 turns that contract into observed runtime telemetry before ASI03 and ASI05 are allowed to become runtime detectors.
 
@@ -25,12 +25,12 @@ Phase 2 built the ASI02 detector, curated telemetry workflow, combined detector-
 
 ## Recommended Sequence
 
-1. Run [PHASE3_TOMORROW_RUNBOOK.md](PHASE3_TOMORROW_RUNBOOK.md) after the May 6 9:30 AM PT compile.
-2. If email and telemetry are healthy, begin runtime-event implementation.
-3. Add local fixture coverage before emitting runtime events on the VPS.
-4. Deploy runtime-event emission in observe-only mode.
+1. Keep the May 6 operational evidence as the Phase 2 closeout record.
+2. Keep Python-side runtime hooks for identity, provider credential/egress, and file-write events in observe-only mode.
+3. Add host-side redaction before any automated runtime-event export.
+4. Decide whether to enable scheduled runtime-event emission after the one-off baseline review.
 5. Export only sanitized real review samples; do not seed live providers with synthetic malicious jobs.
-6. Revisit ASI03/ASI05 detector implementation only after runtime events exist and pass redaction/validation.
+6. Revisit ASI03/ASI05 detector implementation only after runtime events exist, pass redaction/validation, and have reviewed false-positive expectations.
 
 ## Out of Scope Until Later
 

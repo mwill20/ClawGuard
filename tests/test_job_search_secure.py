@@ -166,7 +166,10 @@ class JobSearchSecureTests(unittest.TestCase):
         old_key = job_search_secure.USAJOBS_AUTH_KEY
         old_agent = job_search_secure.USAJOBS_USER_AGENT
         old_http = job_search_secure._http_get_json
+        old_enabled = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_ENABLED")
+        old_runtime_dir = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_DIR")
         calls = []
+        runtime_data = None
 
         def fake_http_get_json(url, headers):
             calls.append(url)
@@ -208,21 +211,199 @@ class JobSearchSecureTests(unittest.TestCase):
             job_search_secure.USAJOBS_AUTH_KEY = "test-key"
             job_search_secure.USAJOBS_USER_AGENT = "test@example.com"
             job_search_secure._http_get_json = fake_http_get_json
+            os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = "1"
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = tmpdir
+                job_search_secure.clawguard_runtime_events.reset_for_tests()
+                job_search_secure.clawguard_runtime_events.start_runtime_event_session(
+                    "digest-20260506T163000-aaaabbbb"
+                )
 
-            jobs, credits = job_search_secure._search_usajobs_api(
-                "SOC Analyst OR Security Engineer",
-                "Seattle, WA",
-                10,
-            )
+                jobs, credits = job_search_secure._search_usajobs_api(
+                    "SOC Analyst OR Security Engineer",
+                    "Seattle, WA",
+                    10,
+                )
+                runtime_path = job_search_secure.clawguard_runtime_events.flush_runtime_events()
+                runtime_data = json.loads(runtime_path.read_text(encoding="utf-8"))
         finally:
             job_search_secure.USAJOBS_AUTH_KEY = old_key
             job_search_secure.USAJOBS_USER_AGENT = old_agent
             job_search_secure._http_get_json = old_http
+            if old_enabled is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_ENABLED", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = old_enabled
+            if old_runtime_dir is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_DIR", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = old_runtime_dir
+            job_search_secure.clawguard_runtime_events.reset_for_tests()
 
         self.assertEqual(credits, 0)
         self.assertEqual([job.job_id for job in jobs], ["SOC1", "SEC1"])
         self.assertIn("Keyword=SOC+Analyst", calls[0])
         self.assertIn("Keyword=Security+Engineer", calls[1])
+        runtime_events = runtime_data["events"]
+        credential_events = [event for event in runtime_events if event["event_type"] == "credential_use"]
+        egress_events = [event for event in runtime_events if event["event_type"] == "network_egress"]
+        self.assertEqual(len(credential_events), 2)
+        self.assertEqual(len(egress_events), 2)
+        self.assertEqual(credential_events[0]["target"]["label"], "usajobs-search-provider-credential")
+        self.assertEqual(egress_events[0]["target"]["label"], "data.usajobs.gov")
+        self.assertFalse(egress_events[0]["evidence"]["keyword_text_stored"])
+        self.assertFalse(egress_events[0]["evidence"]["full_url_stored"])
+
+    def test_runtime_event_helpers_emit_sanitized_phase3_events(self):
+        old_enabled = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_ENABLED")
+        old_runtime_dir = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_DIR")
+        try:
+            os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = "1"
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = tmpdir
+                job_search_secure.clawguard_runtime_events.reset_for_tests()
+                job_search_secure._start_runtime_events_safely("digest-20260506T163000-bbbbcccc")
+                job_search_secure._record_identity_runtime_event()
+                job_search_secure._record_provider_runtime_events(
+                    provider="brave",
+                    site_key="linkedin",
+                    credential_label="brave-search-provider-credential",
+                    credential_configured=True,
+                    destination_domain="api.search.brave.com",
+                    request_context={
+                        "freshness_label": "configured",
+                        "page_offset_index": 0,
+                        "result_count_requested": 10,
+                    },
+                )
+                job_search_secure._record_file_write_runtime_event(
+                    operation="write_digest",
+                    target_label="digest-output",
+                    file_format="json",
+                    atomic_write=False,
+                )
+                runtime_path = job_search_secure._flush_runtime_events_safely()
+                runtime_data = json.loads(runtime_path.read_text(encoding="utf-8"))
+        finally:
+            if old_enabled is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_ENABLED", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = old_enabled
+            if old_runtime_dir is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_DIR", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = old_runtime_dir
+            job_search_secure.clawguard_runtime_events.reset_for_tests()
+
+        event_types = [event["event_type"] for event in runtime_data["events"]]
+        self.assertIn("identity_context", event_types)
+        self.assertIn("credential_use", event_types)
+        self.assertIn("network_egress", event_types)
+        self.assertGreaterEqual(event_types.count("file_write"), 2)
+        identity = next(event for event in runtime_data["events"] if event["event_type"] == "identity_context")
+        self.assertEqual(identity["source"]["component"], "job_search_secure.py")
+        self.assertIn(identity["evidence"]["profile_label"], {"default-profile", "private-profile-env"})
+        self.assertFalse(identity["evidence"]["resume_contents_stored"])
+        egress = next(event for event in runtime_data["events"] if event["event_type"] == "network_egress")
+        self.assertEqual(egress["target"]["label"], "api.search.brave.com")
+        self.assertFalse(egress["evidence"]["query_text_stored"])
+        self.assertFalse(egress["evidence"]["full_url_stored"])
+
+    def test_run_daily_digest_starts_and_flushes_runtime_session(self):
+        old_enabled = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_ENABLED")
+        old_runtime_dir = os.environ.get("CLAWGUARD_RUNTIME_EVENTS_DIR")
+        original_db = job_search_secure.JobDatabase
+        original_profile = job_search_secure.load_profile
+        original_tailoring = job_search_secure.TailoringEngine
+        original_enrich = job_search_secure.enrich_top_jobs
+        original_session_id = job_search_secure.new_agent_session_id
+        original_digests_dir = job_search_secure.DIGESTS_DIR
+
+        class StubDB:
+            def get_digest_jobs(self):
+                return []
+
+            def is_first_week(self):
+                return True
+
+            def get_quota(self):
+                return (0, 1000)
+
+            def get_source_run_summary(self):
+                return {}
+
+            def get_total_count(self):
+                return 0
+
+            def close(self):
+                pass
+
+        profile = job_search_secure.Profile(
+            full_name="Runtime Test",
+            email="runtime@example.com",
+            phone="",
+            resume_text="SOC analyst resume.",
+            target_roles=["SOC Analyst"],
+            target_locations=["Remote"],
+            preferences={},
+            key_skills=["SIEM"],
+            certifications=[],
+        )
+
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tmp = Path(tmpdir)
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = "1"
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = str(tmp / "runtime_events")
+                job_search_secure.clawguard_runtime_events.reset_for_tests()
+                job_search_secure.JobDatabase = lambda: StubDB()
+                job_search_secure.load_profile = lambda: profile
+                job_search_secure.TailoringEngine = lambda *args, **kwargs: object()
+                job_search_secure.enrich_top_jobs = lambda *args, **kwargs: 0
+                job_search_secure.new_agent_session_id = (
+                    lambda prefix="digest": "digest-20260506T163000-ccccdddd"
+                )
+                job_search_secure.DIGESTS_DIR = tmp / "digests"
+
+                digest = job_search_secure.run_daily_digest(
+                    compile_only=True,
+                    auto_prepare=False,
+                    send_notification=False,
+                )
+
+                runtime_data = json.loads(
+                    (tmp / "runtime_events" / "runtime_events_latest.json").read_text(encoding="utf-8")
+                )
+                digest_path = tmp / "digests" / f"digest_{digest['date']}.json"
+                digest_path_exists = digest_path.exists()
+        finally:
+            if old_enabled is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_ENABLED", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_ENABLED"] = old_enabled
+            if old_runtime_dir is None:
+                os.environ.pop("CLAWGUARD_RUNTIME_EVENTS_DIR", None)
+            else:
+                os.environ["CLAWGUARD_RUNTIME_EVENTS_DIR"] = old_runtime_dir
+            job_search_secure.JobDatabase = original_db
+            job_search_secure.load_profile = original_profile
+            job_search_secure.TailoringEngine = original_tailoring
+            job_search_secure.enrich_top_jobs = original_enrich
+            job_search_secure.new_agent_session_id = original_session_id
+            job_search_secure.DIGESTS_DIR = original_digests_dir
+            job_search_secure.clawguard_runtime_events.reset_for_tests()
+
+        self.assertEqual(digest["agent_session_id"], "digest-20260506T163000-ccccdddd")
+        self.assertTrue(digest_path_exists)
+        event_types = [event["event_type"] for event in runtime_data["events"]]
+        self.assertIn("identity_context", event_types)
+        self.assertIn("file_write", event_types)
+        digest_write = [
+            event for event in runtime_data["events"]
+            if event["event_type"] == "file_write" and event["operation"] == "write_digest"
+        ][0]
+        self.assertEqual(digest_write["target"]["label"], "digest-output")
+        self.assertTrue(digest_write["evidence"]["path_label_only"])
 
     def test_provider_order_supports_forced_fallback_modes(self):
         old_brave = job_search_secure.BRAVE_SEARCH_API_KEY

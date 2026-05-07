@@ -1,7 +1,7 @@
 # Phase 3 Spec - Runtime Event Instrumentation and Detector Promotion
 
-Last updated: 2026-05-05
-Status: Draft for May 6, 2026 start
+Last updated: 2026-05-06
+Status: In progress; Phase 2 gates closed, Python runtime hooks deployed, observe-only baseline validated
 Predecessor: Phase 2 ASI02 detector, curated telemetry workflow, and `runtime-events/0.1` contract
 
 ## Mission
@@ -20,6 +20,8 @@ Implemented before Phase 3:
 - `runtime-events/0.1` schema fixture and validator.
 - Deploy helper ships runtime, detections, post-compile hook, and cron wrapper.
 - Email compile path verified after `CLAWGUARD_EMAIL_TO` forwarding fix.
+- May 6 live no-notify digest trial evaluated real jobs and confirmed ASI02 activation.
+- May 7 UTC one-off observe-only runtime-event baselines validated on the VPS with runtime events disabled by default outside the test runs.
 
 ## Phase 3 Tracks
 
@@ -104,9 +106,9 @@ Phase 3 is complete when:
 
 Start with event plumbing, not new findings:
 
-1. Add a runtime-event writer that can emit JSONL or session JSON under `/data/clawguard/runtime_events/`.
-2. Emit one `identity_context` event per digest session.
-3. Emit provider `network_egress` and credential-label events from Brave/USAJobs calls.
-4. Emit file-write events for digest and telemetry writes.
-5. Extend validation/export helpers for runtime-event artifacts.
-6. Keep all runtime-event emission observe-only.
+1. Add a runtime-event writer that can emit session JSON under `/data/clawguard/runtime_events/`. Done.
+2. Emit one `identity_context` event per digest session. Done in Python runtime hooks.
+3. Emit provider `network_egress` and credential-label events from Brave/USAJobs calls. Done in Python runtime hooks.
+4. Emit file-write events for digest and telemetry writes. Digest output done; telemetry hook deferred until host-side redaction is designed.
+5. Extend validation/export helpers for runtime-event artifacts. Local validation exists; curated export remains deferred until host-side redaction is designed.
+6. Keep all runtime-event emission observe-only. Required.
