@@ -143,6 +143,30 @@ Invoke-Step "Runtime event normal-ops false-positive fixture validation" {
     )
 }
 
+Invoke-Step "Curated ASI03 runtime-event baseline validation" {
+    Invoke-Native "python" @(
+        "-B",
+        "scripts\validate_runtime_events.py",
+        "--input",
+        "lessons\runtime-events\2026-05\digest-20260507T041020-50c7d030\runtime_events.json",
+        "--require",
+        "asi03"
+    )
+}
+
+Invoke-Step "Curated ASI03 ASI05 runtime-event baseline validation" {
+    Invoke-Native "python" @(
+        "-B",
+        "scripts\validate_runtime_events.py",
+        "--input",
+        "lessons\runtime-events\2026-05\digest-20260507T174059-2121b8be\runtime_events.json",
+        "--require",
+        "asi03",
+        "--require",
+        "asi05"
+    )
+}
+
 Invoke-Step "Sample detector output matches expected JSON" {
     $code = @'
 import json
@@ -178,6 +202,7 @@ paths = [
     'scripts/validate_telemetry.py',
     'scripts/validate_runtime_events.py',
     'detections/asi02_tool_misuse/detector.py',
+    'target-agent/skills/job-search-custom/clawguard_annotate_runtime_events.py',
     'target-agent/skills/job-search-custom/clawguard_redact_runtime_events.py',
     'target-agent/skills/job-search-custom/job_search_secure.py',
     'target-agent/skills/job-search-custom/runtime_events.py',
@@ -246,7 +271,7 @@ Assert-GitGrepNoMatch `
 
 Assert-GitGrepNoMatch `
     -Name "No stale test-count claims" `
-    -Pattern "76 local tests|76 tests|76/76|Ran 76|73 local tests|73 tests|73/73|Ran 73|71 local tests|71 tests|71/71|Ran 71|69 local tests|69 tests|69/69|Ran 69|63 local tests|63 tests|63/63|Ran 63|61 local tests|61 tests|61/61|Ran 61|60 local tests|60 tests|60/60|Ran 60|55 local tests|55 tests|55/55|Ran 55|54 local tests|54 tests|54/54|Ran 54|50 local tests|50 tests|50/50|Ran 50|49 local tests|49 tests|49/49|Ran 49|35 local tests|35 tests|35/35|Ran 35|28 local tests|28 tests|28/28|Ran 28|24 local tests|24 tests|24/24|Ran 24|14 local tests|14 tests|14/14|Ran 14|12 local tests|12 tests|12/12|Ran 12|11 local tests|11 tests|11/11|Ran 11"
+    -Pattern "77 local tests|77 tests|77/77|Ran 77|76 local tests|76 tests|76/76|Ran 76|73 local tests|73 tests|73/73|Ran 73|71 local tests|71 tests|71/71|Ran 71|69 local tests|69 tests|69/69|Ran 69|63 local tests|63 tests|63/63|Ran 63|61 local tests|61 tests|61/61|Ran 61|60 local tests|60 tests|60/60|Ran 60|55 local tests|55 tests|55/55|Ran 55|54 local tests|54 tests|54/54|Ran 54|50 local tests|50 tests|50/50|Ran 50|49 local tests|49 tests|49/49|Ran 49|35 local tests|35 tests|35/35|Ran 35|28 local tests|28 tests|28/28|Ran 28|24 local tests|24 tests|24/24|Ran 24|14 local tests|14 tests|14/14|Ran 14|12 local tests|12 tests|12/12|Ran 12|11 local tests|11 tests|11/11|Ran 11"
 
 Invoke-Step "Git diff whitespace check" {
     Invoke-Native "git" @("diff", "--check")

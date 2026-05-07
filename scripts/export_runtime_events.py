@@ -89,8 +89,27 @@ def _selected_candidates(
     return [candidates[session] for session in sessions]
 
 
+def _reviewer_notes(payload: dict[str, Any]) -> str:
+    event_types = {
+        str(event.get("event_type", "unknown"))
+        for event in payload.get("events", [])
+        if isinstance(event, dict)
+    }
+    if {"process_exec", "container_action"}.issubset(event_types):
+        return (
+            "Clean real no-notify provider baseline with ASI03 and ASI05 "
+            "readiness coverage; observe-only, no findings promoted."
+        )
+    if {"credential_use", "network_egress"}.issubset(event_types):
+        return (
+            "Clean real provider baseline with ASI03 readiness coverage; "
+            "observe-only, no findings promoted."
+        )
+    return "Clean observe-only runtime baseline; no findings promoted."
+
+
 def _write_month_index(month_dir: Path) -> None:
-    rows: list[tuple[str, str, int, str, str]] = []
+    rows: list[tuple[str, str, int, str, str, str]] = []
     for session_dir in sorted(path for path in month_dir.iterdir() if path.is_dir()):
         runtime_json = session_dir / "runtime_events.json"
         if not runtime_json.exists():
@@ -103,6 +122,7 @@ def _write_month_index(month_dir: Path) -> None:
                 len(payload.get("events", []) or []),
                 str(payload.get("generated_at", "")),
                 str((payload.get("redaction") or {}).get("status", "")),
+                _reviewer_notes(payload),
             )
         )
 
@@ -112,10 +132,10 @@ def _write_month_index(month_dir: Path) -> None:
         "| Session | Schema | Events | Generated | Redaction | Reviewer notes |",
         "|---|---:|---:|---|---|---|",
     ]
-    for session_id, schema_version, event_count, generated_at, redaction_status in rows:
+    for session_id, schema_version, event_count, generated_at, redaction_status, reviewer_notes in rows:
         lines.append(
             f"| [{session_id}]({session_id}/runtime_events.json) | {schema_version} | "
-            f"{event_count} | {generated_at} | {redaction_status} |  |"
+            f"{event_count} | {generated_at} | {redaction_status} | {reviewer_notes} |"
         )
     month_dir.mkdir(parents=True, exist_ok=True)
     (month_dir / "index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -141,7 +161,7 @@ def _summary_markdown(candidate: RuntimeEventExportCandidate) -> str:
         "",
         "## Reviewer Notes",
         "",
-        "Clean observe-only runtime baseline. No ASI03/ASI05 findings are promoted from this artifact.",
+        _reviewer_notes(candidate.payload),
     ])
     return "\n".join(lines) + "\n"
 

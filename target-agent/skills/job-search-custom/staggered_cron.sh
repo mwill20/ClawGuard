@@ -27,6 +27,7 @@ SKILL_DIR="/usr/local/lib/node_modules/openclaw/skills/job-search-custom"
 ENV_FILE="/docker/openclaw-utxu/.env"
 LOG_DIR="/docker/openclaw-utxu/data/clawguard/logs"
 POST_COMPILE_HOOK="/docker/openclaw-utxu/data/clawguard/clawguard_post_compile.sh"
+RUNTIME_EVENTS_ANNOTATOR="/docker/openclaw-utxu/data/clawguard/clawguard_annotate_runtime_events.py"
 DATE=$(date +%Y-%m-%d)
 TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
 
@@ -63,6 +64,25 @@ docker exec "$CONTAINER" pip install oxylabs-ai-studio --break-system-packages -
 
 echo "[$TIMESTAMP] Running: $SITE" | tee -a "$LOG_DIR/cron.log"
 
+annotate_runtime_events() {
+    local operation_label="$1"
+    local exit_code="$2"
+    if [ "${RUNTIME_EVENTS_ENABLED:-}" = "1" ] && [ -x "$RUNTIME_EVENTS_ANNOTATOR" ]; then
+        set +e
+        python3 "$RUNTIME_EVENTS_ANNOTATOR" \
+          --operation-label "$operation_label" \
+          --site-label "$SITE" \
+          --exit-code "$exit_code" \
+          --container-label "job-search-runtime" \
+          2>&1 | tee -a "$LOG_DIR/runtime_events_${DATE}.log"
+        ANNOTATE_EXIT=${PIPESTATUS[0]}
+        set -e
+        if [ "$ANNOTATE_EXIT" -ne 0 ]; then
+            echo "[$TIMESTAMP] runtime-event annotation failed (exit=$ANNOTATE_EXIT)" | tee -a "$LOG_DIR/cron.log"
+        fi
+    fi
+}
+
 if [ "$SITE" = "compile" ]; then
     # Maintenance compilation: score + notify, no new application packages.
     set +e
@@ -92,6 +112,7 @@ if [ "$SITE" = "compile" ]; then
       2>&1 | tee "$LOG_DIR/compile_${DATE}.log"
     EXIT_CODE=${PIPESTATUS[0]}
     set -e
+    annotate_runtime_events "cron-wrapper-compile-run" "$EXIT_CODE"
 
     if [ "$EXIT_CODE" -eq 0 ] && [ -x "$POST_COMPILE_HOOK" ]; then
         set +e
@@ -131,6 +152,7 @@ else
       2>&1 | tee "$LOG_DIR/search_${SITE}_${DATE}.log"
     EXIT_CODE=${PIPESTATUS[0]}
     set -e
+    annotate_runtime_events "cron-wrapper-search-run" "$EXIT_CODE"
 fi
 
 echo "[$TIMESTAMP] $SITE completed (exit=$EXIT_CODE)" | tee -a "$LOG_DIR/cron.log"

@@ -1,7 +1,7 @@
 # Phase 3 - ASI03/ASI05 False-Positive Expectations
 
 Last updated: 2026-05-07
-Status: Active promotion gate; ASI03/ASI05 detectors are not implemented yet
+Status: Active Phase 4 input; ASI03/ASI05 detectors are not implemented yet
 
 ## Purpose
 
@@ -17,16 +17,18 @@ Normal cron/search/deploy events are evidence, not findings.
 
 - Runtime events under schema `runtime-events/0.1`.
 - Host-side runtime-event redaction before export.
-- A curated clean runtime-event baseline:
+- Curated clean runtime-event baselines:
 
 ```text
 lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json
+lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/runtime_events.json
 ```
 
 - Local runtime-event validation:
 
 ```powershell
 python -B scripts\validate_runtime_events.py --input lessons\runtime-events\2026-05\digest-20260507T041020-50c7d030\runtime_events.json --require asi03
+python -B scripts\validate_runtime_events.py --input lessons\runtime-events\2026-05\digest-20260507T174059-2121b8be\runtime_events.json --require asi03 --require asi05
 ```
 
 - A local clean false-positive fixture for normal ops:
@@ -72,8 +74,8 @@ ASI03 must never persist raw credentials, raw profile paths, raw tokens, or priv
 
 | Runtime fact | Normal example | Future detector expectation |
 |---|---|---|
-| `process_exec` | `python unittest discover`, evaluator scripts, validator scripts | Do not alert for approved local validation labels. |
-| `container_action` | deploy helper py-compile/import check against the OpenClaw runtime container label | Do not alert for approved deploy-helper labels. |
+| `process_exec` | `cron-wrapper-search-run`, `cron-wrapper-compile-run`, evaluator scripts, validator scripts | Do not alert for approved local validation or cron wrapper labels. |
+| `container_action` | `job-search-runtime` label for expected cron wrapper execution | Do not alert for approved cron/deploy labels. |
 | `file_write` | telemetry, digest, runtime-event, and curated lesson artifact writes | Do not alert when path labels are approved and raw paths are not stored. |
 | `policy.decision` | `allow` for expected cron/deploy, `review` for manual deploy helper operations | Do not alert by itself. Use it as context. |
 | `operation_category` | `process-exec`, `container-exec`, `file-write` | Do not alert on category alone; match operation, actor, target, and policy together. |
@@ -124,8 +126,9 @@ This inventory is intentionally small. Future detector code should reference thi
 - `validate runtime events`
 - `deploy helper py-compile`
 - `deploy helper import check`
-- `cron wrapper search run`
-- `cron wrapper compile run`
+- `cron-wrapper-search-run`
+- `cron-wrapper-compile-run`
+- `job-search-runtime`
 
 ## Detector Promotion Requirements
 

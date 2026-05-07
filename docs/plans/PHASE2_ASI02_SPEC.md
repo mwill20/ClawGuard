@@ -14,7 +14,7 @@ Current baseline:
 - `run_jd_security_detections()` passes ASI06 findings into ASI01, then passes ASI06/ASI01 findings into ASI02.
 - `record_security_findings()` replaces `ASI06_%`, `ASI01_%`, and `ASI02_%` findings.
 - Deploy dry-run compiles ASI06, ASI01, and ASI02 detector modules.
-- Full local preflight currently runs 77 tests.
+- Full local preflight currently runs 81 tests.
 - ASI02 module activation has been confirmed on a real-job no-notify compile after the May 6 discovery fix.
 
 ## Tool Surface
@@ -61,7 +61,12 @@ The rule_id prefix is `ASI02_*`. All evidence preserves `pattern`, `matched_text
 
 ## Why Content-Only for v1
 
-The runtime currently does not emit structured tool-call events. Building Layer 3/4 ASI02, such as allowlist enforcement or behavioral diffing, requires a tool-call telemetry hook. That is a Phase 3 task.
+Phase 2 shipped ASI02 as content-side detection because structured runtime
+events did not exist yet. Phase 3 later added `runtime-events/0.1` monitoring,
+but ASI02 v1 remains intentionally pre-action/content-side. Building Layer 3/4
+ASI02, such as allowlist enforcement or behavioral diffing, should be scoped as
+a future detector-promotion task rather than retrofitted into the Phase 2
+content detector.
 
 ASI02 v1 catches the pre-action content that would drive misuse, matching the posture ASI06 takes for content injection.
 

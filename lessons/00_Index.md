@@ -5,7 +5,7 @@ Assumptions and scope:
 - Phase 1 closed on 2026-05-04 with ASI01 v1 deployed and cron-confirmed.
 - Line references in lessons are accurate as of Phase 1 close. Re-check after future code movement.
 - Lessons live in the existing lowercase `lessons/` directory.
-- VPS commands target the current OpenClaw host `root@31.97.139.139` and container `openclaw-utxu-openclaw-1`.
+- VPS commands target the configured OpenClaw host/container from the deploy scripts. Public lessons should avoid repeating raw infrastructure identifiers.
 - ASI06, ASI01, and ASI02 detector modules are required runtime dependencies. Inline fallback paths have been removed.
 - Phase 2 plans live under `docs/plans/`, with `PHASE2_SPEC.md` as the v3 umbrella spec.
 
@@ -22,6 +22,7 @@ Assumptions and scope:
 | 06 | [The Investigator - ASI01 Goal Hijack Detector v1](Lesson06_ASI01_Goal_Hijack_Scaffold.md) | `detections/asi01_goal_hijack/detector.py` | Required |
 | 07 | [The Source Compass - Digest Semantics + Phase 2 Map](Lesson07_Source_Compass_And_Phase2_Map.md) | `search_site` source-status, `docs/plans/` | Required |
 | 08 | [The Tool-Use Gatekeeper - ASI02 Defense Lab](Lesson08_ASI02_Tool_Misuse_Defense_Lab.md) | `detections/asi02_tool_misuse/detector.py`, `examples/asi02_labeled_eval.json` | Required |
+| 09 | [The Flight Recorder - Runtime Event Monitoring](Lesson09_Runtime_Event_Monitoring.md) | `runtime_events.py`, host redaction/export, curated runtime baselines | Required |
 
 ## Phase Map
 
@@ -33,8 +34,10 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
   -> ASI02 detector (tool-misuse operation classification)
   -> score and compile digest
   -> post-compile telemetry export
+  -> runtime-events/0.1 observe-only monitoring
+  -> host-side redaction and curated runtime baselines
   -> curated lessons and baselines
-  -> Phase 2: curated telemetry workflow + ASI03/ASI05 roadmap specs
+  -> Phase 4: ASI03/ASI05 detector promotion from runtime evidence
 ```
 
 ## Project Implements
@@ -47,13 +50,13 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - ASI02 v1 tool-misuse detector for unsafe egress, notification redirects, shell payloads, and file-write redirects.
 - Source-status semantics in search audit log (`OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`) and digest summary fields (`newly_inserted_in_run`, `compile_only`).
 - Post-compile telemetry JSON/Markdown artifacts.
-- Runtime-event writer, validation, host-side redaction, and first curated clean baseline.
+- Runtime-event writer, validation, host-side redaction, host wrapper annotation, and curated clean baselines.
 - Runtime-event normal-ops fixture for ASI03/ASI05 false-positive promotion work.
 - Local regression tests covering parsers, session IDs, ASI06 + ASI01 + ASI02 detector behavior, source-status audit, runtime-event export/redaction, and DB queryability.
 - GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, telemetry sample validation, and runtime-event validation.
 - Small synthetic labeled ASI06 fixture metrics under `examples/`.
 - Telemetry sample JSON validation under `examples/`.
-- Phase 2 plan documents under `docs/plans/` covering the v3 baseline, ASI02 module, telemetry workflow, corpus/red-team discipline, and ASI03/ASI05 roadmap specs.
+- Phase 2 and Phase 3 plan documents under `docs/plans/` covering the v3 baseline, ASI02 module, telemetry workflow, corpus/red-team discipline, runtime-event monitoring, and ASI03/ASI05 roadmap specs.
 
 ## Recommended (not implemented here)
 
@@ -61,7 +64,7 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - Layer-4 semantic guardrails using deterministic policy or LLM-as-judge for ambiguous goal-redirect cases.
 - Signed deployment bundles for `job_search_secure.py` plus `detections/`.
 - `search_runs` schema migration to persist `source_status` and `already_known_count` columns (currently audit-log only).
-- Tool-call telemetry instrumentation (Phase 3 prerequisite for ASI02 Layer 3/4 detection).
+- Runtime enforcement or blocking based on ASI03/ASI05 findings.
 
 ## Hands-On Starting Point
 
@@ -75,9 +78,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.............................................................................
+.................................................................................
 ----------------------------------------------------------------------
-Ran 77 tests in 0.47s
+Ran 81 tests in 0.57s
 
 OK
 ```
@@ -92,9 +95,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.............................................................................
+.................................................................................
 ----------------------------------------------------------------------
-Ran 77 tests in 0.47s
+Ran 81 tests in 0.57s
 
 OK
 ```
@@ -107,3 +110,4 @@ OK
 4. Use Lesson 06 to walk through the implemented ASI01 v1 corroborated-classifier design.
 5. Use Lesson 07 to understand source-status semantics and the Phase 2 roadmap.
 6. Use Lesson 08 to practice ASI02 tool-misuse detection.
+7. Use Lesson 09 to understand runtime-event monitoring and Phase 4 detector promotion readiness.

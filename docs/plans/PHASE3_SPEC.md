@@ -1,7 +1,7 @@
 # Phase 3 Spec - Runtime Event Instrumentation and Detector Promotion
 
 Last updated: 2026-05-07
-Status: In progress; Phase 2 gates closed, runtime-event hooks deployed, host-side redaction and first curated baseline complete
+Status: Complete for instrumentation, redaction, validation, and curated baselines; ASI03/ASI05 detector implementation moves to Phase 4
 Predecessor: Phase 2 ASI02 detector, curated telemetry workflow, and `runtime-events/0.1` contract
 
 ## Mission
@@ -23,7 +23,9 @@ Implemented before Phase 3:
 - May 6 live no-notify digest trial evaluated real jobs and confirmed ASI02 activation.
 - May 7 UTC one-off observe-only runtime-event baselines validated on the VPS with runtime events disabled by default outside the test runs.
 - May 7 UTC host-side runtime-event redaction deployed before any export path.
-- First clean runtime-event baseline curated at `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/`.
+- Host-side runtime-event annotation deployed for label-only cron wrapper `process_exec` and `container_action` events.
+- Clean ASI03-ready runtime-event baseline curated at `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/`.
+- Clean ASI03/ASI05-ready no-notify provider baseline curated at `lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/`.
 
 ## Phase 3 Tracks
 
@@ -53,7 +55,7 @@ Required event types:
 - `file_write`
 - `process_exec`
 - `container_action`
-- `policy_decision`
+- Policy decisions as event fields; standalone `policy_decision` event documents are deferred to detector work if needed.
 
 Acceptance criteria:
 
@@ -82,8 +84,8 @@ Goal: promote ASI03 and ASI05 from roadmap specs to runtime detectors only after
 
 Promotion gates:
 
-- At least one clean runtime-event baseline exists.
-- At least one real review-worthy runtime-event sample exists, or a local-only synthetic fixture clearly models the rule without touching live providers.
+- At least one clean runtime-event baseline exists. Done.
+- At least one real review-worthy runtime-event sample exists, or a local-only synthetic fixture clearly models the rule without touching live providers. Done for clean no-notify provider behavior; positive detector fixtures move to Phase 4 and must remain local-only.
 - False-positive expectations exist for normal cron/deploy/search behavior. Done in [PHASE3_FALSE_POSITIVE_EXPECTATIONS.md](PHASE3_FALSE_POSITIVE_EXPECTATIONS.md), with executable clean-fixture validation in `examples/runtime_events_normal_ops.json`.
 - Findings never persist raw credentials, command args, private paths, or host identifiers.
 
@@ -111,11 +113,12 @@ Start with event plumbing, not new findings:
 1. Add a runtime-event writer that can emit session JSON under `/data/clawguard/runtime_events/`. Done.
 2. Emit one `identity_context` event per digest session. Done in Python runtime hooks.
 3. Emit provider `network_egress` and credential-label events from Brave/USAJobs calls. Done in Python runtime hooks.
-4. Emit file-write events for digest and telemetry writes. Digest output done; telemetry hook deferred until host-side redaction is designed.
+4. Emit file-write events for digest/runtime-event writes. Digest output and runtime-event self-write are done; telemetry and application-material file-write events remain deferred because post-compile telemetry is host-side and auto-prepare did not run in the clean baseline.
 5. Extend validation/export helpers for runtime-event artifacts. Done with host-side redaction, local validation, and curated export into `lessons/runtime-events/`.
-6. Keep all runtime-event emission observe-only. Required.
+6. Add label-only host-wrapper `process_exec` and `container_action` annotation. Done via `clawguard_annotate_runtime_events.py` and `staggered_cron.sh`.
+7. Keep all runtime-event emission observe-only. Required.
 
-## Current Runtime-Event Baseline
+## Current Runtime-Event Baselines
 
 The first curated runtime-event baseline is intentionally clean and observe-only:
 
@@ -124,3 +127,20 @@ lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/
 ```
 
 It came from a read-only USAJobs provider smoke run that emitted `identity_context`, `credential_use`, `network_egress`, and `file_write` events. It is suitable for reviewer learning and ASI03 readiness discussion, but it is not a finding-bearing sample and should not be used to claim ASI03/ASI05 detector readiness.
+
+The full clean no-notify provider baseline is:
+
+```text
+lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/
+```
+
+It emitted 162 host-redacted events: `identity_context`, `credential_use`,
+`network_egress`, `file_write`, `process_exec`, and `container_action`. It
+validates with:
+
+```powershell
+python -B scripts\validate_runtime_events.py --input lessons\runtime-events\2026-05\digest-20260507T174059-2121b8be\runtime_events.json --require asi03 --require asi05
+```
+
+It is still a clean observe-only baseline. It proves readiness coverage for
+ASI03/ASI05 detector design, not a promoted runtime finding.

@@ -46,3 +46,6 @@ jobs:
 
       - name: Validate curated runtime event baseline
         run: python -B scripts/validate_runtime_events.py --input lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json --require asi03
+
+      - name: Validate curated ASI03 ASI05 runtime event baseline
+        run: python -B scripts/validate_runtime_events.py --input lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/runtime_events.json --require asi03 --require asi05

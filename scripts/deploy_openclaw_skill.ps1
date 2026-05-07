@@ -15,6 +15,7 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $JobScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\job_search_secure.py"
 $RuntimeEventsScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\runtime_events.py"
 $RuntimeEventsRedactor = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_redact_runtime_events.py"
+$RuntimeEventsAnnotator = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_annotate_runtime_events.py"
 $DetectionsDir = Join-Path $RepoRoot "detections"
 $PostCompileHook = Join-Path $RepoRoot "target-agent\skills\job-search-custom\clawguard_post_compile.sh"
 $CronScript = Join-Path $RepoRoot "target-agent\skills\job-search-custom\staggered_cron.sh"
@@ -49,6 +50,9 @@ if (-not (Test-Path -LiteralPath $RuntimeEventsScript)) {
 if (-not (Test-Path -LiteralPath $RuntimeEventsRedactor)) {
     throw "Missing runtime-events redactor: $RuntimeEventsRedactor"
 }
+if (-not (Test-Path -LiteralPath $RuntimeEventsAnnotator)) {
+    throw "Missing runtime-events annotator: $RuntimeEventsAnnotator"
+}
 if (-not (Test-Path -LiteralPath $DetectionsDir)) {
     throw "Missing detections package: $DetectionsDir"
 }
@@ -69,6 +73,7 @@ $detectionsContainerPath = "${Container}:${SkillDir}/detections"
 $hostHookPath = "${HostDataDir}/clawguard_post_compile.sh"
 $hostCronPath = "${HostDataDir}/staggered_cron.sh"
 $hostRuntimeEventsRedactorPath = "${HostDataDir}/clawguard_redact_runtime_events.py"
+$hostRuntimeEventsAnnotatorPath = "${HostDataDir}/clawguard_annotate_runtime_events.py"
 
 $remoteScript = @"
 set -e
@@ -86,6 +91,10 @@ echo "Installing runtime-event redactor on host at $hostRuntimeEventsRedactorPat
 install -m 0755 "$RemoteStage/clawguard_redact_runtime_events.py" "$hostRuntimeEventsRedactorPath"
 python3 -B -m py_compile "$hostRuntimeEventsRedactorPath"
 grep -q 'REDACTION_STATUS' "$hostRuntimeEventsRedactorPath" && echo "runtime_event_redactor=ok" || (echo "runtime_event_redactor=missing" && exit 1)
+echo "Installing runtime-event annotator on host at $hostRuntimeEventsAnnotatorPath"
+install -m 0755 "$RemoteStage/clawguard_annotate_runtime_events.py" "$hostRuntimeEventsAnnotatorPath"
+python3 -B -m py_compile "$hostRuntimeEventsAnnotatorPath"
+grep -q 'ANNOTATOR_VERSION' "$hostRuntimeEventsAnnotatorPath" && echo "runtime_event_annotator=ok" || (echo "runtime_event_annotator=missing" && exit 1)
 echo "Installing post-compile hook on host at $hostHookPath"
 mkdir -p $quotedHostDataDir
 install -m 0755 "$RemoteStage/clawguard_post_compile.sh" "$hostHookPath"
@@ -105,6 +114,7 @@ if ($DryRun) {
     Write-Host "JobScript: $JobScript"
     Write-Host "RuntimeEventsScript: $RuntimeEventsScript"
     Write-Host "RuntimeEventsRedactor: $RuntimeEventsRedactor"
+    Write-Host "RuntimeEventsAnnotator: $RuntimeEventsAnnotator"
     Write-Host "DetectionsDir: $DetectionsDir"
     Write-Host "PostCompileHook: $PostCompileHook"
     Write-Host "CronScript: $CronScript"
@@ -128,6 +138,7 @@ Invoke-Native "ssh" @("-o", "BatchMode=yes", $Remote, "mkdir -p $quotedStage")
 Invoke-Native "scp" @($JobScript, "${Remote}:$RemoteStage/job_search_secure.py")
 Invoke-Native "scp" @($RuntimeEventsScript, "${Remote}:$RemoteStage/runtime_events.py")
 Invoke-Native "scp" @($RuntimeEventsRedactor, "${Remote}:$RemoteStage/clawguard_redact_runtime_events.py")
+Invoke-Native "scp" @($RuntimeEventsAnnotator, "${Remote}:$RemoteStage/clawguard_annotate_runtime_events.py")
 Invoke-Native "scp" @("-r", $DetectionsDir, "${Remote}:$RemoteStage/detections")
 Invoke-Native "scp" @($PostCompileHook, "${Remote}:$RemoteStage/clawguard_post_compile.sh")
 Invoke-Native "scp" @($CronScript, "${Remote}:$RemoteStage/staggered_cron.sh")

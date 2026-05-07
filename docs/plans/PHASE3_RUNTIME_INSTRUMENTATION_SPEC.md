@@ -1,7 +1,7 @@
 # Phase 3 - Runtime Event Instrumentation Spec
 
 Last updated: 2026-05-07
-Status: Implementation in progress; writer, Python runtime hooks, host-side redaction, and first curated baseline complete
+Status: Implemented for writer, Python runtime hooks, host wrapper labels, host-side redaction, and curated clean baselines
 Input contract: [PHASE2_RUNTIME_TELEMETRY_CONTRACT.md](PHASE2_RUNTIME_TELEMETRY_CONTRACT.md)
 
 ## Purpose
@@ -71,19 +71,19 @@ Evidence:
 
 ### 4. Host Wrapper Commands
 
-Emit `process_exec` and `container_action` from host-side scripts later in Phase 3.
+Emit `process_exec` and `container_action` from host-side scripts as label-only annotations after cron/deploy commands finish.
 
 Initial scripts:
 
-- `target-agent/skills/job-search-custom/staggered_cron.sh`
-- `scripts/deploy_openclaw_skill.ps1`
+- `target-agent/skills/job-search-custom/staggered_cron.sh` - implemented for cron wrapper search/compile runs.
+- `scripts/deploy_openclaw_skill.ps1` - ships the annotator and validates it; deploy-helper event annotation remains a Phase 4 option.
 
 Evidence:
 
 - Command label, not raw command line.
 - Container label, not private container identifier in curated exports.
 - Exit code.
-- Policy decision: `allow` for expected cron/deploy operations, `review` for manual deploy.
+- Policy decision: `allow` for expected cron operations, `review` for nonzero exits.
 
 ## Redaction Requirements
 
@@ -248,11 +248,28 @@ Observed VPS validation on May 7, 2026 UTC:
   asi03` with `identity_context`, `credential_use`, `network_egress`, and
   `file_write` events.
 
-Deferred until the Python-side baseline is stable:
+Deferred:
 
 - Telemetry hook `file_write` events.
 - Application-material `file_write` events.
-- Host wrapper `process_exec` and `container_action` events.
+- Deploy-helper `process_exec` and `container_action` events, if Phase 4 needs deploy-flow examples.
+
+### Step 3.5 - Host Wrapper Annotation
+
+Done with `target-agent/skills/job-search-custom/clawguard_annotate_runtime_events.py`
+and `target-agent/skills/job-search-custom/staggered_cron.sh`:
+
+- `staggered_cron.sh` forwards `CLAWGUARD_RUNTIME_EVENTS_ENABLED` into the container.
+- After a site run or compile run finishes, the host annotator appends one
+  `process_exec` event and one `container_action` event.
+- The annotator writes labels only: `cron-wrapper-search-run`,
+  `cron-wrapper-compile-run`, site labels such as `usajobs`, and
+  `job-search-runtime` as the container label.
+- The annotator updates both `runtime_events_latest.json` and the matching
+  archived session file so export-by-session sees the same evidence as the
+  latest pointer.
+- Duplicate detection keeps annotation idempotent.
+- Unsafe operation labels are rejected before any artifact is modified.
 
 ### Step 3 - Preflight
 
@@ -293,10 +310,11 @@ Deploy with runtime events enabled only after:
 
 ### Step 5 - Curate Baselines
 
-Done for the first clean baseline:
+Done for clean baselines:
 
 ```text
 lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/
+lessons/runtime-events/2026-05/digest-20260507T174059-2121b8be/
 ```
 
 The export path is:
@@ -307,7 +325,10 @@ The export path is:
 4. Local validation runs before curation.
 5. `scripts/export_runtime_events.py` writes `runtime_events.json`, `runtime_events.md`, and the month index under `lessons/runtime-events/`.
 
-Continue to wait for real review-worthy events before building ASI03/ASI05 detectors. Do not seed synthetic malicious jobs into live providers.
+Continue to wait for real finding-bearing or false-positive-worthy events
+before exporting finding samples. Do not seed synthetic malicious jobs into
+live providers. Positive ASI03/ASI05 detector fixtures should be local-only in
+Phase 4.
 
 ## ASI03 Readiness
 
@@ -319,19 +340,23 @@ ASI03 can move forward when runtime events include:
 - policy decisions - present as event fields; standalone `policy_decision` event samples remain open.
 - session correlation - present in the first clean baseline.
 
-Do not implement ASI03 until the false-positive expectations for normal credential use are written and reviewed.
+ASI03 implementation moves to Phase 4. It should start from the curated clean
+baselines and the false-positive expectations, then add local-only positive
+fixtures before any runtime detector is deployed.
 
 ## ASI05 Readiness
 
 ASI05 can move forward when runtime events include:
 
-- `process_exec` - deferred until host wrapper instrumentation.
-- `container_action` or `file_write` - `file_write` present in the first clean baseline.
+- `process_exec` - present in the full no-notify provider baseline.
+- `container_action` or `file_write` - both are present in the full no-notify provider baseline.
 - policy decisions - present as event fields; standalone `policy_decision` event samples remain open.
 - session correlation - present in the first clean baseline.
 - redacted command/target labels
 
-Do not implement ASI05 until host wrapper command labels and false-positive expectations are written and reviewed.
+ASI05 implementation moves to Phase 4. It should use the host-wrapper labels
+and false-positive expectations from Phase 3, then add local-only positive
+fixtures that never touch live providers.
 
 ## Failure Modes
 

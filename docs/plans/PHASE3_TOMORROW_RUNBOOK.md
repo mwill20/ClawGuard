@@ -1,15 +1,16 @@
 # Phase 3 Tomorrow Runbook - May 6, 2026
 
-Status: Active runbook; partial completion as of 2026-05-06 13:10 UTC
+Status: Closed runbook; schedule/email/telemetry evidence was confirmed and Phase 3 implementation proceeded
 Purpose: Confirm daily schedule health before starting Phase 3 runtime-event instrumentation.
 
 ## Current State Snapshot
 
-As of 2026-05-06 13:10 UTC:
+As of 2026-05-07:
 
 - The 2026-05-06 manual compile-only run at 05:13 UTC sent the digest email and wrote schema `1.2` telemetry. Manual gate satisfied.
-- The scheduled 16:30 UTC compile has not yet run. Schedule gate pending.
-- Cron-confirm for 2026-05-06 currently shows the 05:13 manual compile entry only; re-run after 16:35 UTC for the scheduled-compile evidence the runbook requires.
+- The scheduled compile gate was later confirmed.
+- The May 7 scheduled compile evaluated real jobs, sent the digest, and logged ASI06/ASI01/ASI02 activation lines.
+- Runtime-event implementation proceeded after the operational gate was healthy.
 
 ## Context
 

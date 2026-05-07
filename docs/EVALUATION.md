@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event normal-ops fixture validation, runtime-event writer behavior, runtime-event export/redaction, source-health digest reporting, review-session selection, profile privacy override, and DB behavior | 77/77 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event normal-ops fixture validation, runtime-event writer behavior, runtime-event export/redaction, host annotation, source-health digest reporting, review-session selection, profile privacy override, and DB behavior | 81/81 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -25,6 +25,7 @@
 | Telemetry sample schema | Protects expected post-compile JSON shape | Passing for `examples/telemetry_sample.json` |
 | Runtime event contract | Defines ASI03/ASI05 prerequisite telemetry before runtime detectors exist | Passing for `examples/runtime_events_minimal.json` with `--require asi03 --require asi05` |
 | Runtime normal-ops false-positive fixture | Defines clean runtime behavior future ASI03/ASI05 detectors must not alert on | Passing for `examples/runtime_events_normal_ops.json` with `--require asi03 --require asi05` |
+| Curated runtime-event baselines | Confirms real no-notify runtime artifacts remain schema-valid after host redaction | `digest-20260507T041020-50c7d030` passes `--require asi03`; `digest-20260507T174059-2121b8be` passes `--require asi03 --require asi05` |
 | Runtime performance | Useful for scaling expectations | Local fixture evaluator ran in about 3 ms for 8 synthetic records in one local run; VPS cron performance is not yet measured |
 
 Important scope note: the labeled ASI06 and ASI02 fixtures are small and synthetic. They are useful for regression and reviewer reproducibility, but they are not real-world precision/recall benchmarks.
@@ -41,9 +42,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-.............................................................................
+.................................................................................
 ----------------------------------------------------------------------
-Ran 77 tests in 0.4
+Ran 81 tests in 0.6
 
 OK
 ```

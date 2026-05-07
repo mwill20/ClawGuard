@@ -83,6 +83,16 @@ class TelemetryRedactionTests(unittest.TestCase):
 
         self.assertEqual(redacted, {"contact": "<REDACTED_EMAIL>"})
 
+    def test_phone_redaction_preserves_agent_session_ids(self):
+        session = "digest-20260507T174059-2121b8be"
+
+        redacted = telemetry_redaction.redact_text(
+            f"session={session}; call 206-555-1212 for support"
+        )
+
+        self.assertIn(session, redacted)
+        self.assertNotIn("206-555-1212", redacted)
+
     def test_export_writes_redacted_session_and_month_index(self):
         with tempfile.TemporaryDirectory() as temp:
             input_dir = Path(temp) / "input"
@@ -258,6 +268,18 @@ class TelemetryRedactionTests(unittest.TestCase):
         self.assertNotIn("openclaw-utxu", serialized)
         self.assertNotIn("/data/clawguard", serialized)
         self.assertIn("openclaw-job-search-profile", serialized)
+
+    def test_runtime_event_host_redactor_preserves_phone_like_session_id(self):
+        payload = {
+            "schema_version": "runtime-events/0.1",
+            "generated_at": "2026-05-07T17:40:59Z",
+            "agent_session_id": "digest-20260507T174059-2121b8be",
+            "events": [],
+        }
+
+        redacted = runtime_event_redactor.redact_runtime_events_payload(payload)
+
+        self.assertEqual(redacted["agent_session_id"], "digest-20260507T174059-2121b8be")
 
     def test_runtime_event_host_redactor_relabels_raw_path_stored_flag(self):
         payload = {
