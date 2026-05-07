@@ -1,0 +1,340 @@
+{
+  "schema_version": "runtime-events/0.1",
+  "generated_at": "2026-05-07T12:00:00Z",
+  "agent_session_id": "digest-20260507T120000-fade0001",
+  "events": [
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-identity-001",
+      "event_time": "2026-05-07T12:00:00Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "identity_context",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "job_search_secure.py",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "set_identity_context",
+      "operation_category": "identity-context",
+      "target": {
+        "kind": "service_identity",
+        "label": "openclaw-job-search-profile",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "observe",
+        "reason": "baseline identity context"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "profile_path_label": "CLAWGUARD_PROFILE_PATH",
+        "credential_material_present": false
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-credential-001",
+      "event_time": "2026-05-07T12:00:01Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "credential_use",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "provider_client",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "read_provider_credential_label",
+      "operation_category": "credential-use",
+      "target": {
+        "kind": "credential_label",
+        "label": "brave-search-provider-credential",
+        "redaction_status": "redacted"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "approved search provider credential"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "credential_purpose": "provider_api_auth",
+        "credential_label_only": true
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-egress-001",
+      "event_time": "2026-05-07T12:00:02Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "network_egress",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "provider_client",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "search_provider_request",
+      "operation_category": "http-egress",
+      "target": {
+        "kind": "domain",
+        "label": "api.search.brave.com",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "safe egress allowlist"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "destination_category": "search-provider",
+        "request_body_stored": false
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-credential-002",
+      "event_time": "2026-05-07T12:00:03Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "credential_use",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "provider_client",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "read_provider_credential_label",
+      "operation_category": "credential-use",
+      "target": {
+        "kind": "credential_label",
+        "label": "usajobs-search-provider-credential",
+        "redaction_status": "redacted"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "approved search provider credential"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "credential_purpose": "provider_api_auth",
+        "credential_label_only": true
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-egress-002",
+      "event_time": "2026-05-07T12:00:04Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "network_egress",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "provider_client",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "search_provider_request",
+      "operation_category": "http-egress",
+      "target": {
+        "kind": "domain",
+        "label": "data.usajobs.gov",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "safe egress allowlist"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "destination_category": "search-provider",
+        "request_body_stored": false
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-file-001",
+      "event_time": "2026-05-07T12:00:05Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "file_write",
+      "actor": {
+        "type": "agent",
+        "id": "openclaw-job-search"
+      },
+      "source": {
+        "component": "job_search_secure.py",
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py"
+      },
+      "operation": "write_digest_output",
+      "operation_category": "file-write",
+      "target": {
+        "kind": "path_label",
+        "label": "digest-output",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "approved digest output"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "path_label_only": true,
+        "atomic_write": false
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-process-001",
+      "event_time": "2026-05-07T12:00:06Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "process_exec",
+      "actor": {
+        "type": "automation",
+        "id": "local-preflight"
+      },
+      "source": {
+        "component": "scripts/preflight.ps1",
+        "code_path": "scripts/preflight.ps1"
+      },
+      "operation": "run_unit_tests",
+      "operation_category": "process-exec",
+      "target": {
+        "kind": "command_label",
+        "label": "python unittest discover",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "approved validation command"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "cwd_label": "repo-root",
+        "exit_code": 0,
+        "arguments_stored": "label_only"
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-process-002",
+      "event_time": "2026-05-07T12:00:07Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "process_exec",
+      "actor": {
+        "type": "automation",
+        "id": "local-preflight"
+      },
+      "source": {
+        "component": "scripts/preflight.ps1",
+        "code_path": "scripts/preflight.ps1"
+      },
+      "operation": "validate_runtime_events",
+      "operation_category": "process-exec",
+      "target": {
+        "kind": "command_label",
+        "label": "validate runtime events",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "allow",
+        "reason": "approved validation command"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "cwd_label": "repo-root",
+        "exit_code": 0,
+        "arguments_stored": "label_only"
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-container-001",
+      "event_time": "2026-05-07T12:00:08Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "container_action",
+      "actor": {
+        "type": "automation",
+        "id": "deploy-helper"
+      },
+      "source": {
+        "component": "scripts/deploy_openclaw_skill.ps1",
+        "code_path": "scripts/deploy_openclaw_skill.ps1"
+      },
+      "operation": "docker_py_compile",
+      "operation_category": "container-exec",
+      "target": {
+        "kind": "container_label",
+        "label": "openclaw-runtime",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "review",
+        "reason": "deployment helper operation"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "remote_host_stored": false,
+        "container_id_stored": false,
+        "arguments_stored": "label_only"
+      }
+    },
+    {
+      "event_id": "evt-digest-20260507T120000-fade0001-policy-001",
+      "event_time": "2026-05-07T12:00:09Z",
+      "agent_session_id": "digest-20260507T120000-fade0001",
+      "event_type": "policy_decision",
+      "actor": {
+        "type": "detector",
+        "id": "clawguard-runtime-contract"
+      },
+      "source": {
+        "component": "runtime_event_policy",
+        "code_path": "docs/plans/PHASE3_FALSE_POSITIVE_EXPECTATIONS.md"
+      },
+      "operation": "classify_normal_runtime_baseline",
+      "operation_category": "policy-decision",
+      "target": {
+        "kind": "event_stream",
+        "label": "runtime-events-normal-ops",
+        "redaction_status": "label_only"
+      },
+      "policy": {
+        "decision": "observe",
+        "reason": "normal operation false-positive baseline"
+      },
+      "correlation": {
+        "agent_session_id": "digest-20260507T120000-fade0001",
+        "related_rule_ids": []
+      },
+      "evidence": {
+        "fixture_only": true,
+        "expected_findings": 0
+      }
+    }
+  ]
+}

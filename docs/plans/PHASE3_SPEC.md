@@ -84,7 +84,7 @@ Promotion gates:
 
 - At least one clean runtime-event baseline exists.
 - At least one real review-worthy runtime-event sample exists, or a local-only synthetic fixture clearly models the rule without touching live providers.
-- False-positive checks exist for normal cron/deploy/search behavior.
+- False-positive expectations exist for normal cron/deploy/search behavior. Done in [PHASE3_FALSE_POSITIVE_EXPECTATIONS.md](PHASE3_FALSE_POSITIVE_EXPECTATIONS.md), with executable clean-fixture validation in `examples/runtime_events_normal_ops.json`.
 - Findings never persist raw credentials, command args, private paths, or host identifiers.
 
 Non-goals:

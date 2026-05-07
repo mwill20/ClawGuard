@@ -22,6 +22,8 @@ Phase 2 built the ASI02 detector, curated telemetry workflow, combined detector-
 | [PHASE3_TOMORROW_RUNBOOK.md](PHASE3_TOMORROW_RUNBOOK.md) | May 6, 2026 operational target: schedule, email, telemetry, ASI02 activation |
 | [PHASE3_SPEC.md](PHASE3_SPEC.md) | Phase 3 umbrella spec: tracks, gates, acceptance criteria |
 | [PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md](PHASE3_RUNTIME_INSTRUMENTATION_SPEC.md) | Concrete implementation plan for `runtime-events/0.1` emission |
+| [PHASE3_FALSE_POSITIVE_EXPECTATIONS.md](PHASE3_FALSE_POSITIVE_EXPECTATIONS.md) | Clean ASI03/ASI05 baseline expectations for normal cron/search/deploy behavior |
+| `examples/runtime_events_normal_ops.json` | Local clean false-positive fixture for normal ASI03/ASI05 runtime behavior |
 | `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/` | First curated clean runtime-event baseline; host-redacted and locally validated |
 
 ## Recommended Sequence

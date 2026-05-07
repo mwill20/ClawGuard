@@ -42,7 +42,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Combined detector-chain fixture: `examples/combined_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
 - Runtime event contract fixture: `examples/runtime_events_minimal.json`
-- Full suite: 76 tests passing.
+- Full suite: 77 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -177,9 +177,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-............................................................................
+.............................................................................
 ----------------------------------------------------------------------
-Ran 76 tests in 0.47s
+Ran 77 tests in 0.47s
 
 OK
 ```
@@ -369,7 +369,7 @@ Why: this proves the runtime chain can produce ASI06, ASI01, and ASI02 findings 
 | Combined detector-chain fixture | `examples/combined_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
 | Runtime event contract fixture | `examples/runtime_events_minimal.json` |
-| Current total | 76 tests (31 in `test_job_search_secure.py`, 45 across detector / evaluation / telemetry / runtime-event contract and writer / selector / redaction-export / runtime-event export) |
+| Current total | 77 tests (31 in `test_job_search_secure.py`, 46 across detector / evaluation / telemetry / runtime-event contract and writer / selector / redaction-export / runtime-event export / normal-ops fixture validation) |
 | Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

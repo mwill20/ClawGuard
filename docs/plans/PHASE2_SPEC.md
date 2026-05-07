@@ -6,7 +6,7 @@ Supersedes: `ClawGuardSpecs/ClawGuard_OpenClaw_Project_Spec_v2.md` and the Phase
 
 ## Why This Spec Exists
 
-The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 and Phase 2 are closed. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, runtime-event writer tests, runtime-event redaction/export tests, source-health digest reporting, lessons, CI, and 76 local tests.
+The March 2026 project specs are useful history, but they describe a project that no longer exists. Phase 1 and Phase 2 are closed. The repo now has a live OpenClaw telemetry loop, detector-backed ASI06, ASI01, and ASI02 modules, session-correlated SQLite findings, post-compile telemetry, curated export helpers, runtime-event contract validation, runtime-event writer tests, runtime-event redaction/export tests, normal-ops runtime-event fixture validation, source-health digest reporting, lessons, CI, and 77 local tests.
 
 Phase 2 starts from that baseline. It should not repeat already-completed scaffold work.
 
@@ -23,7 +23,7 @@ Phase 1 delivered:
 | Digest semantics | Source audit events distinguish `OK_NEW`, `ALL_KNOWN`, `EMPTY`, and `ERROR` |
 | Discovery reliability | Daily search expands profile/default role terms, searches primary + Remote locations, uses Brave freshness/pagination, filters aggregate pages, and splits USAJobs OR terms before API calls |
 | Telemetry | Post-compile hook writes per-session JSON/Markdown and `_latest` files atomically |
-| Testing | 76 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract and writer behavior, runtime hook emission, runtime-event redaction/export, review-session selection, export redaction, profile privacy, source-status audit, source-health digest reporting, schema-version branches, and fixture evaluation |
+| Testing | 77 tests cover parsers, ASI01/ASI02/ASI06 detectors, persistence, telemetry validation, runtime-event contract and writer behavior, runtime hook emission, runtime-event redaction/export, normal-ops runtime-event fixture validation, review-session selection, export redaction, profile privacy, source-status audit, source-health digest reporting, schema-version branches, and fixture evaluation |
 | Ops helpers | `preflight.ps1`, `deploy_openclaw_skill.ps1`, `check_cron_confirmation.ps1`, `check_latest_telemetry.ps1`, `export_telemetry.ps1`, `export_latest_telemetry.ps1` |
 | Data separation | `CLAWGUARD_PROFILE_PATH` keeps private profile data outside the repo |
 

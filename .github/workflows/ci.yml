@@ -41,5 +41,8 @@ jobs:
       - name: Validate runtime event contract
         run: python -B scripts/validate_runtime_events.py --input examples/runtime_events_minimal.json --require asi03 --require asi05
 
+      - name: Validate runtime event normal-ops false-positive fixture
+        run: python -B scripts/validate_runtime_events.py --input examples/runtime_events_normal_ops.json --require asi03 --require asi05
+
       - name: Validate curated runtime event baseline
         run: python -B scripts/validate_runtime_events.py --input lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json --require asi03

@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "validate_runtime_events.py"
 SAMPLE = ROOT / "examples" / "runtime_events_minimal.json"
+NORMAL_OPS = ROOT / "examples" / "runtime_events_normal_ops.json"
 
 spec = importlib.util.spec_from_file_location("validate_runtime_events", SCRIPT)
 validate_runtime_events = importlib.util.module_from_spec(spec)
@@ -22,6 +23,16 @@ class RuntimeEventContractTests(unittest.TestCase):
         self.assertEqual(result["event_count"], 7)
         self.assertEqual(result["event_type_counts"]["credential_use"], 1)
         self.assertEqual(result["event_type_counts"]["process_exec"], 1)
+
+    def test_normal_ops_fixture_supports_asi03_and_asi05_false_positive_baseline(self):
+        result = validate_runtime_events.load_and_validate(NORMAL_OPS, require=["asi03", "asi05"])
+
+        self.assertEqual(result["status"], "valid")
+        self.assertEqual(result["event_count"], 10)
+        self.assertEqual(result["event_type_counts"]["credential_use"], 2)
+        self.assertEqual(result["event_type_counts"]["network_egress"], 2)
+        self.assertEqual(result["event_type_counts"]["process_exec"], 2)
+        self.assertEqual(result["policy_decision_counts"]["review"], 1)
 
     def test_event_session_must_match_top_level_session(self):
         data = validate_runtime_events.json.loads(SAMPLE.read_text(encoding="utf-8"))

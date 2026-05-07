@@ -178,9 +178,9 @@ python -B -m unittest discover -s tests
 Expected result:
 
 ```text
-............................................................................
+.............................................................................
 ----------------------------------------------------------------------
-Ran 76 tests in 0.4
+Ran 77 tests in 0.4
 
 OK
 ```
@@ -362,13 +362,14 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 76/76 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 77/77 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | ASI02 labeled synthetic fixture | Passing | 7 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Combined detector-chain synthetic fixture | Passing | 4 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
 | Runtime event contract | Passing | `examples/runtime_events_minimal.json` validates ASI03/ASI05 readiness shape without live-provider seeding |
+| Runtime normal-ops fixture | Passing | `examples/runtime_events_normal_ops.json` validates the ASI03/ASI05 clean false-positive baseline |
 | Curated runtime-event baseline | Passing | `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json` validates ASI03 readiness shape |
 | Live telemetry baseline | 0 findings | Baseline documents clean OpenClaw sessions, not detection failure |
 | Real-world precision/recall | Not yet measured | Current metrics are limited to the small synthetic fixture |
