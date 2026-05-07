@@ -277,14 +277,14 @@ python -B -m unittest tests.test_job_search_secure
 Expected output:
 
 ```text
-....................
+...............................
 ----------------------------------------------------------------------
-Ran 20 tests in 0.159s
+Ran 31 tests in 0.267s
 
 OK
 ```
 
-Note: the exact seconds may vary. The 20 tests cover ASI06 detection, ASI01 goal-redirect classification, ASI02 tool-misuse detection, source-status audit, and DB queryability.
+Note: the exact seconds may vary. The 31 tests cover ASI06 detection, ASI01 goal-redirect classification, ASI02 tool-misuse detection, source-status audit, DB queryability, source discovery, and runtime-event hook emission.
 
 ### 🧪 Exercise 4: Intentional packaging failure
 

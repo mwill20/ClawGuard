@@ -1,7 +1,7 @@
 # Phase 3 - Runtime Event Instrumentation Spec
 
-Last updated: 2026-05-06
-Status: Implementation in progress; writer and Python runtime hooks deployed, observe-only baseline validated
+Last updated: 2026-05-07
+Status: Implementation in progress; writer, Python runtime hooks, host-side redaction, and first curated baseline complete
 Input contract: [PHASE2_RUNTIME_TELEMETRY_CONTRACT.md](PHASE2_RUNTIME_TELEMETRY_CONTRACT.md)
 
 ## Purpose
@@ -293,31 +293,45 @@ Deploy with runtime events enabled only after:
 
 ### Step 5 - Curate Baselines
 
-Export a clean runtime-event baseline first. Then wait for real review-worthy events before building ASI03/ASI05 detectors.
+Done for the first clean baseline:
+
+```text
+lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/
+```
+
+The export path is:
+
+1. Runtime event JSON is emitted on the VPS under `/data/clawguard/runtime_events/`.
+2. Host-side redaction runs from `/docker/openclaw-utxu/data/clawguard/clawguard_redact_runtime_events.py`.
+3. Only `*.redacted.json` files are copied locally by `scripts/export_runtime_events.ps1`.
+4. Local validation runs before curation.
+5. `scripts/export_runtime_events.py` writes `runtime_events.json`, `runtime_events.md`, and the month index under `lessons/runtime-events/`.
+
+Continue to wait for real review-worthy events before building ASI03/ASI05 detectors. Do not seed synthetic malicious jobs into live providers.
 
 ## ASI03 Readiness
 
 ASI03 can move forward when runtime events include:
 
-- `identity_context`
-- `credential_use`
-- `network_egress` or `file_access`
-- policy decisions
-- session correlation
+- `identity_context` - present in the first clean baseline.
+- `credential_use` - present in the first clean baseline.
+- `network_egress` or `file_access` - `network_egress` present in the first clean baseline.
+- policy decisions - present as event fields; standalone `policy_decision` event samples remain open.
+- session correlation - present in the first clean baseline.
 
-Do not implement ASI03 before those exist in real telemetry.
+Do not implement ASI03 until the false-positive expectations for normal credential use are written and reviewed.
 
 ## ASI05 Readiness
 
 ASI05 can move forward when runtime events include:
 
-- `process_exec`
-- `container_action` or `file_write`
-- policy decisions
-- session correlation
+- `process_exec` - deferred until host wrapper instrumentation.
+- `container_action` or `file_write` - `file_write` present in the first clean baseline.
+- policy decisions - present as event fields; standalone `policy_decision` event samples remain open.
+- session correlation - present in the first clean baseline.
 - redacted command/target labels
 
-Do not implement ASI05 before those exist in real telemetry.
+Do not implement ASI05 until host wrapper command labels and false-positive expectations are written and reviewed.
 
 ## Failure Modes
 

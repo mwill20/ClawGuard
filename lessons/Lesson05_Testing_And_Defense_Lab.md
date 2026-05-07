@@ -34,7 +34,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 ### Project implements
 
 - Detector tests: `tests/test_asi06_detector.py`, `tests/test_asi02_detector.py`
-- Runtime tests: `tests/test_job_search_secure.py` (20 tests covering ASI06, ASI01, ASI02, source-status, DB queryability)
+- Runtime tests: `tests/test_job_search_secure.py` (31 tests covering ASI06, ASI01, ASI02, source-status, DB queryability, runtime-event hooks, and source discovery)
 - Evaluation tests: `tests/test_asi06_evaluation.py`, `tests/test_asi02_evaluation.py`
 - Telemetry validation tests: `tests/test_telemetry_validation.py`, `tests/test_runtime_event_contract.py`
 - Red-team lab data: `lessons/assets/asi06_red_team_jobs.json`
@@ -42,7 +42,7 @@ Analogy: this lesson is a training range. You fire known clean and known hostile
 - Combined detector-chain fixture: `examples/combined_labeled_eval.json`
 - Telemetry sample: `examples/telemetry_sample.json`
 - Runtime event contract fixture: `examples/runtime_events_minimal.json`
-- Full suite: 69 tests passing.
+- Full suite: 76 tests passing.
 
 ### Recommended (not implemented here)
 
@@ -177,9 +177,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.49s
+Ran 76 tests in 0.47s
 
 OK
 ```
@@ -369,7 +369,7 @@ Why: this proves the runtime chain can produce ASI06, ASI01, and ASI02 findings 
 | Combined detector-chain fixture | `examples/combined_labeled_eval.json` |
 | Telemetry sample | `examples/telemetry_sample.json` |
 | Runtime event contract fixture | `examples/runtime_events_minimal.json` |
-| Current total | 69 tests (29 in `test_job_search_secure.py`, 40 across detector / evaluation / telemetry / runtime-event contract and writer / selector / redaction-export) |
+| Current total | 76 tests (31 in `test_job_search_secure.py`, 45 across detector / evaluation / telemetry / runtime-event contract and writer / selector / redaction-export / runtime-event export) |
 | Core proof | Detector paths (ASI06 + ASI01 + ASI02) used by OpenClaw runtime, source-status semantics in audit log |
 
 ## 8. Next Steps

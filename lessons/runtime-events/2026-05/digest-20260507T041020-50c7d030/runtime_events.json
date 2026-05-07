@@ -1,0 +1,160 @@
+{
+  "agent_session_id": "digest-20260507T041020-50c7d030",
+  "events": [
+    {
+      "actor": {
+        "id": "openclaw-job-search",
+        "type": "agent"
+      },
+      "agent_session_id": "digest-20260507T041020-50c7d030",
+      "correlation": {
+        "agent_session_id": "digest-20260507T041020-50c7d030",
+        "related_rule_ids": []
+      },
+      "event_id": "evt-digest-20260507T041020-50c7d030-set-identity-context-001",
+      "event_time": "2026-05-07T04:10:20Z",
+      "event_type": "identity_context",
+      "evidence": {
+        "candidate_contact_stored": false,
+        "credential_material_present": false,
+        "profile_contents_stored": false,
+        "profile_label": "default-profile",
+        "resume_contents_stored": false,
+        "runtime_component": "job_search_secure.py"
+      },
+      "operation": "set_identity_context",
+      "operation_category": "identity-context",
+      "policy": {
+        "decision": "observe",
+        "reason": "baseline job-search runtime identity context"
+      },
+      "source": {
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py",
+        "component": "job_search_secure.py"
+      },
+      "target": {
+        "kind": "service_identity",
+        "label": "openclaw-job-search-profile",
+        "redaction_status": "label_only"
+      }
+    },
+    {
+      "actor": {
+        "id": "openclaw-job-search",
+        "type": "agent"
+      },
+      "agent_session_id": "digest-20260507T041020-50c7d030",
+      "correlation": {
+        "agent_session_id": "digest-20260507T041020-50c7d030",
+        "related_rule_ids": []
+      },
+      "event_id": "evt-digest-20260507T041020-50c7d030-read-provider-credential-label-002",
+      "event_time": "2026-05-07T04:10:20Z",
+      "event_type": "credential_use",
+      "evidence": {
+        "credential_configured": true,
+        "credential_purpose": "provider_api_auth",
+        "provider": "usajobs",
+        "raw_value_stored": false,
+        "site": "usajobs"
+      },
+      "operation": "read_provider_credential_label",
+      "operation_category": "credential-use",
+      "policy": {
+        "decision": "allow",
+        "reason": "approved search provider credential"
+      },
+      "source": {
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py",
+        "component": "job_search_secure.py"
+      },
+      "target": {
+        "kind": "credential_label",
+        "label": "usajobs-search-provider-credential",
+        "redaction_status": "redacted"
+      }
+    },
+    {
+      "actor": {
+        "id": "openclaw-job-search",
+        "type": "agent"
+      },
+      "agent_session_id": "digest-20260507T041020-50c7d030",
+      "correlation": {
+        "agent_session_id": "digest-20260507T041020-50c7d030",
+        "related_rule_ids": []
+      },
+      "event_id": "evt-digest-20260507T041020-50c7d030-search-provider-request-003",
+      "event_time": "2026-05-07T04:10:20Z",
+      "event_type": "network_egress",
+      "evidence": {
+        "destination_category": "search-provider",
+        "full_url_stored": false,
+        "keyword_text_stored": false,
+        "location_text_stored": false,
+        "provider": "usajobs",
+        "query_text_stored": false,
+        "result_count_requested": 1,
+        "site": "usajobs"
+      },
+      "operation": "search_provider_request",
+      "operation_category": "http-egress",
+      "policy": {
+        "decision": "allow",
+        "reason": "approved job-search provider egress"
+      },
+      "source": {
+        "code_path": "target-agent/skills/job-search-custom/job_search_secure.py",
+        "component": "job_search_secure.py"
+      },
+      "target": {
+        "kind": "domain",
+        "label": "data.usajobs.gov",
+        "redaction_status": "label_only"
+      }
+    },
+    {
+      "actor": {
+        "id": "openclaw-job-search",
+        "type": "agent"
+      },
+      "agent_session_id": "digest-20260507T041020-50c7d030",
+      "correlation": {
+        "agent_session_id": "digest-20260507T041020-50c7d030",
+        "related_rule_ids": []
+      },
+      "event_id": "evt-digest-20260507T041020-50c7d030-runtime-event-write-004",
+      "event_time": "2026-05-07T04:10:21Z",
+      "event_type": "file_write",
+      "evidence": {
+        "atomic_write": true,
+        "path_label_only": true,
+        "self_emission_guard": "direct_append_no_record_call"
+      },
+      "operation": "runtime_event_write",
+      "operation_category": "file-write",
+      "policy": {
+        "decision": "allow",
+        "reason": "approved runtime-event output path"
+      },
+      "source": {
+        "code_path": "target-agent/skills/job-search-custom/runtime_events.py",
+        "component": "runtime_events.py"
+      },
+      "target": {
+        "kind": "path_label",
+        "label": "runtime-events",
+        "redaction_status": "label_only"
+      }
+    }
+  ],
+  "generated_at": "2026-05-07T04:10:20Z",
+  "redaction": {
+    "host_side": true,
+    "redacted_at": "2026-05-07T11:54:54Z",
+    "redactor": "clawguard_redact_runtime_events.py",
+    "source_artifact_label": "runtime-events",
+    "status": "host_redacted"
+  },
+  "schema_version": "runtime-events/0.1"
+}

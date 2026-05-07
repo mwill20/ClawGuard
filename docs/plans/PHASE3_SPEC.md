@@ -1,7 +1,7 @@
 # Phase 3 Spec - Runtime Event Instrumentation and Detector Promotion
 
-Last updated: 2026-05-06
-Status: In progress; Phase 2 gates closed, Python runtime hooks deployed, observe-only baseline validated
+Last updated: 2026-05-07
+Status: In progress; Phase 2 gates closed, runtime-event hooks deployed, host-side redaction and first curated baseline complete
 Predecessor: Phase 2 ASI02 detector, curated telemetry workflow, and `runtime-events/0.1` contract
 
 ## Mission
@@ -22,6 +22,8 @@ Implemented before Phase 3:
 - Email compile path verified after `CLAWGUARD_EMAIL_TO` forwarding fix.
 - May 6 live no-notify digest trial evaluated real jobs and confirmed ASI02 activation.
 - May 7 UTC one-off observe-only runtime-event baselines validated on the VPS with runtime events disabled by default outside the test runs.
+- May 7 UTC host-side runtime-event redaction deployed before any export path.
+- First clean runtime-event baseline curated at `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/`.
 
 ## Phase 3 Tracks
 
@@ -69,10 +71,10 @@ Goal: prepare for future automation without moving sensitive data off-host first
 
 Acceptance criteria:
 
-- Host-side redaction runs before any automated export.
-- Local redaction remains as a second validation layer.
-- Redaction tests cover runtime-event artifacts.
-- Export artifacts include redaction status and schema version.
+- Host-side redaction runs before any automated export. Done with `clawguard_redact_runtime_events.py` deployed on the VPS host.
+- Local validation remains as a second layer after transfer. Done in `scripts/export_runtime_events.ps1`.
+- Redaction tests cover runtime-event artifacts. Done in `tests/test_export_redaction.py`.
+- Export artifacts include redaction status and schema version. Done for the first clean baseline.
 
 ### Track D - ASI03/ASI05 Detector Promotion
 
@@ -110,5 +112,15 @@ Start with event plumbing, not new findings:
 2. Emit one `identity_context` event per digest session. Done in Python runtime hooks.
 3. Emit provider `network_egress` and credential-label events from Brave/USAJobs calls. Done in Python runtime hooks.
 4. Emit file-write events for digest and telemetry writes. Digest output done; telemetry hook deferred until host-side redaction is designed.
-5. Extend validation/export helpers for runtime-event artifacts. Local validation exists; curated export remains deferred until host-side redaction is designed.
+5. Extend validation/export helpers for runtime-event artifacts. Done with host-side redaction, local validation, and curated export into `lessons/runtime-events/`.
 6. Keep all runtime-event emission observe-only. Required.
+
+## Current Runtime-Event Baseline
+
+The first curated runtime-event baseline is intentionally clean and observe-only:
+
+```text
+lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/
+```
+
+It came from a read-only USAJobs provider smoke run that emitted `identity_context`, `credential_use`, `network_egress`, and `file_write` events. It is suitable for reviewer learning and ASI03 readiness discussion, but it is not a finding-bearing sample and should not be used to claim ASI03/ASI05 detector readiness.

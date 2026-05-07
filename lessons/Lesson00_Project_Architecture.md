@@ -104,6 +104,7 @@ detections/asi01_goal_hijack/detector.py
 target-agent/skills/job-search-custom/clawguard_post_compile.sh
 tests/test_job_search_secure.py
 tests/test_asi06_detector.py
+tests/test_export_redaction.py
 ```
 
 ### Walkthrough: current flow in `README.md`
@@ -179,9 +180,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.49s
+Ran 76 tests in 0.47s
 
 OK
 ```

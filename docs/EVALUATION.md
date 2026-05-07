@@ -14,7 +14,7 @@
 
 | Metric | Why It Matters | Result |
 |---|---|---|
-| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event writer behavior, source-health digest reporting, review-session selection, export redaction, profile privacy override, and DB behavior | 69/69 passing |
+| Unit tests | Confirms ASI01/ASI02/ASI06 detectors, runtime, parser, evaluation, telemetry validation, runtime-event contract validation, runtime-event writer behavior, runtime-event export/redaction, source-health digest reporting, review-session selection, profile privacy override, and DB behavior | 76/76 passing |
 | Clean sample findings | Basic false-positive smoke check | 0 findings for `clean-example-001` |
 | Adversarial sample findings | Basic true-positive smoke check | 4 ASI06 findings for `attack-example-001` |
 | ASI06 synthetic labeled fixture exact match | Verifies expected ASI06 rule sets on curated fixtures | 1.0 across 8 synthetic records |
@@ -40,9 +40,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.4
+Ran 76 tests in 0.4
 
 OK
 ```
@@ -188,6 +188,8 @@ python -B -m unittest discover -s tests
 python -B scripts/evaluate_asi06.py --input examples/asi06_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
 python -B scripts/evaluate_asi02.py --input examples/asi02_labeled_eval.json --expected-micro-f1 1.0 --hide-timing
 python -B scripts/validate_telemetry.py --input examples/telemetry_sample.json
+python -B scripts/validate_runtime_events.py --input examples/runtime_events_minimal.json --require asi03 --require asi05
+python -B scripts/validate_runtime_events.py --input lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json --require asi03
 ```
 
 ## Telemetry Schema Validation
@@ -213,6 +215,7 @@ Documented baselines:
 - `lessons/clawguard-telemetry-baseline-001.md`
 - `lessons/clawguard-telemetry-baseline-002.md`
 - `lessons/telemetry/2026-05/digest-20260505T163003-d9133ff9/telemetry.json`
+- `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json`
 
 Known baseline result:
 
@@ -220,6 +223,7 @@ Known baseline result:
 - ASI02 was implemented after the first two Markdown baselines; the curated Phase 2 JSON baseline records zero findings with schema `1.0`.
 - 0 auto-prepared application packages.
 - 0 Oxylabs credits used.
+- 1 clean runtime-event baseline with `identity_context`, `credential_use`, `network_egress`, and `file_write` events.
 
 Zero findings are treated as clean-content telemetry, not as a failed detector.
 

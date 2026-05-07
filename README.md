@@ -18,8 +18,8 @@ The repository includes runnable detector code, tests, sample inputs and outputs
 - SQLite persistence for jobs, scores, search runs, quota state, and `job_security_findings`.
 - Session-correlated telemetry with `agent_session_id` values such as `digest-20260503T163003-b91b67e1`.
 - Post-compile telemetry summaries written as JSON and Markdown.
-- Ready-to-run unit tests, ASI06 sample input/output, and ASI02 labeled fixture examples.
-- GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, and telemetry validation.
+- Ready-to-run unit tests, ASI06 sample input/output, ASI02 labeled fixture examples, and runtime-event validation/redaction tests.
+- GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, telemetry validation, and runtime-event validation.
 - Local preflight and cron-confirmation helper scripts for repeatable operator checks.
 - Teaching curriculum under `lessons/`.
 
@@ -178,9 +178,9 @@ python -B -m unittest discover -s tests
 Expected result:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.4
+Ran 76 tests in 0.4
 
 OK
 ```
@@ -362,13 +362,14 @@ Current validation summary:
 
 | Check | Result | Notes |
 |---|---|---|
-| Unit tests | 69/69 passing | `python -B -m unittest discover -s tests` |
+| Unit tests | 76/76 passing | `python -B -m unittest discover -s tests` |
 | ASI06 sample detector run | Passing | Clean sample returns no findings; adversarial sample returns four ASI06 findings |
 | ASI06 labeled synthetic fixture | Passing | 8 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | ASI02 labeled synthetic fixture | Passing | 7 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Combined detector-chain synthetic fixture | Passing | 4 synthetic records; exact match 1.0; micro precision/recall/F1 1.0 |
 | Telemetry sample schema | Passing | `examples/telemetry_sample.json` validates with `scripts/validate_telemetry.py` |
 | Runtime event contract | Passing | `examples/runtime_events_minimal.json` validates ASI03/ASI05 readiness shape without live-provider seeding |
+| Curated runtime-event baseline | Passing | `lessons/runtime-events/2026-05/digest-20260507T041020-50c7d030/runtime_events.json` validates ASI03 readiness shape |
 | Live telemetry baseline | 0 findings | Baseline documents clean OpenClaw sessions, not detection failure |
 | Real-world precision/recall | Not yet measured | Current metrics are limited to the small synthetic fixture |
 

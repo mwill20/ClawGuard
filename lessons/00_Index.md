@@ -47,8 +47,9 @@ OpenClaw source search (with OK_NEW / ALL_KNOWN / EMPTY / ERROR status)
 - ASI02 v1 tool-misuse detector for unsafe egress, notification redirects, shell payloads, and file-write redirects.
 - Source-status semantics in search audit log (`OK_NEW`, `ALL_KNOWN`, `EMPTY`, `ERROR`) and digest summary fields (`newly_inserted_in_run`, `compile_only`).
 - Post-compile telemetry JSON/Markdown artifacts.
-- Local regression tests covering parsers, session IDs, ASI06 + ASI01 + ASI02 detector behavior, source-status audit, and DB queryability.
-- GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, and telemetry sample validation.
+- Runtime-event writer, validation, host-side redaction, and first curated clean baseline.
+- Local regression tests covering parsers, session IDs, ASI06 + ASI01 + ASI02 detector behavior, source-status audit, runtime-event export/redaction, and DB queryability.
+- GitHub Actions CI for unit tests, synthetic ASI06/ASI02 fixture evaluation, telemetry sample validation, and runtime-event validation.
 - Small synthetic labeled ASI06 fixture metrics under `examples/`.
 - Telemetry sample JSON validation under `examples/`.
 - Phase 2 plan documents under `docs/plans/` covering the v3 baseline, ASI02 module, telemetry workflow, corpus/red-team discipline, and ASI03/ASI05 roadmap specs.
@@ -73,9 +74,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.49s
+Ran 76 tests in 0.47s
 
 OK
 ```
@@ -90,9 +91,9 @@ python -B -m unittest discover -s tests
 Expected output:
 
 ```text
-........................
+............................................................................
 ----------------------------------------------------------------------
-Ran 69 tests in 0.49s
+Ran 76 tests in 0.47s
 
 OK
 ```
